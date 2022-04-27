@@ -158,12 +158,7 @@ impl ATCParser {
             "<" => Lesser,
             "<=" => LesserOrEqual,
             "in" => In,
-            _ => {
-                let mut iter = input.into_children();
-                assert_eq!("not", iter.next().unwrap().as_str());
-                assert_eq!("in", iter.next().unwrap().as_str());
-                NotIn
-            }
+            _ => NotIn,
         })
     }
 
