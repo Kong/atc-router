@@ -3,7 +3,6 @@ use crate::context::Context;
 use crate::router::Router;
 use crate::schema::Schema;
 use std::ffi;
-use std::slice::from_raw_parts;
 use std::slice::from_raw_parts_mut;
 use uuid::fmt::Hyphenated;
 use uuid::Uuid;
@@ -29,7 +28,7 @@ impl From<&CValue> for Value {
 
 #[no_mangle]
 pub extern "C" fn schema_new() -> *mut Schema {
-    Box::into_raw(Box::new(Schema::new()))
+    Box::into_raw(Box::new(Schema::default()))
 }
 
 #[no_mangle]

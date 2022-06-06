@@ -1,9 +1,5 @@
-use crate::ast::{
-    BinaryOperator, Expression, LHSTransformations, LogicalExpression, Predicate, Value, LHS,
-};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Value};
 use crate::context::{Context, Match};
-use regex::Regex;
-use uuid::Uuid;
 
 pub trait Execute {
     fn execute(&self, context: &mut Context, m: &mut Match) -> bool;
@@ -21,15 +17,14 @@ impl Execute for Expression {
                 BinaryOperator::NotEquals => context.value_of(&p.lhs.var_name) != &p.rhs,
                 BinaryOperator::Regex => {
                     let rhs = match &p.rhs {
-                        Value::String(s) => s,
+                        Value::Regex(r) => r,
                         _ => unreachable!(),
                     };
                     let lhs = match context.value_of(&p.lhs.var_name) {
                         Value::String(s) => s,
                         _ => unreachable!(),
                     };
-                    let r = Regex::new(&rhs).expect("bad regex");
-                    r.is_match(lhs)
+                    rhs.is_match(lhs)
                 }
                 BinaryOperator::Prefix => {
                     let rhs = match &p.rhs {

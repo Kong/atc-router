@@ -1,6 +1,6 @@
 use crate::ast::Value;
 use crate::schema::Schema;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 pub struct Match {

@@ -9,12 +9,13 @@ mod semantics;
 extern crate pest;
 
 use crate::ast::{
-    BinaryOperator, Expression, LHSTransformations, LogicalExpression, Predicate, Value, LHS,
+    BinaryOperator, Expression, Lhs, LhsTransformations, LogicalExpression, Predicate, Value,
 };
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
 use pest::error::ErrorVariant;
 use pest::prec_climber::{Assoc, Operator, PrecClimber};
 use pest_consume::{match_nodes, Error as ParseError, Parser};
+use regex::Regex;
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
 /// cbindgen:ignore
@@ -132,23 +133,23 @@ impl ATCParser {
         })
     }
 
-    fn transform_func(input: Node) -> ParseResult<LHS> {
+    fn transform_func(input: Node) -> ParseResult<Lhs> {
         let mut iter = input.children();
         let func_name = iter.next().unwrap();
         let var_name = iter.next().unwrap();
         // currently only "lower()" is supported from grammar
         assert_eq!(func_name.as_str(), "lower");
 
-        Ok(LHS {
+        Ok(Lhs {
             var_name: var_name.as_str().into(),
-            transformation: Some(LHSTransformations::Lower),
+            transformation: Some(LhsTransformations::Lower),
         })
     }
 
-    fn lhs(input: Node) -> ParseResult<LHS> {
+    fn lhs(input: Node) -> ParseResult<Lhs> {
         Ok(match_nodes! { input.children();
             [transform_func(t)] => t,
-            [ident(var)] => LHS { var_name: var, transformation: None },
+            [ident(var)] => Lhs { var_name: var, transformation: None },
         })
     }
 
@@ -172,7 +173,29 @@ impl ATCParser {
 
     fn predicate(input: Node) -> ParseResult<Expression> {
         Ok(match_nodes! { input.children();
-            [lhs(lhs), binary_operator(op), rhs(rhs)] => Expression::Predicate(Predicate{lhs, rhs, op}),
+            [lhs(lhs), binary_operator(op), rhs(rhs)] => {
+                Expression::Predicate(Predicate{ lhs,
+                    rhs: if op == BinaryOperator::Regex {
+                        if let Value::String(s) = rhs {
+                            let r = Regex::new(&s)
+                                .map_err(|e| ParseError::new_from_span(
+                                ErrorVariant::CustomError {
+                                    message: e.to_string(),
+                                }, input.as_span()))?;
+
+                            Value::Regex(r)
+                        } else {
+                            return Err(ParseError::new_from_span(
+                                ErrorVariant::CustomError {
+                                    message: "regex operator can only be used with String operands".to_string(),
+                                },
+                            input.as_span()));
+                        }
+                    } else {
+                        rhs
+                    },
+                    op })
+            },
         })
     }
 

@@ -1,8 +1,5 @@
-use crate::ast::{
-    BinaryOperator, Expression, LHSTransformations, LogicalExpression, Predicate, Value, LHS,
-};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
 use crate::schema::Schema;
-use regex::Regex;
 
 type ValidationResult = Result<(), String>;
 
@@ -30,11 +27,12 @@ impl Validate for Expression {
             Expression::Predicate(p) => {
                 // lhs and rhs must be the same type
                 let lhs_type = p.lhs.my_type(schema);
-                if let None = lhs_type {
+                if lhs_type.is_none() {
                     return Err("unknown LHS field".to_string());
                 }
+                let lhs_type = lhs_type.unwrap();
 
-                if *lhs_type.unwrap() != p.rhs.my_type() {
+                if p.op != BinaryOperator::Regex && lhs_type != &p.rhs.my_type() {
                     return Err(
                         "type mismatch between the LHS and RHS values of predicate".to_string()
                     );
@@ -43,15 +41,10 @@ impl Validate for Expression {
                 match p.op {
                     BinaryOperator::Equals | BinaryOperator::NotEquals => { Ok(()) }
                     BinaryOperator::Regex => {
-                        match &p.rhs {
-                            Value::String(r) => {
-                                let r = Regex::new(r);
-                                match r {
-                                    Err(e) => Err(e.to_string()),
-                                    Ok(_) => Ok(())
-                                }
-                            }
-                            _ => Err("Regex/Prefix/Postfix operators only supports string operands".to_string())
+                        if lhs_type == &Type::String {
+                            Ok(())
+                        } else {
+                            Err("Regex operators only supports string operands".to_string())
                         }
                     },
                     BinaryOperator::Prefix | BinaryOperator::Postfix => {

@@ -1,17 +1,12 @@
 use crate::ast::Type;
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct Schema {
     fields: HashMap<String, Type>,
 }
 
 impl Schema {
-    pub fn new() -> Self {
-        Self {
-            fields: HashMap::new(),
-        }
-    }
-
     pub fn type_of(&self, field: &str) -> Option<&Type> {
         self.fields.get(field)
     }
