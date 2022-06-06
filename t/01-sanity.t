@@ -19,6 +19,7 @@ no_diff();
 run_tests();
 
 __DATA__
+
 === TEST 1: create schema, router, context
 --- http_config eval: $::HttpConfig
 --- config
@@ -177,6 +178,41 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
 /foo
 false
 0
+--- no_error_log
+[error]
+[warn]
+[crit]
+
+
+
+=== TEST 4: invalid ATC DSL
+--- http_config eval: $::HttpConfig
+--- config
+    location = /t {
+        content_by_lua_block {
+            local schema = require("resty.router.schema")
+            local router = require("resty.router.router")
+            local context = require("resty.router.context")
+
+            local s = schema.new()
+
+            s:add_field("http.path", "String")
+            s:add_field("tcp.port", "Int")
+
+            local r = router.new(s)
+            ngx.say(r:add_matcher("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
+                                  "http.path = \"/foo\" && tcp.port == 80"))
+        }
+    }
+--- request
+GET /t
+--- response_body
+nil --> 1:11
+  |
+1 | http.path = "/foo" && tcp.port == 80
+  |           ^---
+  |
+  = expected binary_operator
 --- no_error_log
 [error]
 [warn]

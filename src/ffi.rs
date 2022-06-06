@@ -70,7 +70,7 @@ pub extern "C" fn router_add_matcher(
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
 
     if let Err(e) = router.add_matcher(uuid, atc) {
-        errbuf.copy_from_slice(e.as_bytes());
+        errbuf[..e.len()].copy_from_slice(e.as_bytes());
         unsafe {
             *errbuf_len = e.len();
         }
