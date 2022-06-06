@@ -1,5 +1,6 @@
 use crate::schema::Schema;
 use cidr::IpCidr;
+use regex::Regex;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
