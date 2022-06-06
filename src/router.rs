@@ -1,7 +1,7 @@
 use crate::ast::{
     BinaryOperator, Expression, LHSTransformations, LogicalExpression, Predicate, Value, LHS,
 };
-use crate::context::Context;
+use crate::context::{Context, Match};
 use crate::interpreter::Execute;
 use crate::parse;
 use crate::schema::Schema;
@@ -39,15 +39,22 @@ impl<'a> Router<'a> {
         Ok(())
     }
 
-    pub fn remove_matcher(&mut self, uuid: Uuid) -> bool {
+    pub fn remove_matcher(&mut self, uuid: &Uuid) -> bool {
         self.matchers.remove(&uuid).is_some()
     }
 
-    pub fn execute(&self, context: &Context) -> bool {
-        for m in self.matchers.values() {
-            return m.execute(context);
+    pub fn execute(&self, context: &mut Context) -> bool {
+        let mut matched = false;
+
+        for (id, m) in &self.matchers {
+            let mut mat = Match::new();
+            if m.execute(context, &mut mat) {
+                mat.uuid = *id;
+                matched = true;
+                context.matches.push(mat);
+            }
         }
 
-        false
+        matched
     }
 }

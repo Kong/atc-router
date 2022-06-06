@@ -1,19 +1,34 @@
 use crate::ast::Value;
 use crate::schema::Schema;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use uuid::Uuid;
 
-pub struct Context<'a, 'v> {
-    schema: &'a Schema,
-    values: HashMap<String, Value>,
-    prefix: Option<&'v str>,
+pub struct Match {
+    pub uuid: Uuid,
+    pub prefix: Option<String>,
 }
 
-impl<'a, 'v> Context<'a, 'v> {
+impl Match {
+    pub fn new() -> Self {
+        Match {
+            uuid: Uuid::default(),
+            prefix: None,
+        }
+    }
+}
+
+pub struct Context<'a> {
+    schema: &'a Schema,
+    values: HashMap<String, Value>,
+    pub matches: Vec<Match>,
+}
+
+impl<'a> Context<'a> {
     pub fn new(schema: &'a Schema) -> Self {
         Context {
             schema,
             values: HashMap::new(),
-            prefix: None,
+            matches: Vec::new(),
         }
     }
 

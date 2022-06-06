@@ -1,19 +1,20 @@
 use crate::ast::{
     BinaryOperator, Expression, LHSTransformations, LogicalExpression, Predicate, Value, LHS,
 };
-use crate::context::Context;
+use crate::context::{Context, Match};
 use regex::Regex;
+use uuid::Uuid;
 
 pub trait Execute {
-    fn execute(&self, context: &Context) -> bool;
+    fn execute(&self, context: &mut Context, m: &mut Match) -> bool;
 }
 
 impl Execute for Expression {
-    fn execute(&self, context: &Context) -> bool {
+    fn execute(&self, context: &mut Context, m: &mut Match) -> bool {
         match self {
             Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) => l.execute(context) && r.execute(context),
-                LogicalExpression::Or(l, r) => l.execute(context) || r.execute(context),
+                LogicalExpression::And(l, r) => l.execute(context, m) && r.execute(context, m),
+                LogicalExpression::Or(l, r) => l.execute(context, m) || r.execute(context, m),
             },
             Expression::Predicate(p) => match p.op {
                 BinaryOperator::Equals => context.value_of(&p.lhs.var_name) == &p.rhs,
@@ -40,7 +41,16 @@ impl Execute for Expression {
                         _ => unreachable!(),
                     };
 
-                    lhs.starts_with(rhs)
+                    if lhs.starts_with(rhs) {
+                        if p.lhs.var_name == "http.path" {
+                            // hack: prefix extraction
+                            m.prefix = Some(rhs.to_string());
+                        }
+
+                        return true;
+                    }
+
+                    false
                 }
                 BinaryOperator::Postfix => {
                     let rhs = match &p.rhs {

@@ -1,14 +1,17 @@
 local _M = {}
+local clib = require("resty.router.cdefs")
+local ffi = require("ffi")
 
 
-local _M = { __index = _M, }
+local _MT = { __index = _M, }
 
 
 function _M.new()
     local schema = clib.schema_new()
     local s = setmetatable({
         schema = ffi.gc(schema, clib.schema_free),
-        fields = {},
+        field_types = {},
+        field_ctypes = {},
     }, _MT)
 
     return s
@@ -17,7 +20,7 @@ end
 
 do
     function _M:add_field(field, typ)
-        if self.fields[field] then
+        if self.field_types[field] then
             return nil, "field " .. field .. " already exists"
         end
 
@@ -37,7 +40,32 @@ do
         end
 
         clib.schema_add_field(self.schema, field, ctype)
+
+        self.field_types[field] = typ
+        self.field_ctypes[field] = ctype
     end
+end
+
+
+function _M:get_field_type(field)
+    local typ = self.field_types[field]
+
+    if not typ then
+        return nil, "field " .. field .. " unknown"
+    end
+
+    return typ
+end
+
+
+function _M:get_field_ctype(field)
+    local typ = self.field_ctypes[field]
+
+    if not typ then
+        return nil, "field " .. field .. " unknown"
+    end
+
+    return typ
 end
 
 

@@ -5,6 +5,7 @@ use crate::schema::Schema;
 use std::ffi;
 use std::slice::from_raw_parts;
 use std::slice::from_raw_parts_mut;
+use uuid::fmt::Hyphenated;
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -15,13 +16,13 @@ pub enum CValue {
     CInt(i64),
 }
 
-impl From<CValue> for Value {
-    fn from(v: CValue) -> Self {
+impl From<&CValue> for Value {
+    fn from(v: &CValue) -> Self {
         match v {
             CValue::CString(s) => {
-                Self::String(unsafe { ffi::CStr::from_ptr(s).to_str().unwrap().to_string() })
+                Self::String(unsafe { ffi::CStr::from_ptr(*s).to_str().unwrap().to_string() })
             }
-            CValue::CInt(i) => Self::Int(i),
+            CValue::CInt(i) => Self::Int(*i),
         }
     }
 }
@@ -80,7 +81,16 @@ pub extern "C" fn router_add_matcher(
 }
 
 #[no_mangle]
-pub extern "C" fn router_execute(router: &Router, context: &Context) -> bool {
+// uuid must be ASCII representation of 128-bit UUID
+pub extern "C" fn router_remove_matcher(router: &mut Router, uuid: *const i8) -> bool {
+    let uuid = unsafe { ffi::CStr::from_ptr(uuid).to_str().unwrap() };
+    let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
+
+    router.remove_matcher(&uuid)
+}
+
+#[no_mangle]
+pub extern "C" fn router_execute(router: &Router, context: &mut Context) -> bool {
     router.execute(context)
 }
 
@@ -95,9 +105,38 @@ pub extern "C" fn context_free(context: *mut Context) {
 }
 
 #[no_mangle]
-pub extern "C" fn context_add_value(context: &mut Context, field: *const i8, value: CValue) {
+pub extern "C" fn context_add_value(context: &mut Context, field: *const i8, value: &CValue) {
     let field = unsafe { ffi::CStr::from_ptr(field).to_str().unwrap() };
-    println!("{:?}", value);
 
     context.add_value(field, value.into())
+}
+
+#[no_mangle]
+pub extern "C" fn context_get_matched_count(context: &Context) -> usize {
+    context.matches.len()
+}
+
+#[no_mangle]
+pub extern "C" fn context_get_match(
+    context: &Context,
+    index: usize,
+    uuid: *mut u8,
+    prefix: *mut u8,
+    prefix_len: *mut usize,
+) {
+    let uuid = unsafe { from_raw_parts_mut(uuid, Hyphenated::LENGTH) };
+    let prefix = unsafe { from_raw_parts_mut(prefix, 2048) };
+
+    let m = &context.matches[index];
+    m.uuid.as_hyphenated().encode_lower(uuid);
+    if let Some(p) = &m.prefix {
+        prefix[..p.len()].copy_from_slice(p.as_bytes());
+        unsafe {
+            *prefix_len = p.len();
+        }
+    } else {
+        unsafe {
+            *prefix_len = 0;
+        }
+    }
 }

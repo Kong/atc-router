@@ -1,9 +1,6 @@
 local ffi = require("ffi")
 
 
-local _M = {}
-
-
 ffi.cdef([[
 typedef enum Type {
   String,
@@ -44,15 +41,29 @@ struct Router *router_new(const struct Schema *schema);
 
 void router_free(struct Router *router);
 
-void router_add_matcher(struct Router *router, const int8_t *uuid, const int8_t *atc);
+bool router_add_matcher(struct Router *router,
+                        const int8_t *uuid,
+                        const int8_t *atc,
+                        uint8_t *errbuf,
+                        uintptr_t *errbuf_len);
 
-bool router_execute(const struct Router *router, const struct Context *context);
+bool router_remove_matcher(struct Router *router, const int8_t *uuid);
+
+bool router_execute(const struct Router *router, struct Context *context);
 
 struct Context *context_new(const struct Schema *schema);
 
 void context_free(struct Context *context);
 
-void context_add_value(struct Context *context, const int8_t *field, struct CValue value);
+void context_add_value(struct Context *context, const int8_t *field, const struct CValue *value);
+
+uintptr_t context_get_matched_count(const struct Context *context);
+
+void context_get_match(const struct Context *context,
+                       uintptr_t index,
+                       uint8_t *uuid,
+                       uint8_t *prefix,
+                       uintptr_t *prefix_len);
 ]])
 
 
