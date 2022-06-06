@@ -1,3 +1,4 @@
+use crate::schema::Schema;
 use cidr::IpCidr;
 use serde::Serialize;
 
@@ -37,12 +38,30 @@ pub enum BinaryOperator {
     NotIn,          // not in
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Eq, PartialEq)]
 #[serde(tag = "type", content = "value")]
-pub enum RHS {
+pub enum Value {
     String(String),
     IpCidr(IpCidr),
     Int(i64),
+}
+
+impl Value {
+    pub fn my_type(&self) -> Type {
+        match self {
+            Value::String(_) => Type::String,
+            Value::IpCidr(_) => Type::IpCidr,
+            Value::Int(_) => Type::Int,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Eq, PartialEq)]
+#[repr(C)]
+pub enum Type {
+    String,
+    IpCidr,
+    Int,
 }
 
 #[derive(Debug, Serialize)]
@@ -51,9 +70,15 @@ pub struct LHS {
     pub transformation: Option<LHSTransformations>,
 }
 
+impl LHS {
+    pub fn my_type<'a>(&self, schema: &'a Schema) -> Option<&'a Type> {
+        schema.type_of(&self.var_name)
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct Predicate {
     pub lhs: LHS,
-    pub rhs: RHS,
+    pub rhs: Value,
     pub op: BinaryOperator,
 }

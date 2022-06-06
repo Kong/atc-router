@@ -1,16 +1,24 @@
 mod ast;
+mod context;
+mod ffi;
+mod interpreter;
+mod router;
+mod schema;
+mod semantics;
+
 extern crate pest;
 
 use crate::ast::{
-    BinaryOperator, Expression, LHSTransformations, LogicalExpression, Predicate, LHS, RHS,
+    BinaryOperator, Expression, LHSTransformations, LogicalExpression, Predicate, Value, LHS,
 };
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
 use pest::error::ErrorVariant;
 use pest::prec_climber::{Assoc, Operator, PrecClimber};
 use pest_consume::{match_nodes, Error as ParseError, Parser};
-use wasm_bindgen::prelude::wasm_bindgen;
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
+/// cbindgen:ignore
+// Bug: https://github.com/eqrion/cbindgen/issues/286
 type Node<'i> = pest_consume::Node<'i, Rule, ()>;
 
 trait IntoParseResult<T> {
@@ -116,11 +124,11 @@ impl ATCParser {
         Ok(num)
     }
 
-    fn rhs(input: Node) -> ParseResult<RHS> {
+    fn rhs(input: Node) -> ParseResult<Value> {
         Ok(match_nodes! { input.children();
-            [str_literal(s)] => RHS::String(s),
-            [ip_literal(ip)] => RHS::IpCidr(ip),
-            [int_literal(i)] => RHS::Int(i),
+            [str_literal(s)] => Value::String(s),
+            [ip_literal(ip)] => Value::IpCidr(ip),
+            [int_literal(i)] => Value::Int(i),
         })
     }
 
@@ -197,13 +205,8 @@ impl ATCParser {
     }
 }
 
-#[wasm_bindgen]
-pub fn parse(atc: &str) -> Result<String, String> {
-    match ATCParser::parse(Rule::matcher, atc) {
-        Ok(matcher) => Ok(serde_json::to_string(
-            &ATCParser::matcher(matcher.single().unwrap()).unwrap(),
-        )
-        .unwrap()),
-        Err(e) => Err(e.to_string()),
-    }
+pub fn parse(atc: &str) -> ParseResult<Expression> {
+    let matchers = ATCParser::parse(Rule::matcher, atc)?;
+    let matcher = matchers.single()?;
+    ATCParser::matcher(matcher)
 }
