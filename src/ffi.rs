@@ -4,6 +4,7 @@ use crate::router::Router;
 use crate::schema::Schema;
 use std::ffi;
 use std::slice::from_raw_parts;
+use std::slice::from_raw_parts_mut;
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -54,13 +55,28 @@ pub extern "C" fn router_free(router: *mut Router) {
 
 #[no_mangle]
 // uuid must be ASCII representation of 128-bit UUID
-pub extern "C" fn router_add_matcher(router: &mut Router, uuid: *const i8, atc: *const i8) {
+pub extern "C" fn router_add_matcher(
+    router: &mut Router,
+    uuid: *const i8,
+    atc: *const i8,
+    errbuf: *mut u8,
+    errbuf_len: *mut usize,
+) -> bool {
     let uuid = unsafe { ffi::CStr::from_ptr(uuid).to_str().unwrap() };
     let atc = unsafe { ffi::CStr::from_ptr(atc).to_str().unwrap() };
+    let errbuf = unsafe { from_raw_parts_mut(errbuf, 2048) };
 
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
 
-    router.add_matcher(uuid, atc).unwrap()
+    if let Err(e) = router.add_matcher(uuid, atc) {
+        errbuf.copy_from_slice(e.as_bytes());
+        unsafe {
+            *errbuf_len = e.len();
+        }
+        return false;
+    }
+
+    true
 }
 
 #[no_mangle]

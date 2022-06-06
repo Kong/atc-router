@@ -2,16 +2,18 @@ use crate::ast::Value;
 use crate::schema::Schema;
 use std::collections::HashMap;
 
-pub struct Context<'a> {
+pub struct Context<'a, 'v> {
     schema: &'a Schema,
     values: HashMap<String, Value>,
+    prefix: Option<&'v str>,
 }
 
-impl<'a> Context<'a> {
+impl<'a, 'v> Context<'a, 'v> {
     pub fn new(schema: &'a Schema) -> Self {
         Context {
             schema,
             values: HashMap::new(),
+            prefix: None,
         }
     }
 

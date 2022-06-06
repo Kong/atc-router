@@ -39,6 +39,10 @@ impl<'a> Router<'a> {
         Ok(())
     }
 
+    pub fn remove_matcher(&mut self, uuid: Uuid) -> bool {
+        self.matchers.remove(&uuid).is_some()
+    }
+
     pub fn execute(&self, context: &Context) -> bool {
         for m in self.matchers.values() {
             return m.execute(context);

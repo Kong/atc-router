@@ -44,7 +44,7 @@ struct Router *router_new(const struct Schema *schema);
 
 void router_free(struct Router *router);
 
-void router_add_matcher(struct Router *router, const uint8_t *uuid, const int8_t *atc);
+void router_add_matcher(struct Router *router, const int8_t *uuid, const int8_t *atc);
 
 bool router_execute(const struct Router *router, const struct Context *context);
 
