@@ -1,6 +1,7 @@
 use crate::schema::Schema;
 use cidr::IpCidr;
 use regex::Regex;
+use std::net::IpAddr;
 
 #[derive(Debug)]
 pub enum Expression {
@@ -38,6 +39,7 @@ pub enum BinaryOperator {
 pub enum Value {
     String(String),
     IpCidr(IpCidr),
+    IpAddr(IpAddr),
     Int(i64),
     Regex(Regex),
 }
@@ -61,6 +63,7 @@ impl Value {
         match self {
             Value::String(_) => Type::String,
             Value::IpCidr(_) => Type::IpCidr,
+            Value::IpAddr(_) => Type::IpAddr,
             Value::Int(_) => Type::Int,
             Value::Regex(_) => Type::Regex,
         }
@@ -72,6 +75,7 @@ impl Value {
 pub enum Type {
     String,
     IpCidr,
+    IpAddr,
     Int,
     Regex,
 }

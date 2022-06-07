@@ -5,7 +5,9 @@ ffi.cdef([[
 typedef enum Type {
   String,
   IpCidr,
+  IpAddr,
   Int,
+  Regex,
 } Type;
 
 typedef struct Context Context;
@@ -16,6 +18,8 @@ typedef struct Schema Schema;
 
 typedef enum CValue_Tag {
   CString,
+  CIpCidr,
+  CIpAddr,
   CInt,
 } CValue_Tag;
 
@@ -24,6 +28,12 @@ typedef struct CValue {
   union {
     struct {
       const int8_t *c_string;
+    };
+    struct {
+      const int8_t *c_ip_cidr;
+    };
+    struct {
+      const int8_t *c_ip_addr;
     };
     struct {
       int64_t c_int;
@@ -55,7 +65,11 @@ struct Context *context_new(const struct Schema *schema);
 
 void context_free(struct Context *context);
 
-void context_add_value(struct Context *context, const int8_t *field, const struct CValue *value);
+bool context_add_value(struct Context *context,
+                       const int8_t *field,
+                       const struct CValue *value,
+                       uint8_t *errbuf,
+                       uintptr_t *errbuf_len);
 
 uintptr_t context_get_matched_count(const struct Context *context);
 

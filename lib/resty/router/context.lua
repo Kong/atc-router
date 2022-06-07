@@ -37,16 +37,23 @@ function _M:add_value(field, value)
         CACHED_VALUE[0].tag = C.CString
         CACHED_VALUE[0].c_string = value
 
-    elseif typ == "IpCidr" then
-        assert(false) -- unimplemented
-        CACHED_VALUE[0].tag = C.IpCidr
+    elseif typ == "IpAddr" then
+        CACHED_VALUE[0].tag = C.IpAddr
+        CACHED_VALUE[0].c_ip_addr = value
 
     elseif typ == "Int" then
         CACHED_VALUE[0].tag = C.Int
         CACHED_VALUE[0].c_int = value
     end
 
-    clib.context_add_value(self.context, field, CACHED_VALUE)
+    local errbuf = get_string_buf(2048)
+    local errbuf_len = get_size_ptr()
+
+    if clib.context_add_value(self.context, field, CACHED_VALUE, errbuf, errbuf_len) == false then
+        return ffi_string(errbuf, errbuf_len[0])
+    end
+
+    return true
 end
 
 

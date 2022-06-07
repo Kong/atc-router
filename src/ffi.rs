@@ -2,7 +2,9 @@ use crate::ast::{Type, Value};
 use crate::context::Context;
 use crate::router::Router;
 use crate::schema::Schema;
+use cidr::IpCidr;
 use std::ffi;
+use std::net::IpAddr;
 use std::slice::from_raw_parts_mut;
 use uuid::fmt::Hyphenated;
 use uuid::Uuid;
@@ -11,18 +13,31 @@ use uuid::Uuid;
 #[repr(C)]
 pub enum CValue {
     CString(*const i8),
-    //IpCidr(IpCidr),
+    CIpCidr(*const i8),
+    CIpAddr(*const i8),
     CInt(i64),
 }
 
-impl From<&CValue> for Value {
-    fn from(v: &CValue) -> Self {
-        match v {
+impl TryFrom<&CValue> for Value {
+    type Error = String;
+
+    fn try_from(v: &CValue) -> Result<Self, Self::Error> {
+        Ok(match v {
             CValue::CString(s) => {
                 Self::String(unsafe { ffi::CStr::from_ptr(*s).to_str().unwrap().to_string() })
             }
+            CValue::CIpCidr(s) => Self::IpCidr(
+                unsafe { ffi::CStr::from_ptr(*s).to_str().unwrap().to_string() }
+                    .parse::<IpCidr>()
+                    .map_err(|e| e.to_string())?,
+            ),
+            CValue::CIpAddr(s) => Self::IpAddr(
+                unsafe { ffi::CStr::from_ptr(*s).to_str().unwrap().to_string() }
+                    .parse::<IpAddr>()
+                    .map_err(|e| e.to_string())?,
+            ),
             CValue::CInt(i) => Self::Int(*i),
-        }
+        })
     }
 }
 
@@ -104,10 +119,28 @@ pub extern "C" fn context_free(context: *mut Context) {
 }
 
 #[no_mangle]
-pub extern "C" fn context_add_value(context: &mut Context, field: *const i8, value: &CValue) {
+pub extern "C" fn context_add_value(
+    context: &mut Context,
+    field: *const i8,
+    value: &CValue,
+    errbuf: *mut u8,
+    errbuf_len: *mut usize,
+) -> bool {
     let field = unsafe { ffi::CStr::from_ptr(field).to_str().unwrap() };
+    let errbuf = unsafe { from_raw_parts_mut(errbuf, 2048) };
 
-    context.add_value(field, value.into())
+    let value: Result<Value, _> = value.try_into();
+    if let Err(e) = value {
+        errbuf[..e.len()].copy_from_slice(e.as_bytes());
+        unsafe {
+            *errbuf_len = e.len();
+        }
+        return false;
+    }
+
+    context.add_value(field, value.unwrap());
+
+    true
 }
 
 #[no_mangle]

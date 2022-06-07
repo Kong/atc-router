@@ -107,18 +107,11 @@ impl Execute for Expression {
 
                     lhs <= rhs
                 }
-                BinaryOperator::In => {
-                    let rhs = match &p.rhs {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
-                    let lhs = match context.value_of(&p.lhs.var_name) {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
-
-                    rhs.contains(lhs)
-                }
+                BinaryOperator::In => match (context.value_of(&p.lhs.var_name), &p.rhs) {
+                    (Value::String(l), Value::String(r)) => r.contains(l),
+                    (Value::IpAddr(l), Value::IpCidr(r)) => r.contains(l),
+                    _ => unreachable!(),
+                },
                 BinaryOperator::NotIn => {
                     let rhs = match &p.rhs {
                         Value::String(s) => s,

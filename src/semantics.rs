@@ -28,13 +28,21 @@ impl Validate for Expression {
                 // lhs and rhs must be the same type
                 let lhs_type = p.lhs.my_type(schema);
                 if lhs_type.is_none() {
-                    return Err("unknown LHS field".to_string());
+                    return Err("Unknown LHS field".to_string());
                 }
                 let lhs_type = lhs_type.unwrap();
 
                 if p.op != BinaryOperator::Regex && lhs_type != &p.rhs.my_type() {
                     return Err(
-                        "type mismatch between the LHS and RHS values of predicate".to_string()
+                        "Type mismatch between the LHS and RHS values of predicate".to_string()
+                    );
+                }
+
+                // LHS transformations only makes sense with string fields
+                if p.lhs.transformation.is_some() && lhs_type != &Type::String {
+                    return Err(
+                        "Transformation function only supported with String type fields"
+                            .to_string(),
                     );
                 }
 
