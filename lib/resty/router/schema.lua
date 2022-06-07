@@ -51,7 +51,13 @@ function _M:get_field_type(field)
     local typ = self.field_types[field]
 
     if not typ then
-        return nil, "field " .. field .. " unknown"
+        local name = field:match("(.+)%..+")
+        if name then
+            typ = self.field_types[name .. ".*"]
+            if not typ then
+                return nil, "field " .. field .. " unknown"
+            end
+        end
     end
 
     return typ
