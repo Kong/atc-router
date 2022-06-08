@@ -28,6 +28,10 @@ end
 
 
 function _M:add_value(field, value)
+    if not value then
+        return true
+    end
+
     local typ, err = self.schema:get_field_type(field)
     if not typ then
         return nil, err
@@ -62,19 +66,23 @@ function _M:get_matched_count()
 end
 
 
-function _M:get_match(index)
-    local prefix_buf = get_string_buf(2048)
-    local prefix_len = get_size_ptr()
-
-    clib.context_get_match(self.context, index, UUID_BUF, prefix_buf, prefix_len)
-
-    local uuid = ffi_string(UUID_BUF, 36)
-    local prefix
-    if prefix_len[0] > 0 then
-        prefix = ffi_string(prefix_buf, prefix_len[0])
+function _M:get_match(index, matched_field)
+    local buf, len
+    if matched_field then
+      buf = get_string_buf(2048)
+      len = get_size_ptr()
     end
 
-    return uuid, prefix
+    clib.context_get_match(self.context, index, UUID_BUF, matched_field, buf, len)
+
+    local uuid = ffi_string(UUID_BUF, 36)
+
+    local matched_value
+    if matched_field and len[0] > 0 then
+        matched_value = ffi_string(buf, len[0])
+    end
+
+    return uuid, matched_value
 end
 
 

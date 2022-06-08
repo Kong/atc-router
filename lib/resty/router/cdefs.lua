@@ -76,8 +76,9 @@ uintptr_t context_get_matched_count(const struct Context *context);
 void context_get_match(const struct Context *context,
                        uintptr_t index,
                        uint8_t *uuid,
-                       uint8_t *prefix,
-                       uintptr_t *prefix_len);
+                       const int8_t *field,
+                       uint8_t *matched,
+                       uintptr_t *matched_len);
 ]])
 
 

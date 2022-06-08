@@ -35,7 +35,7 @@ pub enum BinaryOperator {
     NotIn,          // not in
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     String(String),
     IpCidr(IpCidr),

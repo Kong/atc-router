@@ -5,14 +5,14 @@ use uuid::Uuid;
 
 pub struct Match {
     pub uuid: Uuid,
-    pub prefix: Option<String>,
+    pub matches: HashMap<String, Value>,
 }
 
 impl Match {
     pub fn new() -> Self {
         Match {
             uuid: Uuid::default(),
-            prefix: None,
+            matches: HashMap::new(),
         }
     }
 }
@@ -40,7 +40,7 @@ impl<'a> Context<'a> {
         self.values.insert(field.to_string(), value);
     }
 
-    pub fn value_of(&self, field: &str) -> &Value {
-        self.values.get(field).unwrap()
+    pub fn value_of(&self, field: &str) -> Option<&Value> {
+        self.values.get(field)
     }
 }

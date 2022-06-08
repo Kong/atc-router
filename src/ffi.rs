@@ -153,22 +153,27 @@ pub extern "C" fn context_get_match(
     context: &Context,
     index: usize,
     uuid: *mut u8,
-    prefix: *mut u8,
-    prefix_len: *mut usize,
+    field: *const i8,
+    matched: *mut u8,
+    matched_len: *mut usize,
 ) {
     let uuid = unsafe { from_raw_parts_mut(uuid, Hyphenated::LENGTH) };
-    let prefix = unsafe { from_raw_parts_mut(prefix, 2048) };
 
     let m = &context.matches[index];
     m.uuid.as_hyphenated().encode_lower(uuid);
-    if let Some(p) = &m.prefix {
-        prefix[..p.len()].copy_from_slice(p.as_bytes());
-        unsafe {
-            *prefix_len = p.len();
-        }
-    } else {
-        unsafe {
-            *prefix_len = 0;
+
+    if !field.is_null() {
+        let matched = unsafe { from_raw_parts_mut(matched, 2048) };
+        let field = unsafe { ffi::CStr::from_ptr(field).to_str().unwrap() };
+        if let Some(Value::String(p)) = m.matches.get(field) {
+            matched[..p.len()].copy_from_slice(p.as_bytes());
+            unsafe {
+                *matched_len = p.len();
+            }
+        } else {
+            unsafe {
+                *matched_len = 0;
+            }
         }
     }
 }
