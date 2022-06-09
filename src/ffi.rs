@@ -109,6 +109,28 @@ pub extern "C" fn router_execute(router: &Router, context: &mut Context) -> bool
 }
 
 #[no_mangle]
+pub extern "C" fn router_get_fields(
+    router: &Router,
+    fields: *mut *const u8,
+    fields_len: *mut usize,
+) -> usize {
+    if !fields.is_null() {
+        assert!(!fields_len.is_null());
+        assert!(unsafe { *fields_len } >= router.fields.len());
+
+        let fields = unsafe { from_raw_parts_mut(fields, *fields_len) };
+        let fields_len = unsafe { from_raw_parts_mut(fields_len, *fields_len) };
+
+        for (i, k) in router.fields.keys().enumerate() {
+            fields[i] = k.as_bytes().as_ptr();
+            fields_len[i] = k.len()
+        }
+    }
+
+    router.fields.len()
+}
+
+#[no_mangle]
 pub extern "C" fn context_new(schema: &Schema) -> *mut Context {
     Box::into_raw(Box::new(Context::new(schema)))
 }

@@ -43,4 +43,28 @@ function _M:execute(context)
 end
 
 
+function _M:get_fields()
+    local out = {}
+    local out_n = 0
+
+    local total = tonumber(clib.router_get_fields(self.router, nil, nil))
+    if total == 0 then
+        return out
+    end
+
+    local fields = ffi.new("const uint8_t *[?]", total)
+    local fields_len = ffi.new("size_t [?]", total)
+    fields_len[0] = total
+
+    clib.router_get_fields(self.router, fields, fields_len)
+
+    for i = 0, total - 1 do
+        out_n = out_n + 1
+        out[out_n] = ffi.string(fields[i], fields_len[i])
+    end
+
+    return out
+end
+
+
 return _M

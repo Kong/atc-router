@@ -61,6 +61,10 @@ bool router_remove_matcher(struct Router *router, const int8_t *uuid);
 
 bool router_execute(const struct Router *router, struct Context *context);
 
+uintptr_t router_get_fields(const struct Router *router,
+                            const uint8_t **fields,
+                            uintptr_t *fields_len);
+
 struct Context *context_new(const struct Schema *schema);
 
 void context_free(struct Context *context);

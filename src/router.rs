@@ -3,13 +3,14 @@ use crate::context::{Context, Match};
 use crate::interpreter::Execute;
 use crate::parse;
 use crate::schema::Schema;
-use crate::semantics::Validate;
+use crate::semantics::{FieldCounter, Validate};
 use std::collections::HashMap;
 use uuid::Uuid;
 
 pub struct Router<'a> {
     schema: &'a Schema,
     matchers: HashMap<Uuid, Expression>,
+    pub fields: HashMap<String, usize>,
 }
 
 impl<'a> Router<'a> {
@@ -17,6 +18,7 @@ impl<'a> Router<'a> {
         Self {
             schema,
             matchers: HashMap::new(),
+            fields: HashMap::new(),
         }
     }
 
@@ -28,6 +30,7 @@ impl<'a> Router<'a> {
         let ast = parse(atc).map_err(|e| e.to_string())?;
 
         ast.validate(self.schema)?;
+        ast.add_to_counter(&mut self.fields);
 
         assert!(self.matchers.insert(uuid, ast).is_none());
 
@@ -35,7 +38,12 @@ impl<'a> Router<'a> {
     }
 
     pub fn remove_matcher(&mut self, uuid: &Uuid) -> bool {
-        self.matchers.remove(uuid).is_some()
+        if let Some(ast) = self.matchers.remove(uuid) {
+            ast.remove_from_counter(&mut self.fields);
+            return true;
+        }
+
+        false
     }
 
     pub fn execute(&self, context: &mut Context) -> bool {
