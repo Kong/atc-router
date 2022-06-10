@@ -38,16 +38,31 @@ impl Execute for Expression {
                             _ => unreachable!(),
                         };
 
-                        let reg_match = rhs.find(lhs);
-                        if reg_match.is_none() {
+                        let reg_cap = rhs.captures(lhs);
+                        if reg_cap.is_none() {
                             return false;
                         }
 
-                        let reg_match = reg_match.unwrap();
+                        let reg_cap = reg_cap.unwrap();
                         m.matches.insert(
                             p.lhs.var_name.clone(),
-                            Value::String(reg_match.as_str().to_string()),
+                            Value::String(reg_cap.get(0).unwrap().as_str().to_string()),
                         );
+
+                        for (i, c) in reg_cap.iter().enumerate() {
+                            if let Some(c) = c {
+                                m.captures.insert(i.to_string(), c.as_str().to_string());
+                            }
+                        }
+
+                        // named captures
+                        for n in rhs.capture_names() {
+                            if let Some(n) = n {
+                                if let Some(value) = reg_cap.name(n) {
+                                    m.captures.insert(n.to_string(), value.as_str().to_string());
+                                }
+                            }
+                        }
 
                         true
                     }

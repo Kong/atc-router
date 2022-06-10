@@ -6,6 +6,7 @@ use uuid::Uuid;
 pub struct Match {
     pub uuid: Uuid,
     pub matches: HashMap<String, Value>,
+    pub captures: HashMap<String, String>,
 }
 
 impl Match {
@@ -13,6 +14,7 @@ impl Match {
         Match {
             uuid: Uuid::default(),
             matches: HashMap::new(),
+            captures: HashMap::new(),
         }
     }
 }
@@ -20,7 +22,7 @@ impl Match {
 pub struct Context<'a> {
     schema: &'a Schema,
     values: HashMap<String, Value>,
-    pub matches: Vec<Match>,
+    pub result: Option<Match>,
 }
 
 impl<'a> Context<'a> {
@@ -28,7 +30,7 @@ impl<'a> Context<'a> {
         Context {
             schema,
             values: HashMap::new(),
-            matches: Vec::new(),
+            result: None,
         }
     }
 

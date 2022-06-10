@@ -47,17 +47,16 @@ impl<'a> Router<'a> {
     }
 
     pub fn execute(&self, context: &mut Context) -> bool {
-        let mut matched = false;
-
         for (id, m) in &self.matchers {
             let mut mat = Match::new();
             if m.execute(context, &mut mat) {
                 mat.uuid = *id;
-                matched = true;
-                context.matches.push(mat);
+                context.result = Some(mat);
+
+                return true;
             }
         }
 
-        matched
+        false
     }
 }

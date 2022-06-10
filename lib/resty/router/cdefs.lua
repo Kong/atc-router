@@ -75,14 +75,14 @@ bool context_add_value(struct Context *context,
                        uint8_t *errbuf,
                        uintptr_t *errbuf_len);
 
-uintptr_t context_get_matched_count(const struct Context *context);
-
-void context_get_match(const struct Context *context,
-                       uintptr_t index,
-                       uint8_t *uuid,
-                       const int8_t *field,
-                       uint8_t *matched,
-                       uintptr_t *matched_len);
+intptr_t context_get_result(const struct Context *context,
+                             uint8_t *uuid_hex,
+                             const uint8_t **matched_path,
+                             uintptr_t *matched_path_len,
+                             const uint8_t **capture_names,
+                             uintptr_t *capture_names_len,
+                             const uint8_t **capture_values,
+                             uintptr_t *capture_values_len);
 ]])
 
 

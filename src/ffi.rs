@@ -166,36 +166,67 @@ pub extern "C" fn context_add_value(
 }
 
 #[no_mangle]
-pub extern "C" fn context_get_matched_count(context: &Context) -> usize {
-    context.matches.len()
-}
-
-#[no_mangle]
-pub extern "C" fn context_get_match(
+pub extern "C" fn context_get_result(
     context: &Context,
-    index: usize,
-    uuid: *mut u8,
-    field: *const i8,
-    matched: *mut u8,
-    matched_len: *mut usize,
-) {
-    let uuid = unsafe { from_raw_parts_mut(uuid, Hyphenated::LENGTH) };
+    uuid_hex: *mut u8,
+    matched_path: *mut *const u8,
+    matched_path_len: *mut usize,
+    capture_names: *mut *const u8,
+    capture_names_len: *mut usize,
+    capture_values: *mut *const u8,
+    capture_values_len: *mut usize,
+) -> isize {
+    if context.result.is_none() {
+        return -1;
+    }
 
-    let m = &context.matches[index];
-    m.uuid.as_hyphenated().encode_lower(uuid);
+    if !uuid_hex.is_null() {
+        let uuid_hex = unsafe { from_raw_parts_mut(uuid_hex, Hyphenated::LENGTH) };
+        assert!(!matched_path.is_null());
+        assert!(!matched_path_len.is_null());
 
-    if !field.is_null() {
-        let matched = unsafe { from_raw_parts_mut(matched, 2048) };
-        let field = unsafe { ffi::CStr::from_ptr(field).to_str().unwrap() };
-        if let Some(Value::String(p)) = m.matches.get(field) {
-            matched[..p.len()].copy_from_slice(p.as_bytes());
-            unsafe {
-                *matched_len = p.len();
-            }
+        let res = context.result.as_ref().unwrap();
+
+        res.uuid.as_hyphenated().encode_lower(uuid_hex);
+
+        if let Some(Value::String(v)) = res.matches.get("http.path") {
+            unsafe { *matched_path = v.as_bytes().as_ptr() };
+            unsafe { *matched_path_len = v.len() };
         } else {
-            unsafe {
-                *matched_len = 0;
+            unsafe { *matched_path_len = 0 };
+        }
+
+        if !context.result.as_ref().unwrap().captures.is_empty() {
+            assert!(unsafe { *capture_names_len } >= res.captures.len());
+            assert!(unsafe { *capture_names_len == *capture_values_len });
+            assert!(!capture_names.is_null());
+            assert!(!capture_names_len.is_null());
+            assert!(!capture_values.is_null());
+            assert!(!capture_values_len.is_null());
+
+            let capture_names = unsafe { from_raw_parts_mut(capture_names, *capture_names_len) };
+            let capture_names_len =
+                unsafe { from_raw_parts_mut(capture_names_len, *capture_names_len) };
+            let capture_values = unsafe { from_raw_parts_mut(capture_values, *capture_values_len) };
+            let capture_values_len =
+                unsafe { from_raw_parts_mut(capture_values_len, *capture_values_len) };
+
+            for (i, (k, v)) in res.captures.iter().enumerate() {
+                capture_names[i] = k.as_bytes().as_ptr();
+                capture_names_len[i] = k.len();
+
+                capture_values[i] = v.as_bytes().as_ptr();
+                capture_values_len[i] = v.len();
             }
         }
     }
+
+    context
+        .result
+        .as_ref()
+        .unwrap()
+        .captures
+        .len()
+        .try_into()
+        .unwrap()
 }

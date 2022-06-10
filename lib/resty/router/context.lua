@@ -13,7 +13,9 @@ local UUID_BUF = ffi.new("uint8_t[36]")
 local get_string_buf = base.get_string_buf
 local get_size_ptr = base.get_size_ptr
 local ffi_string = ffi.string
+local ffi_new = ffi.new
 local tonumber = tonumber
+local new_tab = require("table.new")
 
 
 function _M.new(schema)
@@ -61,28 +63,47 @@ function _M:add_value(field, value)
 end
 
 
-function _M:get_matched_count()
-    return tonumber(clib.context_get_matched_count(self.context))
-end
-
-
-function _M:get_match(index, matched_field)
-    local buf, len
-    if matched_field then
-      buf = get_string_buf(2048)
-      len = get_size_ptr()
+function _M:get_result()
+    local captures_len = tonumber(clib.context_get_result(self.context, nil, nil, nil, nil, nil, nil, nil))
+    if captures_len == -1 then
+        return nil
     end
 
-    clib.context_get_match(self.context, index, UUID_BUF, matched_field, buf, len)
+    local matched_path = ffi_new("const uint8_t *[1]")
+    local matched_path_len = ffi_new("size_t [1]")
+
+    local capture_names, capture_names_len, capture_values, capture_values_len
+    if captures_len > 0 then
+        capture_names = ffi_new("const uint8_t *[?]", captures_len)
+        capture_names_len = ffi_new("size_t [?]", captures_len)
+        capture_values = ffi_new("const uint8_t *[?]", captures_len)
+        capture_values_len = ffi_new("size_t [?]", captures_len)
+
+        capture_names_len[0] = captures_len
+        capture_values_len[0] = captures_len
+    end
+
+    clib.context_get_result(self.context, UUID_BUF, matched_path, matched_path_len,
+                           capture_names, capture_names_len, capture_values,
+                           capture_values_len)
 
     local uuid = ffi_string(UUID_BUF, 36)
+    local matched_path = matched_path_len[0] > 0 and ffi_string(matched_path[0], matched_path_len[0]) or nil
 
-    local matched_value
-    if matched_field and len[0] > 0 then
-        matched_value = ffi_string(buf, len[0])
+    local captures
+
+    if captures_len > 0 then
+        captures = new_tab(0, captures_len)
+
+        for i = 0, captures_len - 1 do
+            local name = ffi_string(capture_names[i], capture_names_len[i])
+            local value = ffi_string(capture_values[i], capture_values_len[i])
+
+            captures[name] = value
+        end
     end
 
-    return uuid, matched_value
+    return uuid, matched_path, captures
 end
 
 
