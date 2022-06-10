@@ -15,26 +15,36 @@ function _M.new(schema)
     local r = setmetatable({
         router = ffi.gc(router, clib.router_free),
         schema = schema,
+        priorities = {},
     }, _MT)
 
     return r
 end
 
 
-function _M:add_matcher(uuid, atc)
+function _M:add_matcher(priority, uuid, atc)
     local errbuf = get_string_buf(2048)
     local errbuf_len = get_size_ptr()
 
-    if clib.router_add_matcher(self.router, uuid, atc, errbuf, errbuf_len) == false then
+    if clib.router_add_matcher(self.router, priority, uuid, atc, errbuf, errbuf_len) == false then
         return nil, ffi_string(errbuf, errbuf_len[0])
     end
+
+    self.priorities[uuid] = priority
 
     return true
 end
 
 
 function _M:remove_matcher(uuid)
-    return clib.router_remove_matcher(self.router, uuid) == true
+    local priority = self.priorities[uuid]
+    if not priority then
+        return false
+    end
+
+    self.priorities[uuid] = nil
+
+    return clib.router_remove_matcher(self.router, priority, uuid) == true
 end
 
 

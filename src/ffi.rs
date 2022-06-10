@@ -72,6 +72,7 @@ pub extern "C" fn router_free(router: *mut Router) {
 // uuid must be ASCII representation of 128-bit UUID
 pub extern "C" fn router_add_matcher(
     router: &mut Router,
+    priority: usize,
     uuid: *const i8,
     atc: *const i8,
     errbuf: *mut u8,
@@ -83,7 +84,7 @@ pub extern "C" fn router_add_matcher(
 
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
 
-    if let Err(e) = router.add_matcher(uuid, atc) {
+    if let Err(e) = router.add_matcher(priority, uuid, atc) {
         errbuf[..e.len()].copy_from_slice(e.as_bytes());
         unsafe {
             *errbuf_len = e.len();
@@ -96,11 +97,15 @@ pub extern "C" fn router_add_matcher(
 
 #[no_mangle]
 // uuid must be ASCII representation of 128-bit UUID
-pub extern "C" fn router_remove_matcher(router: &mut Router, uuid: *const i8) -> bool {
+pub extern "C" fn router_remove_matcher(
+    router: &mut Router,
+    priority: usize,
+    uuid: *const i8,
+) -> bool {
     let uuid = unsafe { ffi::CStr::from_ptr(uuid).to_str().unwrap() };
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
 
-    router.remove_matcher(&uuid)
+    router.remove_matcher(priority, uuid)
 }
 
 #[no_mangle]

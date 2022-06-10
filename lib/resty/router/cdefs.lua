@@ -52,12 +52,13 @@ struct Router *router_new(const struct Schema *schema);
 void router_free(struct Router *router);
 
 bool router_add_matcher(struct Router *router,
+                        uintptr_t priority,
                         const int8_t *uuid,
                         const int8_t *atc,
                         uint8_t *errbuf,
                         uintptr_t *errbuf_len);
 
-bool router_remove_matcher(struct Router *router, const int8_t *uuid);
+bool router_remove_matcher(struct Router *router, uintptr_t priority, const int8_t *uuid);
 
 bool router_execute(const struct Router *router, struct Context *context);
 
@@ -76,13 +77,13 @@ bool context_add_value(struct Context *context,
                        uintptr_t *errbuf_len);
 
 intptr_t context_get_result(const struct Context *context,
-                             uint8_t *uuid_hex,
-                             const uint8_t **matched_path,
-                             uintptr_t *matched_path_len,
-                             const uint8_t **capture_names,
-                             uintptr_t *capture_names_len,
-                             const uint8_t **capture_values,
-                             uintptr_t *capture_values_len);
+                            uint8_t *uuid_hex,
+                            const uint8_t **matched_path,
+                            uintptr_t *matched_path_len,
+                            const uint8_t **capture_names,
+                            uintptr_t *capture_names_len,
+                            const uint8_t **capture_values,
+                            uintptr_t *capture_values_len);
 ]])
 
 
