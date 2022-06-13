@@ -12,12 +12,10 @@ oct_digits = { "0" ~ ASCII_OCT_DIGIT+ }
 dec_digits = { ASCII_DIGIT+ }
 
 
-str_literal = ${ "\"" ~ inner ~ "\"" }
-inner = @{ char* }
-char = {
-    !("\"" | "\\") ~ ANY
-    | "\\" ~ ("\"" | "\\" | "n" | "r" | "t")
-}
+str_literal = ${ "\"" ~ str_inner ~ "\"" }
+str_inner = _{ (str_esc | str_char)* }
+str_char = { !("\"" | "\\") ~ ANY }
+str_esc = { "\\" ~ ("\"" | "\\" | "n" | "r" | "t") }
 
 
 ipv4_literal = @{ ASCII_DIGIT{1,3} ~ ( "." ~ ASCII_DIGIT{1,3} ){3} }

@@ -99,6 +99,11 @@ function _M:get_result()
             local name = ffi_string(capture_names[i], capture_names_len[i])
             local value = ffi_string(capture_values[i], capture_values_len[i])
 
+            local num = tonumber(name, 10)
+            if num then
+                name = num
+            end
+
             captures[name] = value
         end
     end
