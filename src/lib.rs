@@ -158,12 +158,14 @@ impl ATCParser {
         let mut iter = input.children();
         let func_name = iter.next().unwrap();
         let var_name = iter.next().unwrap();
-        // currently only "lower()" is supported from grammar
-        assert_eq!(func_name.as_str(), "lower");
 
         Ok(Lhs {
             var_name: var_name.as_str().into(),
-            transformation: Some(LhsTransformations::Lower),
+            transformation: Some(match func_name.as_str() {
+                "lower" => LhsTransformations::Lower,
+                "any" => LhsTransformations::Any,
+                _ => unreachable!(),
+            }),
         })
     }
 

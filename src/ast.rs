@@ -15,9 +15,10 @@ pub enum LogicalExpression {
     Or(Expression, Expression),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum LhsTransformations {
     Lower,
+    Any,
 }
 
 #[derive(Debug, PartialEq)]

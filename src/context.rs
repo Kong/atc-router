@@ -21,7 +21,7 @@ impl Match {
 
 pub struct Context<'a> {
     schema: &'a Schema,
-    values: HashMap<String, Value>,
+    values: HashMap<String, Vec<Value>>,
     pub result: Option<Match>,
 }
 
@@ -39,10 +39,13 @@ impl<'a> Context<'a> {
             panic!("value provided does not match schema");
         }
 
-        self.values.insert(field.to_string(), value);
+        self.values
+            .entry(field.to_string())
+            .or_default()
+            .push(value);
     }
 
-    pub fn value_of(&self, field: &str) -> Option<&Value> {
-        self.values.get(field)
+    pub fn value_of(&self, field: &str) -> Option<&[Value]> {
+        self.values.get(field).map(|v| v.as_slice())
     }
 }
