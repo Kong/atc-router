@@ -87,7 +87,46 @@ intptr_t context_get_result(const struct Context *context,
 ]])
 
 
-local clib = ffi.load("/home/datong.sun/code/kong/atc-router/target/debug/libatc_router.so")
+-- From: https://github.com/openresty/lua-resty-signal/blob/master/lib/resty/signal.lua
+local load_shared_lib
+do
+    local string_gmatch = string.gmatch
+    local string_match = string.match
+    local io_open = io.open
+    local io_close = io.close
+    local table_new = require("table.new")
+
+    local cpath = package.cpath
+
+    function load_shared_lib(so_name)
+        local tried_paths = table_new(32, 0)
+        local i = 1
+
+        for k, _ in string_gmatch(cpath, "[^;]+") do
+            local fpath = string_match(k, "(.*/)")
+            fpath = fpath .. so_name
+            -- Don't get me wrong, the only way to know if a file exist is
+            -- trying to open it.
+            local f = io_open(fpath)
+            if f ~= nil then
+                io_close(f)
+                return ffi.load(fpath)
+            end
+
+            tried_paths[i] = fpath
+            i = i + 1
+        end
+
+        return nil, tried_paths
+    end  -- function
+end  -- do
+
+
+local clib, tried_paths = load_shared_lib("libatc_router.so")
+if not clib then
+    error("could not load libatc_router.so from the following paths:\n" ..
+          table.concat(tried_paths, "\n"), 2)
+end
 
 
 return clib
