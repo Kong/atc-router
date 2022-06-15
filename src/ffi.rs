@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 #[derive(Debug)]
 #[repr(C)]
+#[allow(clippy::enum_variant_names)]
 pub enum CValue {
     CString(*const i8),
     CIpCidr(*const i8),

@@ -1,4 +1,4 @@
-use crate::ast::{BinaryOperator, Expression, LhsTransformations, LogicalExpression, Value};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Value};
 use crate::context::{Context, Match};
 
 pub trait Execute {
@@ -18,11 +18,25 @@ impl Execute for Expression {
                     Some(v) => v,
                 };
 
-                if p.lhs.transformation != Some(LhsTransformations::Any) {
+                let (lower, any) = p.lhs.get_transformations();
+
+                if !any {
                     assert!(lhs_values.len() == 1);
                 }
 
-                for lhs_value in lhs_values {
+                for mut lhs_value in lhs_values {
+                    let lhs_value_transformed;
+
+                    if lower {
+                        match lhs_value {
+                            Value::String(s) => {
+                                lhs_value_transformed = Value::String(s.to_lowercase());
+                                lhs_value = &lhs_value_transformed;
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+
                     match p.op {
                         BinaryOperator::Equals => {
                             if lhs_value == &p.rhs {
@@ -59,12 +73,10 @@ impl Execute for Expression {
                                 }
 
                                 // named captures
-                                for n in rhs.capture_names() {
-                                    if let Some(n) = n {
-                                        if let Some(value) = reg_cap.name(n) {
-                                            m.captures
-                                                .insert(n.to_string(), value.as_str().to_string());
-                                        }
+                                for n in rhs.capture_names().flatten() {
+                                    if let Some(value) = reg_cap.name(n) {
+                                        m.captures
+                                            .insert(n.to_string(), value.as_str().to_string());
                                     }
                                 }
 

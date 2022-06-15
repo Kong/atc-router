@@ -44,11 +44,11 @@ function _M:add_value(field, value)
         CACHED_VALUE[0].c_string = value
 
     elseif typ == "IpAddr" then
-        CACHED_VALUE[0].tag = C.IpAddr
+        CACHED_VALUE[0].tag = C.CIpAddr
         CACHED_VALUE[0].c_ip_addr = value
 
     elseif typ == "Int" then
-        CACHED_VALUE[0].tag = C.Int
+        CACHED_VALUE[0].tag = C.CInt
         CACHED_VALUE[0].c_int = value
     end
 

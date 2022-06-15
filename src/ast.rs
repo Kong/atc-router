@@ -84,12 +84,24 @@ pub enum Type {
 #[derive(Debug)]
 pub struct Lhs {
     pub var_name: String,
-    pub transformation: Option<LhsTransformations>,
+    pub transformations: Vec<LhsTransformations>,
 }
 
 impl Lhs {
     pub fn my_type<'a>(&self, schema: &'a Schema) -> Option<&'a Type> {
         schema.type_of(&self.var_name)
+    }
+
+    pub fn get_transformations(&self) -> (bool, bool) {
+        let mut lower = false;
+        let mut any = false;
+
+        self.transformations.iter().for_each(|i| match i {
+            LhsTransformations::Any => any = true,
+            LhsTransformations::Lower => lower = true,
+        });
+
+        (lower, any)
     }
 }
 

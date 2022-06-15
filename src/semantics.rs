@@ -1,4 +1,4 @@
-use crate::ast::{BinaryOperator, Expression, LhsTransformations, LogicalExpression, Type, Value};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
 use crate::schema::Schema;
 use std::collections::HashMap;
 
@@ -87,10 +87,10 @@ impl Validate for Expression {
                     );
                 }
 
+                let (lower, _any) = p.lhs.get_transformations();
+
                 // LHS transformations only makes sense with string fields
-                if p.lhs.transformation == Some(LhsTransformations::Lower)
-                    && lhs_type != &Type::String
-                {
+                if lower && lhs_type != &Type::String {
                     return Err(
                         "lower-case transformation function only supported with String type fields"
                             .to_string(),

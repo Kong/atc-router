@@ -155,24 +155,23 @@ impl ATCParser {
     }
 
     fn transform_func(input: Node) -> ParseResult<Lhs> {
-        let mut iter = input.children();
-        let func_name = iter.next().unwrap();
-        let var_name = iter.next().unwrap();
+        Ok(match_nodes! { input.children();
+            [func_name, lhs(mut lhs)] => {
+                lhs.transformations.push(match func_name.as_str() {
+                    "lower" => LhsTransformations::Lower,
+                    "any" => LhsTransformations::Any,
+                    _ => unreachable!(),
+                });
 
-        Ok(Lhs {
-            var_name: var_name.as_str().into(),
-            transformation: Some(match func_name.as_str() {
-                "lower" => LhsTransformations::Lower,
-                "any" => LhsTransformations::Any,
-                _ => unreachable!(),
-            }),
+                lhs
+            },
         })
     }
 
     fn lhs(input: Node) -> ParseResult<Lhs> {
         Ok(match_nodes! { input.children();
             [transform_func(t)] => t,
-            [ident(var)] => Lhs { var_name: var, transformation: None },
+            [ident(var)] => Lhs { var_name: var, transformations: Vec::new() },
         })
     }
 
