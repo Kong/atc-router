@@ -8,6 +8,7 @@ local clib = require("resty.router.cdefs")
 local get_string_buf = base.get_string_buf
 local get_size_ptr = base.get_size_ptr
 local ffi_string = ffi.string
+local assert = assert
 
 
 function _M.new(schema)
@@ -49,6 +50,7 @@ end
 
 
 function _M:execute(context)
+    assert(context.schema == self.schema)
     return clib.router_execute(self.router, context.context) == true
 end
 

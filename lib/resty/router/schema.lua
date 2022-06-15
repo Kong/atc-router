@@ -32,6 +32,9 @@ do
         elseif typ == "IpCidr" then
             ctype = clib.IpCidr
 
+        elseif typ == "IpAddr" then
+            ctype = clib.IpAddr
+
         elseif typ == "Int" then
             ctype = clib.Int
 
@@ -58,17 +61,6 @@ function _M:get_field_type(field)
                 return nil, "field " .. field .. " unknown"
             end
         end
-    end
-
-    return typ
-end
-
-
-function _M:get_field_ctype(field)
-    local typ = self.field_ctypes[field]
-
-    if not typ then
-        return nil, "field " .. field .. " unknown"
     end
 
     return typ
