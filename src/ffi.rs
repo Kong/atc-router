@@ -174,8 +174,9 @@ pub extern "C" fn context_add_value(
 pub extern "C" fn context_get_result(
     context: &Context,
     uuid_hex: *mut u8,
-    matched_path: *mut *const u8,
-    matched_path_len: *mut usize,
+    matched_field: *const i8,
+    matched_value: *mut *const u8,
+    matched_value_len: *mut usize,
     capture_names: *mut *const u8,
     capture_names_len: *mut usize,
     capture_values: *mut *const u8,
@@ -187,18 +188,20 @@ pub extern "C" fn context_get_result(
 
     if !uuid_hex.is_null() {
         let uuid_hex = unsafe { from_raw_parts_mut(uuid_hex, Hyphenated::LENGTH) };
-        assert!(!matched_path.is_null());
-        assert!(!matched_path_len.is_null());
-
         let res = context.result.as_ref().unwrap();
 
         res.uuid.as_hyphenated().encode_lower(uuid_hex);
 
-        if let Some(Value::String(v)) = res.matches.get("http.path") {
-            unsafe { *matched_path = v.as_bytes().as_ptr() };
-            unsafe { *matched_path_len = v.len() };
-        } else {
-            unsafe { *matched_path_len = 0 };
+        if !matched_field.is_null() {
+            let matched_field = unsafe { ffi::CStr::from_ptr(matched_field).to_str().unwrap() };
+            assert!(!matched_value.is_null());
+            assert!(!matched_value_len.is_null());
+            if let Some(Value::String(v)) = res.matches.get(matched_field) {
+                unsafe { *matched_value = v.as_bytes().as_ptr() };
+                unsafe { *matched_value_len = v.len() };
+            } else {
+                unsafe { *matched_value_len = 0 };
+            }
         }
 
         if !context.result.as_ref().unwrap().captures.is_empty() {

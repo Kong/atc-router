@@ -173,16 +173,20 @@ If an error occurred, `nil` and a string describing the error will be returned.
 
 ### get\_result
 
-**syntax:** *uuid, matched_path, captures = c:get_result()*
+**syntax:** *uuid, matched_value, captures = c:get_result(matched_field)*
 
 **context:** *any*
 
 After a successful router match, gets the match result from the context.
 
+If `matched_field` is provided, then `matched_value` will be returned with the value
+matched by the specified field. If `matched_field` is `nil` or field did
+not match, then `nil` is returned for `matched_value`.
+
 If the context did not contain a valid match result, `nil` is returned.
 
-Otherwise, the string UUID, path portion and regex captures from the matched route
-are returned.
+Otherwise, the string UUID, value matching field `matched_field` and
+regex captures from the matched route are returned.
 
 [Back to TOC](#table-of-contents)
 
