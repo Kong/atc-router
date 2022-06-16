@@ -20,11 +20,10 @@ impl Execute for Expression {
 
                 let (lower, any) = p.lhs.get_transformations();
 
-                if !any {
-                    assert!(lhs_values.len() == 1);
-                }
-
-                for mut lhs_value in lhs_values {
+                for mut lhs_value in lhs_values
+                    .iter()
+                    .take(if any { lhs_values.len() } else { 1 })
+                {
                     let lhs_value_transformed;
 
                     if lower {
