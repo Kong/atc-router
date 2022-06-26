@@ -89,6 +89,9 @@ intptr_t context_get_result(const struct Context *context,
 ]])
 
 
+local ERR_BUF_MAX_LEN = 2048
+
+
 -- From: https://github.com/openresty/lua-resty-signal/blob/master/lib/resty/signal.lua
 local load_shared_lib
 do
@@ -131,4 +134,7 @@ if not clib then
 end
 
 
-return clib
+return {
+    clib = clib,
+    ERR_BUF_MAX_LEN = ERR_BUF_MAX_LEN,
+}

@@ -160,7 +160,13 @@ impl ATCParser {
                 lhs.transformations.push(match func_name.as_str() {
                     "lower" => LhsTransformations::Lower,
                     "any" => LhsTransformations::Any,
-                    _ => unreachable!(),
+                    unknown => {
+                        return Err(ParseError::new_from_span(
+                            ErrorVariant::CustomError {
+                                message: format!("unknown transformation function: {}", unknown),
+                            },
+                            input.as_span()));
+                    },
                 });
 
                 lhs

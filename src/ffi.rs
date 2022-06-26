@@ -9,6 +9,8 @@ use std::slice::from_raw_parts_mut;
 use uuid::fmt::Hyphenated;
 use uuid::Uuid;
 
+pub const ERR_BUF_MAX_LEN: usize = 2048;
+
 #[derive(Debug)]
 #[repr(C)]
 #[allow(clippy::enum_variant_names)]
@@ -81,7 +83,7 @@ pub extern "C" fn router_add_matcher(
 ) -> bool {
     let uuid = unsafe { ffi::CStr::from_ptr(uuid).to_str().unwrap() };
     let atc = unsafe { ffi::CStr::from_ptr(atc).to_str().unwrap() };
-    let errbuf = unsafe { from_raw_parts_mut(errbuf, 2048) };
+    let errbuf = unsafe { from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN) };
 
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
 
@@ -155,7 +157,7 @@ pub extern "C" fn context_add_value(
     errbuf_len: *mut usize,
 ) -> bool {
     let field = unsafe { ffi::CStr::from_ptr(field).to_str().unwrap() };
-    let errbuf = unsafe { from_raw_parts_mut(errbuf, 2048) };
+    let errbuf = unsafe { from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN) };
 
     let value: Result<Value, _> = value.try_into();
     if let Err(e) = value {

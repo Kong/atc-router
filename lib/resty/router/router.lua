@@ -4,11 +4,17 @@ local _MT = { __index = _M, }
 
 local ffi = require("ffi")
 local base = require("resty.core.base")
-local clib = require("resty.router.cdefs")
+local cdefs = require("resty.router.cdefs")
 local get_string_buf = base.get_string_buf
 local get_size_ptr = base.get_size_ptr
 local ffi_string = ffi.string
+local ffi_new = ffi.new
 local assert = assert
+local tonumber = tonumber
+
+
+local ERR_BUF_MAX_LEN = cdefs.ERR_BUF_MAX_LEN
+local clib = cdefs.clib
 
 
 function _M.new(schema)
@@ -24,7 +30,7 @@ end
 
 
 function _M:add_matcher(priority, uuid, atc)
-    local errbuf = get_string_buf(2048)
+    local errbuf = get_string_buf(ERR_BUF_MAX_LEN)
     local errbuf_len = get_size_ptr()
 
     if clib.router_add_matcher(self.router, priority, uuid, atc, errbuf, errbuf_len) == false then
@@ -64,15 +70,15 @@ function _M:get_fields()
         return out
     end
 
-    local fields = ffi.new("const uint8_t *[?]", total)
-    local fields_len = ffi.new("size_t [?]", total)
+    local fields = ffi_new("const uint8_t *[?]", total)
+    local fields_len = ffi_new("size_t [?]", total)
     fields_len[0] = total
 
     clib.router_get_fields(self.router, fields, fields_len)
 
     for i = 0, total - 1 do
         out_n = out_n + 1
-        out[out_n] = ffi.string(fields[i], fields_len[i])
+        out[out_n] = ffi_string(fields[i], fields_len[i])
     end
 
     return out

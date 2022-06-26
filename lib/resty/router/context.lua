@@ -4,24 +4,31 @@ local _MT = { __index = _M, }
 
 local ffi = require("ffi")
 local base = require("resty.core.base")
-local clib = require("resty.router.cdefs")
+local cdefs = require("resty.router.cdefs")
 
 
-local C = ffi.C
-local CACHED_VALUE = ffi.new("CValue[1]")
-local UUID_BUF = ffi.new("uint8_t[36]")
+local ffi_new = ffi.new
+local ffi_gc = ffi.gc
 local get_string_buf = base.get_string_buf
 local get_size_ptr = base.get_size_ptr
 local ffi_string = ffi.string
-local ffi_new = ffi.new
 local tonumber = tonumber
+local setmetatable = setmetatable
 local new_tab = require("table.new")
+local C = ffi.C
+
+
+local UUID_LEN = 36 -- hexadecimal representation of UUID
+local CACHED_VALUE = ffi_new("CValue[1]")
+local UUID_BUF = ffi_new("uint8_t[?]", UUID_LEN)
+local ERR_BUF_MAX_LEN = cdefs.ERR_BUF_MAX_LEN
+local clib = cdefs.clib
 
 
 function _M.new(schema)
     local context = clib.context_new(schema.schema)
     local c = setmetatable({
-        context = ffi.gc(context, clib.context_free),
+        context = ffi_gc(context, clib.context_free),
         schema = schema,
     }, _MT)
 
@@ -52,7 +59,7 @@ function _M:add_value(field, value)
         CACHED_VALUE[0].c_int = value
     end
 
-    local errbuf = get_string_buf(2048)
+    local errbuf = get_string_buf(ERR_BUF_MAX_LEN)
     local errbuf_len = get_size_ptr()
 
     if clib.context_add_value(self.context, field, CACHED_VALUE, errbuf, errbuf_len) == false then
@@ -92,7 +99,7 @@ function _M:get_result(matched_field)
                            capture_names, capture_names_len, capture_values,
                            capture_values_len)
 
-    local uuid = ffi_string(UUID_BUF, 36)
+    local uuid = ffi_string(UUID_BUF, UUID_LEN)
     local matched_value
     if matched_field then
         matched_value = matched_value_len[0] > 0 and

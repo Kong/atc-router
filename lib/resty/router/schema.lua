@@ -1,5 +1,5 @@
 local _M = {}
-local clib = require("resty.router.cdefs")
+local clib = require("resty.router.cdefs").clib
 local ffi = require("ffi")
 
 
@@ -18,35 +18,33 @@ function _M.new()
 end
 
 
-do
-    function _M:add_field(field, typ)
-        if self.field_types[field] then
-            return nil, "field " .. field .. " already exists"
-        end
-
-        local ctype
-
-        if typ == "String" then
-            ctype = clib.String
-
-        elseif typ == "IpCidr" then
-            ctype = clib.IpCidr
-
-        elseif typ == "IpAddr" then
-            ctype = clib.IpAddr
-
-        elseif typ == "Int" then
-            ctype = clib.Int
-
-        else
-            error("Unknown type: " .. typ, 2)
-        end
-
-        clib.schema_add_field(self.schema, field, ctype)
-
-        self.field_types[field] = typ
-        self.field_ctypes[field] = ctype
+function _M:add_field(field, typ)
+    if self.field_types[field] then
+        return nil, "field " .. field .. " already exists"
     end
+
+    local ctype
+
+    if typ == "String" then
+        ctype = clib.String
+
+    elseif typ == "IpCidr" then
+        ctype = clib.IpCidr
+
+    elseif typ == "IpAddr" then
+        ctype = clib.IpAddr
+
+    elseif typ == "Int" then
+        ctype = clib.Int
+
+    else
+        error("Unknown type: " .. typ, 2)
+    end
+
+    clib.schema_add_field(self.schema, field, ctype)
+
+    self.field_types[field] = typ
+    self.field_ctypes[field] = ctype
 end
 
 
