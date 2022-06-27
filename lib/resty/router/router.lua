@@ -9,8 +9,10 @@ local get_string_buf = base.get_string_buf
 local get_size_ptr = base.get_size_ptr
 local ffi_string = ffi.string
 local ffi_new = ffi.new
+local ffi_gc = ffi.gc
 local assert = assert
 local tonumber = tonumber
+local setmetatable = setmetatable
 
 
 local ERR_BUF_MAX_LEN = cdefs.ERR_BUF_MAX_LEN
@@ -20,7 +22,7 @@ local clib = cdefs.clib
 function _M.new(schema)
     local router = clib.router_new(schema.schema)
     local r = setmetatable({
-        router = ffi.gc(router, clib.router_free),
+        router = ffi_gc(router, clib.router_free),
         schema = schema,
         priorities = {},
     }, _MT)

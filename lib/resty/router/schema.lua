@@ -6,6 +6,10 @@ local ffi = require("ffi")
 local _MT = { __index = _M, }
 
 
+local setmetatable = setmetatable
+local ffi_gc = ffi.gc
+
+
 function _M.new()
     local schema = clib.schema_new()
     local s = setmetatable({
@@ -45,6 +49,8 @@ function _M:add_field(field, typ)
 
     self.field_types[field] = typ
     self.field_ctypes[field] = ctype
+
+    return true
 end
 
 
