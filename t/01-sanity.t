@@ -11,6 +11,7 @@ my $pwd = cwd();
 
 our $HttpConfig = qq{
     lua_package_path "$pwd/lib/?.lua;;";
+    lua_package_cpath "$pwd/target/debug/?.so;;";
 };
 
 no_long_string();
@@ -35,7 +36,7 @@ __DATA__
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
-            assert(r:add_matcher("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
+            assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
 
             local c = context.new(s)
@@ -81,9 +82,9 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
-            assert(r:add_matcher("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
+            assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
-            assert(r:add_matcher("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150d",
+            assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150d",
                                  "http.path ^= \"/\""))
 
             local c = context.new(s)
@@ -141,7 +142,7 @@ i = 2 uuid = a921a9aa-ec0e-4cf3-a6cc-1aa5583d150d prefix = /
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
-            assert(r:add_matcher("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
+            assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
 
             local c = context.new(s)
@@ -200,7 +201,7 @@ false
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
-            ngx.say(r:add_matcher("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
+            ngx.say(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                   "http.path = \"/foo\" && tcp.port == 80"))
         }
     }
