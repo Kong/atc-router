@@ -84,7 +84,7 @@ If an error occurred, `nil` and a string describing the error will be returned.
 **context:** *any*
 
 Create a new router instance that can later be used for performing matches. `schema`
-must refers to an existing schema instance.
+must refer to an existing schema instance.
 
 [Back to TOC](#table-of-contents)
 
@@ -153,7 +153,7 @@ actually used by the user supplied matchers.
 **context:** *any*
 
 Create a new context instance that can later be used for storing contextual information.
-for router matches. `schema` must refers to an existing schema instance.
+for router matches. `schema` must refer to an existing schema instance.
 
 [Back to TOC](#table-of-contents)
 

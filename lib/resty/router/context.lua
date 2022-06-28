@@ -63,7 +63,7 @@ function _M:add_value(field, value)
     local errbuf_len = get_size_ptr()
 
     if clib.context_add_value(self.context, field, CACHED_VALUE, errbuf, errbuf_len) == false then
-        return ffi_string(errbuf, errbuf_len[0])
+        return nil, ffi_string(errbuf, errbuf_len[0])
     end
 
     return true
