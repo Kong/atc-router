@@ -46,9 +46,7 @@ __DATA__
             local matched = r:execute(c)
             ngx.say(matched)
 
-            ngx.say(c:get_matched_count())
-
-            local uuid, prefix = c:get_match(0)
+            local uuid, prefix = c:get_result("http.path")
             ngx.say(uuid)
             ngx.say(prefix)
         }
@@ -57,7 +55,6 @@ __DATA__
 GET /t
 --- response_body
 true
-1
 a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
 /foo
 --- no_error_log
@@ -67,7 +64,7 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
 
 
 
-=== TEST 2: multiple routes
+=== TEST 2: multiple routes, different priority
 --- http_config eval: $::HttpConfig
 --- config
     location = /t {
@@ -82,7 +79,7 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
-            assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
+            assert(r:add_matcher(1, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150d",
                                  "http.path ^= \"/\""))
@@ -94,32 +91,16 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
             local matched = r:execute(c)
             ngx.say(matched)
 
-            ngx.say(c:get_matched_count())
 
-            local matches = {}
-
-            local uuid, prefix = c:get_match(0)
-            matches[1] = { uuid = uuid, prefix = prefix, }
-
-            uuid, prefix = c:get_match(1)
-            matches[2] = { uuid = uuid, prefix = prefix, }
-
-            table.sort(matches, function(a, b)
-                return a.uuid < b.uuid
-            end)
-
-            for i, m in ipairs(matches) do
-                ngx.say("i = " .. i .. " uuid = " .. m.uuid .. " prefix = " .. m.prefix)
-            end
+            local uuid, prefix = c:get_result("http.path")
+            ngx.say("uuid = " .. uuid .. " prefix = " .. prefix)
         }
     }
 --- request
 GET /t
 --- response_body
 true
-2
-i = 1 uuid = a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c prefix = /foo
-i = 2 uuid = a921a9aa-ec0e-4cf3-a6cc-1aa5583d150d prefix = /
+uuid = a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c prefix = /foo
 --- no_error_log
 [error]
 [warn]
@@ -152,9 +133,7 @@ i = 2 uuid = a921a9aa-ec0e-4cf3-a6cc-1aa5583d150d prefix = /
             local matched = r:execute(c)
             ngx.say(matched)
 
-            ngx.say(c:get_matched_count())
-
-            local uuid, prefix = c:get_match(0)
+            local uuid, prefix = c:get_result("http.path")
             ngx.say(uuid)
             ngx.say(prefix)
 
@@ -166,19 +145,15 @@ i = 2 uuid = a921a9aa-ec0e-4cf3-a6cc-1aa5583d150d prefix = /
 
             matched = r:execute(c)
             ngx.say(matched)
-
-            ngx.say(c:get_matched_count())
         }
     }
 --- request
 GET /t
 --- response_body
 true
-1
 a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
 /foo
 false
-0
 --- no_error_log
 [error]
 [warn]
