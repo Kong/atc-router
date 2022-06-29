@@ -95,9 +95,9 @@ function _M:get_result(matched_field)
     end
 
     clib.context_get_result(self.context, UUID_BUF, matched_field,
-                           matched_value_buf, matched_value_len,
-                           capture_names, capture_names_len, capture_values,
-                           capture_values_len)
+                            matched_value_buf, matched_value_len,
+                            capture_names, capture_names_len, capture_values,
+                            capture_values_len)
 
     local uuid = ffi_string(UUID_BUF, UUID_LEN)
     local matched_value
