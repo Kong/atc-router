@@ -13,7 +13,7 @@ local ffi_gc = ffi.gc
 function _M.new()
     local schema = clib.schema_new()
     local s = setmetatable({
-        schema = ffi.gc(schema, clib.schema_free),
+        schema = ffi_gc(schema, clib.schema_free),
         field_types = {},
         field_ctypes = {},
     }, _MT)
