@@ -1,16 +1,25 @@
 mod ast;
+mod context;
+mod ffi;
+mod interpreter;
+mod router;
+mod schema;
+mod semantics;
+
 extern crate pest;
 
 use crate::ast::{
-    BinaryOperator, Expression, LHSTransformations, LogicalExpression, Predicate, LHS, RHS,
+    BinaryOperator, Expression, Lhs, LhsTransformations, LogicalExpression, Predicate, Value,
 };
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
 use pest::error::ErrorVariant;
 use pest::prec_climber::{Assoc, Operator, PrecClimber};
 use pest_consume::{match_nodes, Error as ParseError, Parser};
-use wasm_bindgen::prelude::wasm_bindgen;
+use regex::Regex;
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
+/// cbindgen:ignore
+// Bug: https://github.com/eqrion/cbindgen/issues/286
 type Node<'i> = pest_consume::Node<'i, Rule, ()>;
 
 trait IntoParseResult<T> {
@@ -62,8 +71,29 @@ impl ATCParser {
         Ok(input.as_str().into())
     }
 
+    fn str_esc(input: Node) -> ParseResult<char> {
+        Ok(match input.as_str() {
+            "\\\"" => '"',
+            "\\\\" => '\\',
+            "\\n" => '\n',
+            "\\r" => '\r',
+            "\\t" => '\t',
+            _ => unreachable!(),
+        })
+    }
+
     fn str_literal(input: Node) -> ParseResult<String> {
-        Ok(input.into_children().single()?.as_str().into())
+        let mut s = String::new();
+
+        for node in input.into_children() {
+            match node.as_rule() {
+                Rule::str_char => s.push_str(node.as_str()),
+                Rule::str_esc => s.push(ATCParser::str_esc(node)?),
+                _ => unreachable!(),
+            }
+        }
+
+        Ok(s)
     }
 
     fn ipv4_cidr_literal(input: Node) -> ParseResult<Ipv4Cidr> {
@@ -116,31 +146,38 @@ impl ATCParser {
         Ok(num)
     }
 
-    fn rhs(input: Node) -> ParseResult<RHS> {
+    fn rhs(input: Node) -> ParseResult<Value> {
         Ok(match_nodes! { input.children();
-            [str_literal(s)] => RHS::String(s),
-            [ip_literal(ip)] => RHS::IpCidr(ip),
-            [int_literal(i)] => RHS::Int(i),
+            [str_literal(s)] => Value::String(s),
+            [ip_literal(ip)] => Value::IpCidr(ip),
+            [int_literal(i)] => Value::Int(i),
         })
     }
 
-    fn transform_func(input: Node) -> ParseResult<LHS> {
-        let mut iter = input.children();
-        let func_name = iter.next().unwrap();
-        let var_name = iter.next().unwrap();
-        // currently only "lower()" is supported from grammar
-        assert_eq!(func_name.as_str(), "lower");
+    fn transform_func(input: Node) -> ParseResult<Lhs> {
+        Ok(match_nodes! { input.children();
+            [func_name, lhs(mut lhs)] => {
+                lhs.transformations.push(match func_name.as_str() {
+                    "lower" => LhsTransformations::Lower,
+                    "any" => LhsTransformations::Any,
+                    unknown => {
+                        return Err(ParseError::new_from_span(
+                            ErrorVariant::CustomError {
+                                message: format!("unknown transformation function: {}", unknown),
+                            },
+                            input.as_span()));
+                    },
+                });
 
-        Ok(LHS {
-            var_name: var_name.as_str().into(),
-            transformation: Some(LHSTransformations::Lower),
+                lhs
+            },
         })
     }
 
-    fn lhs(input: Node) -> ParseResult<LHS> {
+    fn lhs(input: Node) -> ParseResult<Lhs> {
         Ok(match_nodes! { input.children();
             [transform_func(t)] => t,
-            [ident(var)] => LHS { var_name: var, transformation: None },
+            [ident(var)] => Lhs { var_name: var, transformations: Vec::new() },
         })
     }
 
@@ -164,7 +201,29 @@ impl ATCParser {
 
     fn predicate(input: Node) -> ParseResult<Expression> {
         Ok(match_nodes! { input.children();
-            [lhs(lhs), binary_operator(op), rhs(rhs)] => Expression::Predicate(Predicate{lhs, rhs, op}),
+            [lhs(lhs), binary_operator(op), rhs(rhs)] => {
+                Expression::Predicate(Predicate{ lhs,
+                    rhs: if op == BinaryOperator::Regex {
+                        if let Value::String(s) = rhs {
+                            let r = Regex::new(&s)
+                                .map_err(|e| ParseError::new_from_span(
+                                ErrorVariant::CustomError {
+                                    message: e.to_string(),
+                                }, input.as_span()))?;
+
+                            Value::Regex(r)
+                        } else {
+                            return Err(ParseError::new_from_span(
+                                ErrorVariant::CustomError {
+                                    message: "regex operator can only be used with String operands".to_string(),
+                                },
+                            input.as_span()));
+                        }
+                    } else {
+                        rhs
+                    },
+                    op })
+            },
         })
     }
 
@@ -197,13 +256,8 @@ impl ATCParser {
     }
 }
 
-#[wasm_bindgen]
-pub fn parse(atc: &str) -> Result<String, String> {
-    match ATCParser::parse(Rule::matcher, atc) {
-        Ok(matcher) => Ok(serde_json::to_string(
-            &ATCParser::matcher(matcher.single().unwrap()).unwrap(),
-        )
-        .unwrap()),
-        Err(e) => Err(e.to_string()),
-    }
+pub fn parse(atc: &str) -> ParseResult<Expression> {
+    let matchers = ATCParser::parse(Rule::matcher, atc)?;
+    let matcher = matchers.single()?;
+    ATCParser::matcher(matcher)
 }
