@@ -66,8 +66,9 @@ end
 function _M:get_fields()
     local out = {}
     local out_n = 0
+    local router = self.router
 
-    local total = tonumber(clib.router_get_fields(self.router, nil, nil))
+    local total = tonumber(clib.router_get_fields(router, nil, nil))
     if total == 0 then
         return out
     end
@@ -76,7 +77,7 @@ function _M:get_fields()
     local fields_len = ffi_new("size_t [?]", total)
     fields_len[0] = total
 
-    clib.router_get_fields(self.router, fields, fields_len)
+    clib.router_get_fields(router, fields, fields_len)
 
     for i = 0, total - 1 do
         out_n = out_n + 1
