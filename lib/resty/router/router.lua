@@ -21,8 +21,17 @@ local clib = cdefs.clib
 
 function _M.new(schema)
     local router = clib.router_new(schema.schema)
+    -- Note on this weird looking finalizer:
+    --
+    -- You may be tempted to change it to ffi_gc(router, clib.router_free)
+    -- This isn't 100% safe, particularly with `busted` clearing the global
+    -- environment between each runs. `clib` could be GC'ed before this entity,
+    -- causing instruction fetch faults because the `router` finalizer will
+    -- attempt to execute from unmapped memory region
     local r = setmetatable({
-        router = ffi_gc(router, clib.router_free),
+        router = ffi_gc(router, function(r)
+            clib.router_free(r)
+        end),
         schema = schema,
         priorities = {},
     }, _MT)
