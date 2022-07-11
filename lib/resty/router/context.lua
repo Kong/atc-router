@@ -28,7 +28,9 @@ local clib = cdefs.clib
 function _M.new(schema)
     local context = clib.context_new(schema.schema)
     local c = setmetatable({
-        context = ffi_gc(context, clib.context_free),
+        context = ffi_gc(context, function(c)
+            clib.context_free(c)
+        end),
         schema = schema,
     }, _MT)
 
