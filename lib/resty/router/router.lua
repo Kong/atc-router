@@ -17,6 +17,7 @@ local setmetatable = setmetatable
 
 local ERR_BUF_MAX_LEN = cdefs.ERR_BUF_MAX_LEN
 local clib = cdefs.clib
+local router_free = cdefs.router_free
 
 
 function _M.new(schema)
@@ -29,9 +30,7 @@ function _M.new(schema)
     -- causing instruction fetch faults because the `router` finalizer will
     -- attempt to execute from unmapped memory region
     local r = setmetatable({
-        router = ffi_gc(router, function(r)
-            clib.router_free(r)
-        end),
+        router = ffi_gc(router, router_free),
         schema = schema,
         priorities = {},
     }, _MT)

@@ -23,14 +23,13 @@ local CACHED_VALUE = ffi_new("CValue[1]")
 local UUID_BUF = ffi_new("uint8_t[?]", UUID_LEN)
 local ERR_BUF_MAX_LEN = cdefs.ERR_BUF_MAX_LEN
 local clib = cdefs.clib
+local context_free = cdefs.context_free
 
 
 function _M.new(schema)
     local context = clib.context_new(schema.schema)
     local c = setmetatable({
-        context = ffi_gc(context, function(c)
-            clib.context_free(c)
-        end),
+        context = ffi_gc(context, context_free),
         schema = schema,
     }, _MT)
 

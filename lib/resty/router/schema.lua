@@ -8,14 +8,13 @@ local _MT = { __index = _M, }
 
 local setmetatable = setmetatable
 local ffi_gc = ffi.gc
+local schema_free = cdefs.schema_free
 
 
 function _M.new()
     local schema = clib.schema_new()
     local s = setmetatable({
-        schema = ffi_gc(schema, function(s)
-            clib.schema_free(s)
-        end),
+        schema = ffi_gc(schema, schema_free),
         field_types = {},
         field_ctypes = {},
         clib = clib,
