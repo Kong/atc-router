@@ -1,5 +1,5 @@
 local _M = {}
-local clib = require("resty.router.cdefs").clib
+local cdefs = require("resty.router.cdefs")
 local ffi = require("ffi")
 
 
@@ -8,6 +8,7 @@ local _MT = { __index = _M, }
 
 local setmetatable = setmetatable
 local ffi_gc = ffi.gc
+local clib = cdefs.clib
 local schema_free = cdefs.schema_free
 
 
