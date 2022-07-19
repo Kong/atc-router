@@ -8,6 +8,7 @@ use std::net::IpAddr;
 use std::slice::from_raw_parts_mut;
 use uuid::fmt::Hyphenated;
 use uuid::Uuid;
+use std::os::raw::c_char;
 
 pub const ERR_BUF_MAX_LEN: usize = 2048;
 
@@ -15,9 +16,9 @@ pub const ERR_BUF_MAX_LEN: usize = 2048;
 #[repr(C)]
 #[allow(clippy::enum_variant_names)]
 pub enum CValue {
-    CString(*const i8),
-    CIpCidr(*const i8),
-    CIpAddr(*const i8),
+    CString(*const c_char),
+    CIpCidr(*const c_char),
+    CIpAddr(*const c_char),
     CInt(i64),
 }
 
@@ -55,7 +56,7 @@ pub extern "C" fn schema_free(schema: *mut Schema) {
 }
 
 #[no_mangle]
-pub extern "C" fn schema_add_field(schema: &mut Schema, field: *const i8, typ: Type) {
+pub extern "C" fn schema_add_field(schema: &mut Schema, field: *const c_char, typ: Type) {
     let field = unsafe { ffi::CStr::from_ptr(field).to_str().unwrap() };
 
     schema.add_field(field, typ)
@@ -76,8 +77,8 @@ pub extern "C" fn router_free(router: *mut Router) {
 pub extern "C" fn router_add_matcher(
     router: &mut Router,
     priority: usize,
-    uuid: *const i8,
-    atc: *const i8,
+    uuid: *const c_char,
+    atc: *const c_char,
     errbuf: *mut u8,
     errbuf_len: *mut usize,
 ) -> bool {
@@ -103,7 +104,7 @@ pub extern "C" fn router_add_matcher(
 pub extern "C" fn router_remove_matcher(
     router: &mut Router,
     priority: usize,
-    uuid: *const i8,
+    uuid: *const c_char,
 ) -> bool {
     let uuid = unsafe { ffi::CStr::from_ptr(uuid).to_str().unwrap() };
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
@@ -151,7 +152,7 @@ pub extern "C" fn context_free(context: *mut Context) {
 #[no_mangle]
 pub extern "C" fn context_add_value(
     context: &mut Context,
-    field: *const i8,
+    field: *const c_char,
     value: &CValue,
     errbuf: *mut u8,
     errbuf_len: *mut usize,
@@ -177,7 +178,7 @@ pub extern "C" fn context_add_value(
 pub extern "C" fn context_get_result(
     context: &Context,
     uuid_hex: *mut u8,
-    matched_field: *const i8,
+    matched_field: *const c_char,
     matched_value: *mut *const u8,
     matched_value_len: *mut usize,
     capture_names: *mut *const u8,
