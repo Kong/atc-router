@@ -8,6 +8,7 @@ use std::net::IpAddr;
 use std::slice::from_raw_parts_mut;
 use uuid::fmt::Hyphenated;
 use uuid::Uuid;
+use std::os::raw::c_char;
 
 pub const ERR_BUF_MAX_LEN: usize = 2048;
 
