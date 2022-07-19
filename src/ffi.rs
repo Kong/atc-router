@@ -5,6 +5,7 @@ use crate::schema::Schema;
 use cidr::IpCidr;
 use std::ffi;
 use std::net::IpAddr;
+use std::os::raw::c_char;
 use std::slice::from_raw_parts_mut;
 use uuid::fmt::Hyphenated;
 use uuid::Uuid;
@@ -26,18 +27,31 @@ impl TryFrom<&CValue> for Value {
 
     fn try_from(v: &CValue) -> Result<Self, Self::Error> {
         Ok(match v {
-            CValue::CString(s) => {
-                Self::String(unsafe { ffi::CStr::from_ptr(*s).to_str().unwrap().to_string() })
-            }
+            CValue::CString(s) => Self::String(unsafe {
+                ffi::CStr::from_ptr(*s as *const c_char)
+                    .to_str()
+                    .unwrap()
+                    .to_string()
+            }),
             CValue::CIpCidr(s) => Self::IpCidr(
-                unsafe { ffi::CStr::from_ptr(*s).to_str().unwrap().to_string() }
-                    .parse::<IpCidr>()
-                    .map_err(|e| e.to_string())?,
+                unsafe {
+                    ffi::CStr::from_ptr(*s as *const c_char)
+                        .to_str()
+                        .unwrap()
+                        .to_string()
+                }
+                .parse::<IpCidr>()
+                .map_err(|e| e.to_string())?,
             ),
             CValue::CIpAddr(s) => Self::IpAddr(
-                unsafe { ffi::CStr::from_ptr(*s).to_str().unwrap().to_string() }
-                    .parse::<IpAddr>()
-                    .map_err(|e| e.to_string())?,
+                unsafe {
+                    ffi::CStr::from_ptr(*s as *const c_char)
+                        .to_str()
+                        .unwrap()
+                        .to_string()
+                }
+                .parse::<IpAddr>()
+                .map_err(|e| e.to_string())?,
             ),
             CValue::CInt(i) => Self::Int(*i),
         })
@@ -56,7 +70,11 @@ pub extern "C" fn schema_free(schema: *mut Schema) {
 
 #[no_mangle]
 pub extern "C" fn schema_add_field(schema: &mut Schema, field: *const i8, typ: Type) {
-    let field = unsafe { ffi::CStr::from_ptr(field).to_str().unwrap() };
+    let field = unsafe {
+        ffi::CStr::from_ptr(field as *const c_char)
+            .to_str()
+            .unwrap()
+    };
 
     schema.add_field(field, typ)
 }
@@ -81,8 +99,8 @@ pub extern "C" fn router_add_matcher(
     errbuf: *mut u8,
     errbuf_len: *mut usize,
 ) -> bool {
-    let uuid = unsafe { ffi::CStr::from_ptr(uuid).to_str().unwrap() };
-    let atc = unsafe { ffi::CStr::from_ptr(atc).to_str().unwrap() };
+    let uuid = unsafe { ffi::CStr::from_ptr(uuid as *const c_char).to_str().unwrap() };
+    let atc = unsafe { ffi::CStr::from_ptr(atc as *const c_char).to_str().unwrap() };
     let errbuf = unsafe { from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN) };
 
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
@@ -105,7 +123,7 @@ pub extern "C" fn router_remove_matcher(
     priority: usize,
     uuid: *const i8,
 ) -> bool {
-    let uuid = unsafe { ffi::CStr::from_ptr(uuid).to_str().unwrap() };
+    let uuid = unsafe { ffi::CStr::from_ptr(uuid as *const c_char).to_str().unwrap() };
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
 
     router.remove_matcher(priority, uuid)
@@ -156,7 +174,11 @@ pub extern "C" fn context_add_value(
     errbuf: *mut u8,
     errbuf_len: *mut usize,
 ) -> bool {
-    let field = unsafe { ffi::CStr::from_ptr(field).to_str().unwrap() };
+    let field = unsafe {
+        ffi::CStr::from_ptr(field as *const c_char)
+            .to_str()
+            .unwrap()
+    };
     let errbuf = unsafe { from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN) };
 
     let value: Result<Value, _> = value.try_into();
@@ -196,7 +218,11 @@ pub extern "C" fn context_get_result(
         res.uuid.as_hyphenated().encode_lower(uuid_hex);
 
         if !matched_field.is_null() {
-            let matched_field = unsafe { ffi::CStr::from_ptr(matched_field).to_str().unwrap() };
+            let matched_field = unsafe {
+                ffi::CStr::from_ptr(matched_field as *const c_char)
+                    .to_str()
+                    .unwrap()
+            };
             assert!(!matched_value.is_null());
             assert!(!matched_value_len.is_null());
             if let Some(Value::String(v)) = res.matches.get(matched_field) {
