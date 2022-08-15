@@ -95,6 +95,7 @@ local ERR_BUF_MAX_LEN = 2048
 -- From: https://github.com/openresty/lua-resty-signal/blob/master/lib/resty/signal.lua
 local load_shared_lib
 do
+    local tostring = tostring
     local string_gmatch = string.gmatch
     local string_match = string.match
     local io_open = io.open
@@ -108,7 +109,7 @@ do
         local i = 1
 
         for k, _ in string_gmatch(cpath, "[^;]+") do
-            local fpath = string_match(k, "(.*/)")
+            local fpath = tostring(string_match(k, "(.*/)"))
             fpath = fpath .. so_name
             -- Don't get me wrong, the only way to know if a file exist is
             -- trying to open it.
