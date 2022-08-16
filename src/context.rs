@@ -17,6 +17,11 @@ impl Match {
             captures: HashMap::new(),
         }
     }
+
+    pub fn reset(&mut self) {
+        self.matches.clear();
+        self.captures.clear();
+    }
 }
 
 pub struct Context<'a> {

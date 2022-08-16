@@ -1,6 +1,7 @@
 mod ast;
 mod context;
 mod ffi;
+mod indexes;
 mod interpreter;
 mod router;
 mod schema;
