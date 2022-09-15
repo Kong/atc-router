@@ -18,9 +18,9 @@ INSTALL ?= install
 
 all: ;
 
-build: target/release/libatc_router.so
+build: target/release/libatc_router.so target/release/libatc_router.a
 
-target/release/libatc_router.so: src/*.rs
+target/release/libatc_router.%: src/*.rs
 ifeq (, $(shell cargo))
 $(error "cargo not found in PATH, consider doing \"curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh\"")
 endif
