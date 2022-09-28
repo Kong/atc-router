@@ -21,7 +21,7 @@ pub enum LhsTransformations {
     Any,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BinaryOperator {
     Equals,         // ==
     NotEquals,      // !=

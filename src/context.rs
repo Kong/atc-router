@@ -19,6 +19,12 @@ impl Match {
     }
 }
 
+impl Default for Match {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct Context<'a> {
     schema: &'a Schema,
     values: HashMap<String, Vec<Value>>,
