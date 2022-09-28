@@ -1,7 +1,7 @@
 use crate::ast::Expression;
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
-use crate::parse;
+use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
 use std::collections::{BTreeMap, HashMap};
