@@ -19,4 +19,4 @@ uuid = "1.1"
 regex = "1.5"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "staticlib"]
