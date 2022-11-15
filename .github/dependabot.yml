@@ -1,0 +1,20 @@
+# Please see the documentation for all configuration options:
+# https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+# https://github.com/rust-lang/rust-semverver/blob/541a462d36c22cf6f82173099dab85ff108570d6/.github/dependabot.yml
+
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+        # These are peer deps of Cargo and should not be automatically bumped
+        - dependency-name: "semver"
+        - dependency-name: "crates-io"
+    rebase-strategy: "disabled"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
