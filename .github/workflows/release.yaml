@@ -14,9 +14,11 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+      env:
+        token: ${{ secrets.GITHUB_PAT }}
     - name: Release
       id: release
       uses: ahmadnassri/action-semantic-release@v2.1.10
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_PAT }}
+        GH_TOKEN: ${{ secrets.GITHUB_PAT }}
         # requires a PAT so the tag triggers the packaging action
