@@ -38,13 +38,18 @@ jobs:
       run: |
         docker buildx build --build-arg PACKAGE_TYPE=${{ matrix.package_type }} --platform linux/arm64,linux/amd64 --output type=tar,dest=out.tar.gz .
         tar -xvf out.tar.gz
-        tar -C linux_arm64/ -czvf ${{ matrix.package_type }}-arm64.tar.gz .
-        tar -C linux_amd64/ -czvf ${{ matrix.package_type }}-amd64.tar.gz .
+        mkdir -p /builds
+        if [ "${{ matrix.package_type }}" = "apk" ]; then
+          tar -C linux_arm64/ -czvf /builds/musl-arm64.tar.gz .
+          tar -C linux_amd64/ -czvf /builds/musl-amd64.tar.gz .
+        fi
+        if [ "${{ matrix.package_type }}" = "deb" ]; then
+          tar -C linux_arm64/ -czvf /builds/glibc-arm64.tar.gz .
+          tar -C linux_amd64/ -czvf /builds/glibc-amd64.tar.gz .
+        fi
     - name: Add Release Artifacts to the Github Release
       if: steps['release']['outputs']['published'] == 'true'
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{steps.release.outputs.release-git-tag}}
-        files: |
-          ${{ matrix.package_type }}-arm64.tar.gz
-          ${{ matrix.package_type }}-amd64.tar.gz
+        files: /builds/*

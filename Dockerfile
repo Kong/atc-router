@@ -11,6 +11,8 @@ ENV CARGO_NET_GIT_FETCH_WITH_CLI true
 RUN make install LUA_LIB_DIR=/usr/local/openresty/lualib || \
     RUSTFLAGS="-C target-feature=-crt-static" make clean install LUA_LIB_DIR=/usr/local/openresty/lualib
 
+#luajit -e 'require("ffi").load "/usr/local/openresty/lualib/libatc_router.so"'
+
 FROM scratch
 
 COPY --from=build /usr/local/openresty /usr/local/openresty
