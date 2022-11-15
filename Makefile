@@ -25,7 +25,7 @@ all: ;
 build: target/release/libatc_router.so target/release/libatc_router.a
 
 target/release/libatc_router.%: src/*.rs
-	$(CARGO) build --release
+	$(CARGO) build --verbose --release
 
 install: build
 	$(INSTALL) -d $(DESTDIR)$(LUA_LIB_DIR)/resty/router/

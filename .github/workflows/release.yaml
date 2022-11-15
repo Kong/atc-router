@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package_type: [apk,deb,rpm]
+        package_type: [apk,deb]
     steps:
     - name: Checkout
       uses: actions/checkout@v3
