@@ -1,3 +1,5 @@
+export SHELL:=/bin/bash
+
 OS=$(shell uname -s)
 
 ifeq ($(OS), Darwin)
@@ -14,6 +16,8 @@ LUA_INCLUDE_DIR ?= $(PREFIX)/include
 LUA_LIB_DIR ?=     $(PREFIX)/lib/lua/$(LUA_VERSION)
 INSTALL ?= install
 
+CARGO := $(HOME)/.cargo/bin/cargo
+
 .PHONY: all test install build clean
 
 all: ;
@@ -21,7 +25,7 @@ all: ;
 build: target/release/libatc_router.so target/release/libatc_router.a
 
 target/release/libatc_router.%: src/*.rs
-	cargo build --release
+	$(CARGO) build --release
 
 install: build
 	$(INSTALL) -d $(DESTDIR)$(LUA_LIB_DIR)/resty/router/

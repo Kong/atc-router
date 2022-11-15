@@ -9,8 +9,7 @@ FROM $PACKAGE_TYPE as build
 COPY . /src
 WORKDIR /src
 ENV CARGO_NET_GIT_FETCH_WITH_CLI true
-RUN which cargo > /dev/null || source "${CARGO_HOME:-$HOME/.cargo}"/env && \
-    make install LUA_LIB_DIR=/usr/local/openresty/lualib || \
+RUN make install LUA_LIB_DIR=/usr/local/openresty/lualib || \
     RUSTFLAGS="-C target-feature=-crt-static" make clean install LUA_LIB_DIR=/usr/local/openresty/lualib
 
 FROM scratch
