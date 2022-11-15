@@ -2,8 +2,7 @@ FROM rust as build
 
 COPY . /src
 WORKDIR /src
-ENV LUA_LIB_DIR /usr/local/openresty/lualib
-RUN RUSTFLAGS="-C target-feature=-crt-static" make install
+RUN make install LUA_LIB_DIR=/usr/local/openresty/lualib
 
 FROM scratch
 
