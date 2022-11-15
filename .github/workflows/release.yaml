@@ -17,5 +17,5 @@ jobs:
     - name: Release
       id: release
       uses: ahmadnassri/action-semantic-release@v2.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      env: # requires a PAT so the tag triggers the packaging action
+        GITHUB_TOKEN: ${{ secrets.GITHUB_PAT }}
