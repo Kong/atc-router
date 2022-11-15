@@ -32,10 +32,11 @@ jobs:
         tar -xvf out.tar.gz
         tar -C linux_arm64/ -czvf linux-arm64.tar.gz .
         tar -C linux_amd64/ -czvf linux-amd64.tar.gz .
-        rm -rf out.tar.gz
     - name: Add Release Artifacts to the Github Release
       if: steps['release']['outputs']['published'] == 'true'
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{steps.release.outputs.release-git-tag}}
-        files: *.tar.gz
+        files: |
+          linux-arm64.tar.gz
+          linux-amd64.tar.gz
