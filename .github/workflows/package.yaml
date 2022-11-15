@@ -1,11 +1,12 @@
 ---
-name: Release
+name: Package
 
 on:  # yamllint disable-line rule:truthy
-  pull_request:
   push:
     branches:
     - main
+#    tags:
+#    - '*'
 
 jobs:
   package:
@@ -19,7 +20,15 @@ jobs:
     - name: Set up Docker Buildx
       id: buildx
       uses: docker/setup-buildx-action@v1
+    - name: Package via Docker Buildx
+      run: |
+        docker buildx build --platform linux/arm64,linux/amd64 --output type=tar,dest=out.tar.gz .
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
       with:
         limit-access-to-actor: true
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: Release.txt
