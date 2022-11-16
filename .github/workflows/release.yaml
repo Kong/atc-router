@@ -9,6 +9,7 @@ on:  # yamllint disable-line rule:truthy
 
 env:
   DESTDIR: /tmp/build
+  LUA_LIB_DIR: /usr/local/openresty/lualib
 
 jobs:
   release:
