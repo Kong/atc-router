@@ -22,14 +22,6 @@ jobs:
       uses: ahmadnassri/action-semantic-release@v2.1.10
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Save release status to environment variables
-      run: |
-        echo "RELEASED=${{ steps.release.outputs.published }}" >> $GITHUB_ENV
-        echo "GIT_TAG=${{ steps.release.outputs.release-git-tag }}" >> $GITHUB_ENV
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-      with:
-        temp: "${{ steps.release.outputs.published }}"
 
   artifacts:
     needs: release
@@ -55,9 +47,9 @@ jobs:
     - name: Compress and rename artifacts
       run: tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
     - name: Add Release Artifacts to the Github Release
-      if: steps['release']['outputs']['published'] == 'true'
+      if: ${{ needs.release.outputs.published }} == 'true'
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{steps.release.outputs.release-git-tag}}
+        tag_name: ${{ needs.release.outputs.release-git-tag }}
         files: ${{ matrix.target }}.tar.gz
 
