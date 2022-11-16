@@ -38,12 +38,6 @@ jobs:
           - aarch64-unknown-linux-gnu
           - aarch64-unknown-linux-musl
     steps:
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-      with:
-        limit-access-to-actor: true
-      env:
-        published: ${{ needs.release.outputs.published }}
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
