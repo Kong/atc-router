@@ -14,6 +14,9 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.release.outputs.published }}
+      release-git-tag: ${{ steps.release.outputs.release-git-tag }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -40,7 +43,7 @@ jobs:
       with:
         limit-access-to-actor: true
       env:
-        RELEASED: ${{ needs.release.release.outputs.published }}
+        published: ${{ needs.release.outputs.published }}
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
