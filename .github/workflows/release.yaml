@@ -7,6 +7,9 @@ on:  # yamllint disable-line rule:truthy
     branches:
     - main
 
+env:
+  DESTDIR: /tmp/build
+
 jobs:
   release:
     name: Create Release
@@ -26,30 +29,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package_type: [apk,deb]
+        target:
+          - x86_64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-gnu
+          - aarch64-unknown-linux-musl
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-    - name: Package via Docker Buildx
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: ${{ matrix.target }}
+        override: true
+    - name: Build & Install
       run: |
-        docker buildx build --build-arg PACKAGE_TYPE=${{ matrix.package_type }} --platform linux/arm64,linux/amd64 --output type=tar,dest=out.tar.gz .
-        tar -xvf out.tar.gz
-        mkdir -p /tmp/builds
-        if [ "${{ matrix.package_type }}" = "apk" ]; then
-          tar -C linux_arm64/ -czvf /tmp/builds/musl-arm64.tar.gz .
-          tar -C linux_amd64/ -czvf /tmp/builds/musl-amd64.tar.gz .
-        fi
-        if [ "${{ matrix.package_type }}" = "deb" ]; then
-          tar -C linux_arm64/ -czvf /tmp/builds/glibc-arm64.tar.gz .
-          tar -C linux_amd64/ -czvf /tmp/builds/glibc-amd64.tar.gz .
-        fi
+        make install
+    - name: Compress and rename artifacts
+      run: tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
     - name: Add Release Artifacts to the Github Release
       if: steps['release']['outputs']['published'] == 'true'
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{steps.release.outputs.release-git-tag}}
-        files: /tmp/builds/*
+        files: ${{ matrix.target }}.tar.gz
+
