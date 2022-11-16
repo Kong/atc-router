@@ -46,6 +46,8 @@ jobs:
         make install
     - name: Compress and rename artifacts
       run: tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
     - name: Add Release Artifacts to the Github Release
       if: steps['release']['outputs']['published'] == 'true'
       uses: softprops/action-gh-release@v1
