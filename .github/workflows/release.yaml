@@ -9,6 +9,7 @@ on:  # yamllint disable-line rule:truthy
 
 env:
   DESTDIR: /tmp/build
+  LUA_LIB_DIR: /usr/local/openresty/lualib
 
 jobs:
   release:
@@ -50,7 +51,7 @@ jobs:
     - name: Compress and rename artifacts
       run: tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
     - name: Add Release Artifacts to the Github Release
-      if: ${{ needs.release.outputs.published }} == 'true'
+      if: ${{ needs.release.outputs.published == 'true' }}
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ needs.release.outputs.release-git-tag }}
