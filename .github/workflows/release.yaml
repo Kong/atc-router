@@ -49,7 +49,10 @@ jobs:
       env:
         TARGET: ${{ matrix.target }}
       run: |
-        make install || RUSTFLAGS="-C target-feature=-crt-static" make clean build
+        if [[ '${{matrix.target}}' == 'aarch64-unknown-linux'* ]]; then
+          export RUSTFLAGS="-C linker=aarch64-linux-gnu-gcc"
+        fi
+        make install
     - name: Compress and rename artifacts
       run: tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
     - name: Add Release Artifacts to the Github Release
