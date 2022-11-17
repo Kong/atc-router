@@ -17,7 +17,7 @@ LUA_LIB_DIR ?=     $(PREFIX)/lib/lua/$(LUA_VERSION)
 INSTALL ?= install
 
 CARGO := $(HOME)/.cargo/bin/cargo
-TARGET := x86_64-unknown-linux-gnu
+TARGET ?= x86_64-unknown-linux-gnu
 
 .PHONY: all test install build clean
 
