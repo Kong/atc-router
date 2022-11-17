@@ -47,7 +47,7 @@ jobs:
         override: true
     - name: Build & Install
       env:
-        target: ${{ matrix.target }}
+        TARGET: ${{ matrix.target }}
       run: |
         make install
     - name: Compress and rename artifacts
