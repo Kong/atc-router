@@ -58,6 +58,10 @@ jobs:
         fi
         make build
         find . -name 'libatc_router.*'
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
     - name: Compress and rename artifacts
       run: tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
     - name: Add Release Artifacts to the Github Release
