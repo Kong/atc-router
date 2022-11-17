@@ -45,6 +45,10 @@ jobs:
         toolchain: stable
         target: ${{ matrix.target }}
         override: true
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
     - name: Build & Install
       env:
         TARGET: ${{ matrix.target }}
