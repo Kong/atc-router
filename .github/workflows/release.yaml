@@ -49,6 +49,8 @@ jobs:
       env:
         TARGET: ${{ matrix.target }}
       run: |
+        make build || \
+        export RUSTFLAGS="-C target-feature=-crt-static" make build
         make install
     - name: Compress and rename artifacts
       run: tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
