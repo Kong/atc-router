@@ -51,9 +51,10 @@ jobs:
     - name: Build and Install atc-router
       env:
         TARGET: ${{ matrix.target }}
+        RUSTFLAGS: '-C target-feature=-crt-static'
       run: |
         if [[ '${{matrix.target}}' == 'aarch64-unknown-linux'* ]]; then
-          export RUSTFLAGS="-C linker=aarch64-linux-gnu-gcc"
+          export RUSTFLAGS="${RUSTFLAGS} -C linker=aarch64-linux-gnu-gcc"
         fi
         make build
         find . -name 'libatc_router.*'
