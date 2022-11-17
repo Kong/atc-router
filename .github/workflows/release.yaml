@@ -45,22 +45,11 @@ jobs:
         toolchain: stable
         target: ${{ matrix.target }}
         override: true
-    - name: Build
-      env:
-        TARGET: ${{ matrix.target }}
-      run: |
-        make build || \
-        export RUSTFLAGS="-C target-feature=-crt-static" \
-        make clean build
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-      with:
-        limit-access-to-actor: true
     - name: Install
       env:
         TARGET: ${{ matrix.target }}
       run: |
-        make install
+        make install || RUSTFLAGS="-C target-feature=-crt-static" make clean build
     - name: Compress and rename artifacts
       run: tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
     - name: Add Release Artifacts to the Github Release
