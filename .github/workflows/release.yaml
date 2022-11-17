@@ -48,14 +48,18 @@ jobs:
     - name: Install the aarch64 toolchain
       run: |
         sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
-    - name: Install atc-router
+    - name: Build atc-router
       env:
         TARGET: ${{ matrix.target }}
       run: |
         if [[ '${{matrix.target}}' == 'aarch64-unknown-linux'* ]]; then
           export RUSTFLAGS="-C linker=aarch64-linux-gnu-gcc"
         fi
-        make install
+        make build
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
     - name: Compress and rename artifacts
       run: tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
     - name: Add Release Artifacts to the Github Release
