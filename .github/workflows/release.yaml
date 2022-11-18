@@ -33,36 +33,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target:
-          - aarch64-unknown-linux-musl
-          - x86_64-unknown-linux-gnu
-          - x86_64-unknown-linux-musl
-          - aarch64-unknown-linux-gnu
+        architecture: [aarch64, x86_64]
+        ostype: [linux-musl, linux-gnu]
     steps:
     - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: ${{ matrix.target }}
-        override: true
-    - name: Install the aarch64 toolchain
+    - name: Build, Install and Package atc-router
       run: |
-        sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
-    - name: Build and Install atc-router
-      env:
-        TARGET: ${{ matrix.target }}
-        RUSTFLAGS: '-C target-feature=-crt-static'
-      run: |
-        if [[ '${{matrix.target}}' == 'aarch64-unknown-linux'* ]]; then
-          export RUSTFLAGS="${RUSTFLAGS} -C linker=aarch64-linux-gnu-gcc"
-        fi
-        make install
-    - name: Compress and rename artifacts
-      run: tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
+        docker buildx build --build-arg ARCHITECTURE=${{ matrix.architecture }} --build-arg OSTYPE=${{ matrix.ostype }} --output type=tar,dest=${{ matrix.architecture }}-${{ matrix.ostype }}.tar.gz
     - name: Add Release Artifacts to the Github Release
       if: ${{ needs.release.outputs.published == 'true' }}
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ needs.release.outputs.release-git-tag }}
-        files: ${{ matrix.target }}.tar.gz
-
+        files: ${{ matrix.architecture }}-${{ matrix.ostype }}.tar.gz
