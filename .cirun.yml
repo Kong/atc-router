@@ -6,7 +6,7 @@ runners:
     cloud: "aws"
     # Cheapest VM on AWS
     instance_type: "t2.xlarge"
-    region: "us-east-2"
+    region: "us-east-1"
     vpc: "vpc-0825bc37b6c12adbb"
     # Ubuntu-22.4, ami image
     machine_image: "ami-08c40ec9ead489470"
