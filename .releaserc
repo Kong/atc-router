@@ -1,7 +1,7 @@
 {
   "branches": ["main"],
   "tagFormat": "${version}",
-  "repositoryUrl": "https://github.com/hutchic/atc-router.git",
+  "repositoryUrl": "https://github.com/Kong/atc-router-cirun.git",
   "plugins": [
     [
       "@semantic-release/commit-analyzer",
