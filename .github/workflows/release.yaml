@@ -41,7 +41,7 @@ jobs:
     - uses: docker/setup-buildx-action@v2
     - name: Build, Install and Package atc-router
       run: |
-        docker buildx build --build-arg ARCHITECTURE=${{ matrix.architecture }} --build-arg OSTYPE=${{ matrix.ostype }} --output type=tar,dest=${{ matrix.architecture }}-${{ matrix.ostype }}.tar.gz
+        docker buildx build --build-arg ARCHITECTURE=${{ matrix.architecture }} --build-arg OSTYPE=${{ matrix.ostype }} --output type=tar,dest=${{ matrix.architecture }}-${{ matrix.ostype }}.tar.gz .
     - name: Add Release Artifacts to the Github Release
       if: ${{ needs.release.outputs.published == 'true' }}
       uses: softprops/action-gh-release@v1
