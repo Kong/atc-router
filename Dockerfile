@@ -8,10 +8,6 @@ FROM --platform=linux/arm64 kong/kong-build-tools:deb-1.8.0 as aarch64-linux-gnu
 
 FROM $ARCHITECTURE-$OSTYPE as build
 
-ARG OSTYPE=linux-gnu
-ARG ARCHITECTURE=x86_64
-ENV TARGET ${ARCHITECTURE}-unknown-${OSTYPE}
-
 WORKDIR /src
 COPY . /src
 ENV CARGO_NET_GIT_FETCH_WITH_CLI true
