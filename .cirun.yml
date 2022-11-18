@@ -8,8 +8,8 @@ runners:
     instance_type: "c5a.2xlarge"
     region: "us-east-1"
     vpc: "vpc-0825bc37b6c12adbb"
-    # Packer builder 2022-10-26
-    machine_image: "ami-0bd9310e48a56447a"
+    # Ubuntu 22.04 amd64
+    machine_image: "ami-08c40ec9ead489470"
     preemptible: false
     # Add this label in the "runs-on" param in .github/workflows/<workflow-name>.yml
     # So that this runner is created for running the workflow
@@ -22,8 +22,8 @@ runners:
     instance_type: "c6g.16xlarge"
     region: "us-east-1"
     vpc: "vpc-0825bc37b6c12adbb"
-    # Packer builder 2022-10-26
-    machine_image: "ami-0bd9310e48a56447a"
+    # Ubuntu 22.04 arm64
+    machine_image: "ami-0f69dd1d0d03ad669"
     preemptible: false
     # Add this label in the "runs-on" param in .github/workflows/<workflow-name>.yml
     # So that this runner is created for running the workflow
