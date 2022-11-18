@@ -8,8 +8,8 @@ runners:
     instance_type: "t2.xlarge"
     region: "us-east-2"
     vpc: "vpc-0825bc37b6c12adbb"
-    # Ubuntu-20.4, ami image
-    machine_image: "ami-052efd3df9dad4825"
+    # Ubuntu-22.4, ami image
+    machine_image: "ami-08c40ec9ead489470"
     preemptible: false
     # Add this label in the "runs-on" param in .github/workflows/<workflow-name>.yml
     # So that this runner is created for running the workflow
