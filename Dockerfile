@@ -16,6 +16,7 @@ WORKDIR /src
 COPY . /src
 ENV LUA_LIB_DIR: /usr/local/openresty/lualib
 ENV DESTDIR /tmp/build
+ENV RUSTFLAGS "-C target-feature=-crt-static"
 RUN make install
 
 FROM scratch
