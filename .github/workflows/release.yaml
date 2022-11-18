@@ -37,6 +37,8 @@ jobs:
         ostype: [linux-musl, linux-gnu]
     steps:
     - uses: actions/checkout@v3
+    - uses: docker/setup-qemu-action@v2
+    - uses: docker/setup-buildx-action@v2
     - name: Build, Install and Package atc-router
       run: |
         docker buildx build --build-arg ARCHITECTURE=${{ matrix.architecture }} --build-arg OSTYPE=${{ matrix.ostype }} --output type=tar,dest=${{ matrix.architecture }}-${{ matrix.ostype }}.tar.gz
