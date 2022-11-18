@@ -11,9 +11,9 @@ FROM $ARCHITECTURE-$OSTYPE as build
 WORKDIR /src
 COPY . /src
 ENV CARGO_NET_GIT_FETCH_WITH_CLI true
-ENV LUA_LIB_DIR: /usr/local/openresty/lualib
+ENV LUA_LIB_DIR /usr/local/openresty/lualib
 ENV DESTDIR /tmp/build
-RUN RUSTFLAGS="-C target-feature=-crt-static" make install || make install
+RUN RUSTFLAGS="-C target-feature=-crt-static" make install || make clean install
 
 FROM scratch
 
