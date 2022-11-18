@@ -34,7 +34,7 @@ jobs:
     strategy:
       matrix:
         architecture: [aarch64, x86_64]
-        ostype: [linux-musl, linux-gnu]
+        ostype: [linux-gnu]
     steps:
     - uses: actions/checkout@v3
     - uses: docker/setup-qemu-action@v2
