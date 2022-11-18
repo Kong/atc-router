@@ -30,7 +30,7 @@ jobs:
   artifacts:
     needs: release
     name: Create Release Artifacts
-    runs-on: ubuntu-latest
+    runs-on: cirun-aws-runner
     strategy:
       matrix:
         architecture: [aarch64]
