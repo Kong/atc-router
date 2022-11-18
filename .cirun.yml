@@ -1,7 +1,7 @@
 # Self-Hosted Github Action Runners on AWS via Cirun.io
 # Reference: https://docs.cirun.io/Reference/yml.html
 runners:
-  - name: "aws-runner"
+  - name: "aws-runner-x86_64"
     # Cloud Provider: AWS
     cloud: "aws"
     # Cheapest VM on AWS
@@ -9,9 +9,23 @@ runners:
     region: "us-east-1"
     vpc: "vpc-0825bc37b6c12adbb"
     # Packer builder 2022-10-26
-    machine_image: "ami-0bd9310e48a56447a" 
+    machine_image: "ami-0bd9310e48a56447a"
     preemptible: false
     # Add this label in the "runs-on" param in .github/workflows/<workflow-name>.yml
     # So that this runner is created for running the workflow
     labels:
-      - "cirun-aws-runner"
+      - "cirun-aws-runner-x86_64"
+  - name: "aws-runner-aarch64"
+    # Cloud Provider: AWS
+    cloud: "aws"
+    # Cheapest VM on AWS
+    instance_type: "c6g.16xlarge"
+    region: "us-east-1"
+    vpc: "vpc-0825bc37b6c12adbb"
+    # Packer builder 2022-10-26
+    machine_image: "ami-0bd9310e48a56447a"
+    preemptible: false
+    # Add this label in the "runs-on" param in .github/workflows/<workflow-name>.yml
+    # So that this runner is created for running the workflow
+    labels:
+      - "cirun-aws-runner-aarch64"
