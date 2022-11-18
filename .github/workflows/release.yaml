@@ -30,11 +30,11 @@ jobs:
   artifacts:
     needs: release
     name: Create Release Artifacts
-    runs-on: cirun-aws-runner
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        architecture: [aarch64]
-        ostype: [linux-gnu]
+        architecture: [aarch64, x86_64]
+        ostype: [linux-musl, linux-gnu]
     steps:
     - uses: actions/checkout@v3
     - uses: docker/setup-qemu-action@v2
