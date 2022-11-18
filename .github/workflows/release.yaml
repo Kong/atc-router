@@ -39,10 +39,10 @@ jobs:
     - uses: actions/checkout@v3
     - uses: docker/setup-qemu-action@v2
     - uses: docker/setup-buildx-action@v2
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-      with:
-        limit-access-to-actor: true
+#    - name: Setup tmate session
+#      uses: mxschmitt/action-tmate@v3
+#      with:
+#        limit-access-to-actor: true
     - name: Build, Install and Package atc-router
       run: |
         docker buildx build --build-arg ARCHITECTURE=${{ matrix.architecture }} --build-arg OSTYPE=${{ matrix.ostype }} --output type=tar,dest=${{ matrix.architecture }}-${{ matrix.ostype }}.tar.gz .

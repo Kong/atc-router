@@ -14,6 +14,7 @@ ENV TARGET ${ARCHITECTURE}-unknown-${OSTYPE}
 
 WORKDIR /src
 COPY . /src
+ENV CARGO_NET_GIT_FETCH_WITH_CLI true
 ENV LUA_LIB_DIR: /usr/local/openresty/lualib
 ENV DESTDIR /tmp/build
 ENV RUSTFLAGS "-C target-feature=-crt-static"
