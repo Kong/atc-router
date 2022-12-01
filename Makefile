@@ -1,3 +1,5 @@
+export SHELL:=/bin/bash
+
 OS=$(shell uname -s)
 
 ifeq ($(OS), Darwin)
@@ -14,6 +16,9 @@ LUA_INCLUDE_DIR ?= $(PREFIX)/include
 LUA_LIB_DIR ?=     $(PREFIX)/lib/lua/$(LUA_VERSION)
 INSTALL ?= install
 
+CARGO := $(HOME)/.cargo/bin/cargo
+TARGET ?= x86_64-unknown-linux-gnu
+
 .PHONY: all test install build clean
 
 all: ;
@@ -21,15 +26,12 @@ all: ;
 build: target/release/libatc_router.so target/release/libatc_router.a
 
 target/release/libatc_router.%: src/*.rs
-ifeq (, $(shell cargo))
-$(error "cargo not found in PATH, consider doing \"curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh\"")
-endif
-	cargo build --release
+	$(CARGO) build --release --target $(TARGET)
 
 install: build
 	$(INSTALL) -d $(DESTDIR)$(LUA_LIB_DIR)/resty/router/
 	$(INSTALL) -m 664 lib/resty/router/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/router/
-	$(INSTALL) -m 775 target/release/libatc_router.$(SHLIB_EXT) $(DESTDIR)$(LUA_LIB_DIR)/libatc_router.so
+	$(INSTALL) -m 775 target/$(TARGET)/release/libatc_router.$(SHLIB_EXT) $(DESTDIR)$(LUA_LIB_DIR)/libatc_router.so
 
 clean:
 	rm -rf target
