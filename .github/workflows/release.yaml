@@ -1,0 +1,71 @@
+---
+name: Release
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+  push:
+    branches:
+    - main
+
+env:
+  DESTDIR: /tmp/build
+  LUA_LIB_DIR: /usr/local/openresty/lualib
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.release.outputs.published }}
+      release-git-tag: ${{ steps.release.outputs.release-git-tag }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Release
+      id: release
+      uses: ahmadnassri/action-semantic-release@v2.1.10
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  artifacts:
+    needs: release
+    name: Create Release Artifacts
+    runs-on: ubuntu-latest
+    env:
+      RUST_BACKTRACE: full
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+      - uses: actions-rs/cargo@v1
+        env:
+          RUSTFLAGS: '-C target-feature=-crt-static' # Required for aarch64-unknown-linux-musl
+        with:
+          use-cross: true
+          command: build
+          args: --release --target ${{ matrix.target }}
+      - name: Install, Compress, and rename artifacts
+        env:
+          DESTDIR: ${{ env.DESTDIR }}
+        run: |
+          make install
+          tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
+      - name: Add Release Artifacts to the Github Release
+        if: ${{ needs.release.outputs.published == 'true' }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.release.outputs.release-git-tag }}
+          files: ${{ matrix.target }}.tar.gz
+
