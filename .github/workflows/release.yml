@@ -32,36 +32,40 @@ jobs:
     needs: release
     name: Create Release Artifacts
     runs-on: ubuntu-latest
-    container: rustembedded/cross:${{ matrix.target }}
+    env:
+      RUST_BACKTRACE: full
     strategy:
       matrix:
         target:
-          - aarch64-unknown-linux-musl
           - x86_64-unknown-linux-gnu
-          - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
+
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: ${{ matrix.target }}
-        override: true
-    - name: Build and Install atc-router
-      env:
-        TARGET: ${{ matrix.target }}
-        RUSTFLAGS: '-C target-feature=-crt-static'
-      run: |
-        if [[ '${{matrix.target}}' == 'aarch64-unknown-linux'* ]]; then
-          export RUSTFLAGS="${RUSTFLAGS} -C linker=aarch64-linux-gnu-gcc"
-        fi
-        make install
-    - name: Compress and rename artifacts
-      run: tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
-    - name: Add Release Artifacts to the Github Release
-      if: ${{ needs.release.outputs.published == 'true' }}
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ needs.release.outputs.release-git-tag }}
-        files: ${{ matrix.target }}.tar.gz
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+      - uses: actions-rs/cargo@v1
+        env:
+          RUSTFLAGS: '-C target-feature=-crt-static' # Required for aarch64-unknown-linux-musl
+        with:
+          use-cross: true
+          command: build
+          args: --release --target ${{ matrix.target }}
+      - name: Install, Compress, and rename artifacts
+        env:
+          DESTDIR: ${{ env.DESTDIR }}
+        run: |
+          make install
+          tar -C /tmp/build/ -czvf ${{ matrix.target }}.tar.gz .
+      - name: Add Release Artifacts to the Github Release
+        if: ${{ needs.release.outputs.published == 'true' }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.release.outputs.release-git-tag }}
+          files: ${{ matrix.target }}.tar.gz
 
