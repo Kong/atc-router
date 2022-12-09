@@ -30,14 +30,14 @@ impl TryFrom<&CValue> for Value {
             CValue::CString(s) => Self::String(unsafe {
                 ffi::CStr::from_ptr(*s as *const c_char)
                     .to_str()
-                    .unwrap()
+                    .map_err(|e| e.to_string())?
                     .to_string()
             }),
             CValue::CIpCidr(s) => Self::IpCidr(
                 unsafe {
                     ffi::CStr::from_ptr(*s as *const c_char)
                         .to_str()
-                        .unwrap()
+                        .map_err(|e| e.to_string())?
                         .to_string()
                 }
                 .parse::<IpCidr>()
@@ -47,7 +47,7 @@ impl TryFrom<&CValue> for Value {
                 unsafe {
                     ffi::CStr::from_ptr(*s as *const c_char)
                         .to_str()
-                        .unwrap()
+                        .map_err(|e| e.to_string())?
                         .to_string()
                 }
                 .parse::<IpAddr>()
