@@ -3,6 +3,17 @@ name: Tests
 on: [push, pull_request]
 
 jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - name: Run unit tests
+      run: cargo test
+
   tests:
     name: Tests
     runs-on: ubuntu-22.04

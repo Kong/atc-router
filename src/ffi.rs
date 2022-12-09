@@ -3,10 +3,11 @@ use crate::context::Context;
 use crate::router::Router;
 use crate::schema::Schema;
 use cidr::IpCidr;
-use std::ffi;
+use std::ffi::{self};
 use std::net::IpAddr;
 use std::os::raw::c_char;
 use std::slice::from_raw_parts_mut;
+use std::str::Utf8Error;
 use uuid::fmt::Hyphenated;
 use uuid::Uuid;
 
@@ -27,32 +28,44 @@ impl TryFrom<&CValue> for Value {
 
     fn try_from(v: &CValue) -> Result<Self, Self::Error> {
         Ok(match v {
-            CValue::CString(s) => Self::String(unsafe {
-                ffi::CStr::from_ptr(*s as *const c_char)
-                    .to_str()
-                    .unwrap()
-                    .to_string()
-            }),
-            CValue::CIpCidr(s) => Self::IpCidr(
+            CValue::CString(s) => {
+                let str: Result<&str, Utf8Error>;
                 unsafe {
-                    ffi::CStr::from_ptr(*s as *const c_char)
-                        .to_str()
-                        .unwrap()
-                        .to_string()
+                    str = ffi::CStr::from_ptr(*s as *const c_char).to_str();
                 }
-                .parse::<IpCidr>()
-                .map_err(|e| e.to_string())?,
-            ),
-            CValue::CIpAddr(s) => Self::IpAddr(
+                Self::String(match str {
+                    Ok(val) => val.to_string(),
+                    Err(err) => return Err(err.to_string()),
+                })
+            }
+            CValue::CIpCidr(s) => {
+                let str: Result<&str, Utf8Error>;
                 unsafe {
-                    ffi::CStr::from_ptr(*s as *const c_char)
-                        .to_str()
-                        .unwrap()
-                        .to_string()
+                    str = ffi::CStr::from_ptr(*s as *const c_char).to_str();
                 }
-                .parse::<IpAddr>()
-                .map_err(|e| e.to_string())?,
-            ),
+
+                Self::IpCidr(match str {
+                    Ok(val) => val
+                        .to_string()
+                        .parse::<IpCidr>()
+                        .map_err(|e| e.to_string())?,
+                    Err(err) => return Err(err.to_string()),
+                })
+            }
+            CValue::CIpAddr(s) => {
+                let str: Result<&str, Utf8Error>;
+                unsafe {
+                    str = ffi::CStr::from_ptr(*s as *const c_char).to_str();
+                }
+
+                Self::IpAddr(match str {
+                    Ok(val) => val
+                        .to_string()
+                        .parse::<IpAddr>()
+                        .map_err(|e| e.to_string())?,
+                    Err(err) => return Err(err.to_string()),
+                })
+            }
             CValue::CInt(i) => Self::Int(*i),
         })
     }
@@ -97,8 +110,16 @@ pub unsafe extern "C" fn router_add_matcher(
     errbuf: *mut u8,
     errbuf_len: *mut usize,
 ) -> bool {
-    let uuid = ffi::CStr::from_ptr(uuid as *const c_char).to_str().unwrap();
-    let atc = ffi::CStr::from_ptr(atc as *const c_char).to_str().unwrap();
+    let uuid = match ffi::CStr::from_ptr(uuid as *const c_char).to_str() {
+        Ok(str) => str,
+        Err(_) => return false,
+    };
+
+    let atc = match ffi::CStr::from_ptr(atc as *const c_char).to_str() {
+        Ok(str) => str,
+        Err(_) => return false,
+    };
+
     let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
 
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
@@ -119,7 +140,10 @@ pub unsafe extern "C" fn router_remove_matcher(
     priority: usize,
     uuid: *const i8,
 ) -> bool {
-    let uuid = ffi::CStr::from_ptr(uuid as *const c_char).to_str().unwrap();
+    let uuid = match ffi::CStr::from_ptr(uuid as *const c_char).to_str() {
+        Ok(str) => str,
+        Err(_) => return false,
+    };
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
 
     router.remove_matcher(priority, uuid)
@@ -170,9 +194,10 @@ pub unsafe extern "C" fn context_add_value(
     errbuf: *mut u8,
     errbuf_len: *mut usize,
 ) -> bool {
-    let field = ffi::CStr::from_ptr(field as *const c_char)
-        .to_str()
-        .unwrap();
+    let field = match ffi::CStr::from_ptr(field as *const c_char).to_str() {
+        Ok(str) => str,
+        Err(_) => return false,
+    };
     let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
 
     let value: Result<Value, _> = value.try_into();
@@ -254,4 +279,87 @@ pub unsafe extern "C" fn context_get_result(
         .len()
         .try_into()
         .unwrap()
+}
+
+#[cfg(test)]
+mod tests_ffi {
+    use super::ffi;
+    use super::{CValue, Value};
+
+    #[test]
+    fn test_try_from_works_for_cstring() {
+        {
+            let raw = b"qwerty".to_vec();
+            let c_string: ffi::CString;
+            unsafe {
+                c_string = ffi::CString::from_vec_unchecked(raw);
+            }
+            let c_value = CValue::CString(c_string.as_ptr());
+            let result = Value::try_from(&c_value).unwrap();
+            _ = result;
+        }
+        {
+            let raw = b"\xe2\x28\xa1\n\n".to_vec();
+            let c_string: ffi::CString;
+            unsafe {
+                c_string = ffi::CString::from_vec_unchecked(raw);
+            }
+            let c_value = CValue::CString(c_string.as_ptr());
+            let err = Value::try_from(&c_value).unwrap_err();
+            let expected_err = String::from("invalid utf-8 sequence of 1 bytes from index 0");
+            assert_eq!(err, expected_err);
+        }
+    }
+
+    #[test]
+    fn test_try_from_works_for_cipcidr() {
+        {
+            let raw = b"192.168.1.1/32".to_vec();
+            let c_string: ffi::CString;
+            unsafe {
+                c_string = ffi::CString::from_vec_unchecked(raw);
+            }
+            let c_value = CValue::CIpCidr(c_string.as_ptr());
+            let result = Value::try_from(&c_value).unwrap();
+            _ = result;
+        }
+        {
+            let raw = b"not_an_ip".to_vec();
+            let c_string: ffi::CString;
+            unsafe {
+                c_string = ffi::CString::from_vec_unchecked(raw);
+            }
+            let c_value = CValue::CIpCidr(c_string.as_ptr());
+            let err = Value::try_from(&c_value).unwrap_err();
+            let expected_err =
+                String::from("couldn't parse address in network: invalid IP address syntax");
+            assert_eq!(err, expected_err);
+        }
+    }
+
+    #[test]
+    fn test_try_from_works_for_cipaddr() {
+        {
+            let raw = b"192.168.1.1".to_vec();
+            let c_string: ffi::CString;
+            unsafe {
+                c_string = ffi::CString::from_vec_unchecked(raw);
+            }
+            let c_value = CValue::CIpCidr(c_string.as_ptr());
+            let result = Value::try_from(&c_value).unwrap();
+            _ = result;
+        }
+        {
+            let raw = b"not_an_ip".to_vec();
+            let c_string: ffi::CString;
+            unsafe {
+                c_string = ffi::CString::from_vec_unchecked(raw);
+            }
+            let c_value = CValue::CIpCidr(c_string.as_ptr());
+            let err = Value::try_from(&c_value).unwrap_err();
+            let expected_err =
+                String::from("couldn't parse address in network: invalid IP address syntax");
+            assert_eq!(err, expected_err);
+        }
+    }
 }
