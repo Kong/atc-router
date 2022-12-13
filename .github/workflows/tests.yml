@@ -57,6 +57,11 @@ jobs:
     - name: Build
       run: cargo build --verbose
 
+    - name: Check bazel dependency synced
+      run: |
+        make raze
+        git diff --exit-code cargo
+
     - name: Setup Nginx binary cache
       uses: actions/cache@v2
       with:

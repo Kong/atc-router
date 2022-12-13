@@ -26,6 +26,10 @@ $(error "cargo not found in PATH, consider doing \"curl --proto '=https' --tlsv1
 endif
 	cargo build --release
 
+raze:
+	cargo install cargo-raze
+	cargo raze
+
 install: build
 	$(INSTALL) -d $(DESTDIR)$(LUA_LIB_DIR)/resty/router/
 	$(INSTALL) -m 664 lib/resty/router/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/router/

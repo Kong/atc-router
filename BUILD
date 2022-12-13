@@ -22,4 +22,5 @@ rust_shared_library(
     proc_macro_deps = [
         "//cargo:pest_derive",
     ],
+    visibility = ["//visibility:public"],
 )
