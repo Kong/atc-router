@@ -1,5 +1,25 @@
 # Bazel project for atc-router
 
+To add or change a crates.io dependency, run `make raze`,
+then add the new dependency to `deps` in the `BUILD` file located in
+the top-level directory:
+
+```python
+    rust_shared_library(
+        name = "atc_router",
+        srcs = [":all_srcs"],
+        proc_macro_deps = [
+            "//cargo:pest_derive",
+        ],
+        visibility = ["//visibility:public"],
+        deps = [
+            # ... existing dependencies
+            "//cargo:new_deps",
+        ],
+    )
+```
+
+
 To use in other Bazel projects, add the following to your WORKSPACE file:
 
 ```python
