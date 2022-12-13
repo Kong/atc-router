@@ -1,0 +1,94 @@
+"""
+@generated
+cargo-raze generated Bazel file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+
+package(default_visibility = ["//visibility:public"])
+
+licenses([
+    "notice",  # See individual crates for specific licenses
+])
+
+# Aliased targets
+alias(
+    name = "cidr",
+    actual = "@raze__cidr__0_2_1//:cidr",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "lazy_static",
+    actual = "@raze__lazy_static__1_4_0//:lazy_static",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "pest",
+    actual = "@raze__pest__2_5_1//:pest",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "pest_consume",
+    actual = "@raze__pest_consume__1_1_3//:pest_consume",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "pest_derive",
+    actual = "@raze__pest_derive__2_5_1//:pest_derive",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "regex",
+    actual = "@raze__regex__1_7_0//:regex",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "uuid",
+    actual = "@raze__uuid__1_2_2//:uuid",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+# Export file for Stardoc support
+exports_files(
+    glob([
+        "**/*.bazel",
+        "**/*.bzl",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "srcs",
+    srcs = glob([
+        "**/*.bazel",
+        "**/*.bzl",
+    ]),
+    visibility = ["//visibility:public"],
+)
