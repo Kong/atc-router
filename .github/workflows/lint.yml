@@ -24,3 +24,11 @@ jobs:
         # Arguments passed to luacheck.
         # Default: -q
         args: '-q'
+
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - name: Check bazel dependency synced
+      run: |
+        make raze
+        git diff --exit-code cargo || echo "cargo-raze file out of sync, please run 'make raze' and commit the changes"
