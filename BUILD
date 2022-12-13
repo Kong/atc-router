@@ -1,5 +1,9 @@
 load("@rules_rust//rust:defs.bzl", "rust_shared_library")
 
+exports_files(
+    ["WORKSPACE"],
+)
+
 filegroup(
     name = "all_srcs",
     srcs = glob(
