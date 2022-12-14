@@ -20,7 +20,3 @@ regex = "1.5"
 
 [lib]
 crate-type = ["cdylib", "staticlib"]
-
-[workspace.metadata.raze]
-workspace_path = "//cargo"
-genmode = "Remote"
