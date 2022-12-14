@@ -1,27 +1,29 @@
 use crate::schema::Schema;
 use cidr::IpCidr;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
+use wasm_bindgen::prelude::wasm_bindgen;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Expression {
     Logical(Box<LogicalExpression>),
     Predicate(Predicate),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum LogicalExpression {
     And(Expression, Expression),
     Or(Expression, Expression),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LhsTransformations {
     Lower,
     Any,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BinaryOperator {
     Equals,         // ==
     NotEquals,      // !=
@@ -36,12 +38,13 @@ pub enum BinaryOperator {
     NotIn,          // not in
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Value {
     String(String),
     IpCidr(IpCidr),
     IpAddr(IpAddr),
     Int(i64),
+    #[serde(with = "serde_regex")]
     Regex(Regex),
 }
 
@@ -71,8 +74,9 @@ impl Value {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[repr(C)]
+#[wasm_bindgen]
 pub enum Type {
     String,
     IpCidr,
@@ -81,7 +85,7 @@ pub enum Type {
     Regex,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Lhs {
     pub var_name: String,
     pub transformations: Vec<LhsTransformations>,
@@ -105,7 +109,7 @@ impl Lhs {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Predicate {
     pub lhs: Lhs,
     pub rhs: Value,
