@@ -5,6 +5,7 @@ local _MT = { __index = _M, }
 local ffi = require("ffi")
 local base = require("resty.core.base")
 local cdefs = require("resty.router.cdefs")
+local tb_new = require("table.new")
 local get_string_buf = base.get_string_buf
 local get_size_ptr = base.get_size_ptr
 local ffi_string = ffi.string
@@ -19,7 +20,7 @@ local ERR_BUF_MAX_LEN = cdefs.ERR_BUF_MAX_LEN
 local clib = cdefs.clib
 
 
-function _M.new(schema)
+function _M.new(schema, routes_n)
     local router = clib.router_new(schema.schema)
     -- Note on this weird looking finalizer:
     --
@@ -33,7 +34,7 @@ function _M.new(schema)
             clib.router_free(r)
         end),
         schema = schema,
-        priorities = {},
+        priorities = tb_new(0, routes_n or 10),
     }, _MT)
 
     return r
