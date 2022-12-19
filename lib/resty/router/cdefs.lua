@@ -138,4 +138,16 @@ end
 return {
     clib = clib,
     ERR_BUF_MAX_LEN = ERR_BUF_MAX_LEN,
+
+    context_free = function(c)
+        clib.context_free(c)
+    end,
+
+    schema_free = function(s)
+        clib.schema_free(s)
+    end,
+
+    router_free = function(r)
+        clib.router_free(r)
+    end,
 }
