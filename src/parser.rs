@@ -187,6 +187,7 @@ impl ATCParser {
             "<" => Lesser,
             "<=" => LesserOrEqual,
             "in" => In,
+            "contains" => Contains,
             _ => NotIn,
         })
     }

@@ -34,6 +34,7 @@ pub enum BinaryOperator {
     LesserOrEqual,  // <=
     In,             // in
     NotIn,          // not in
+    Contains,       // contains
 }
 
 #[derive(Debug, Clone)]
