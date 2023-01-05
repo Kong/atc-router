@@ -20,7 +20,8 @@ impl Execute for Expression {
 
                 let (lower, any) = p.lhs.get_transformations();
 
-                // if not in "any" mode, then we need to check all values. `remaining` is the count of unchecked values.
+                // if not in "any" mode, then we need to check all values. 
+                // `remaining` is the count of unchecked values.
                 let mut remaining = lhs_values.len();
                 for mut lhs_value in lhs_values
                     .iter()
