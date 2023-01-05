@@ -20,9 +20,10 @@ impl Execute for Expression {
 
                 let (lower, any) = p.lhs.get_transformations();
 
+                // if not in "any" mode, then we need to check all values. `remaining` is the count of unchecked values.
+                let mut remaining = lhs_values.len();
                 for mut lhs_value in lhs_values
                     .iter()
-                    .take(if any { lhs_values.len() } else { 1 })
                 {
                     let lhs_value_transformed;
 
@@ -40,7 +41,11 @@ impl Execute for Expression {
                         BinaryOperator::Equals => {
                             if lhs_value == &p.rhs {
                                 m.matches.insert(p.lhs.var_name.clone(), p.rhs.clone());
-                                return true;
+                                if any || remaining == 1{
+                                    return true;
+                                }
+                                remaining -= 1;
+                                continue;
                             }
                         }
                         BinaryOperator::NotEquals => {
