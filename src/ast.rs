@@ -23,18 +23,18 @@ pub enum LhsTransformations {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum BinaryOperator {
-    Equals,         // ==
-    NotEquals,      // !=
-    Regex,          // ~
-    Prefix,         // ^=
-    Postfix,        // =^
-    Greater,        // >
-    GreaterOrEqual, // >=
-    Lesser,         // <
-    LesserOrEqual,  // <=
-    In,             // in
-    NotIn,          // not in
-    Contains,       // contains
+    Equals,
+    NotEquals,
+    Regex,
+    Prefix,
+    Postfix,
+    Greater,
+    GreaterOrEqual,
+    Less,
+    LessOrEqual,
+    In,
+    NotIn,
+    Contains,
 }
 
 #[derive(Debug, Clone)]

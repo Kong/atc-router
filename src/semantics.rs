@@ -114,7 +114,7 @@ impl Validate for Expression {
                             _ => Err("Regex/Prefix/Postfix operators only supports string operands".to_string())
                         }
                     },
-                    BinaryOperator::Greater | BinaryOperator::GreaterOrEqual | BinaryOperator::Lesser | BinaryOperator::LesserOrEqual => {
+                    BinaryOperator::Greater | BinaryOperator::GreaterOrEqual | BinaryOperator::Less | BinaryOperator::LessOrEqual => {
                         match p.rhs {
                             Value::Int(_) => {
                                 Ok(())

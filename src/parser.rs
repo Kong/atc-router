@@ -6,26 +6,28 @@ use crate::ast::{
 };
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
 use pest::error::ErrorVariant;
-use pest::prec_climber::{Assoc, Operator, PrecClimber};
-use pest_consume::{match_nodes, Error as ParseError, Parser};
-use regex::Regex;
+use pest::iterators::Pair;
+use pest::pratt_parser::Assoc as AssocNew;
+use pest::pratt_parser::{Op, PrattParser};
+use pest::Parser;
+
+use pest::error::Error as ParseError;
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
 /// cbindgen:ignore
 // Bug: https://github.com/eqrion/cbindgen/issues/286
-type Node<'i> = pest_consume::Node<'i, Rule, ()>;
 
 trait IntoParseResult<T> {
-    fn into_parse_result(self, node: &Node) -> ParseResult<T>;
+    fn into_parse_result(self, pair: &Pair<Rule>) -> ParseResult<T>;
 }
 
 impl<T, E> IntoParseResult<T> for Result<T, E>
 where
     E: ToString,
 {
-    fn into_parse_result(self, node: &Node) -> ParseResult<T> {
+    fn into_parse_result(self, pair: &Pair<Rule>) -> ParseResult<T> {
         self.map_err(|e| {
-            let span = node.as_span();
+            let span = pair.as_span();
 
             let err_var = ErrorVariant::CustomError {
                 message: e.to_string(),
@@ -38,14 +40,8 @@ where
 
 #[derive(Parser)]
 #[grammar = "atc_grammar.pest"]
-struct ATCParser;
-
-lazy_static::lazy_static! {
-    static ref PRECCLIMBER: PrecClimber<Rule> = PrecClimber::new(
-        vec![
-            Operator::new(Rule::and_op, Assoc::Left) | Operator::new(Rule::or_op, Assoc::Left),
-        ]
-    );
+struct ATCParser {
+    pratt_parser: PrattParser<Rule>,
 }
 
 macro_rules! parse_num {
@@ -54,204 +50,241 @@ macro_rules! parse_num {
     };
 }
 
-#[pest_consume::parser]
 impl ATCParser {
-    fn EOI(_input: Node) -> ParseResult<()> {
-        Ok(())
-    }
-
-    fn ident(input: Node) -> ParseResult<String> {
-        Ok(input.as_str().into())
-    }
-
-    fn str_esc(input: Node) -> ParseResult<char> {
-        Ok(match input.as_str() {
-            "\\\"" => '"',
-            "\\\\" => '\\',
-            "\\n" => '\n',
-            "\\r" => '\r',
-            "\\t" => '\t',
-            _ => unreachable!(),
-        })
-    }
-
-    fn str_literal(input: Node) -> ParseResult<String> {
-        let mut s = String::new();
-
-        for node in input.into_children() {
-            match node.as_rule() {
-                Rule::str_char => s.push_str(node.as_str()),
-                Rule::str_esc => s.push(ATCParser::str_esc(node)?),
-                _ => unreachable!(),
-            }
+    fn new() -> Self {
+        Self {
+            pratt_parser: PrattParser::new()
+                .op(Op::infix(Rule::and_op, AssocNew::Left))
+                .op(Op::infix(Rule::or_op, AssocNew::Left)),
         }
-
-        Ok(s)
     }
-
-    fn ipv4_cidr_literal(input: Node) -> ParseResult<Ipv4Cidr> {
-        input.as_str().parse().into_parse_result(&input)
-    }
-
-    fn ipv6_cidr_literal(input: Node) -> ParseResult<Ipv6Cidr> {
-        input.as_str().parse().into_parse_result(&input)
-    }
-
-    fn ipv4_literal(input: Node) -> ParseResult<Ipv4Cidr> {
-        format!("{}/32", input.as_str())
-            .parse()
-            .into_parse_result(&input)
-    }
-
-    fn ipv6_literal(input: Node) -> ParseResult<Ipv6Cidr> {
-        format!("{}/128", input.as_str())
-            .parse()
-            .into_parse_result(&input)
-    }
-
-    fn ip_literal(input: Node) -> ParseResult<IpCidr> {
-        Ok(match_nodes! { input.children();
-            [ipv4_cidr_literal(c)] => IpCidr::V4(c),
-            [ipv6_cidr_literal(c)] => IpCidr::V6(c),
-            [ipv4_literal(c)] => IpCidr::V4(c),
-            [ipv6_literal(c)] => IpCidr::V6(c),
-        })
-    }
-
-    fn int_literal(input: Node) -> ParseResult<i64> {
-        use Rule::*;
-
-        let digits_node = input.children().single().unwrap();
-
-        let radix = match digits_node.as_rule() {
-            hex_digits => 16,
-            oct_digits => 8,
-            dec_digits => 10,
+    // matcher = { SOI ~ expression ~ EOI }
+    fn parse_matcher(&mut self, source: &str) -> ParseResult<Expression> {
+        let pairs = ATCParser::parse(Rule::matcher, source)?;
+        let expr_pair = pairs.peek().unwrap().into_inner().peek().unwrap();
+        let rule = expr_pair.as_rule();
+        match rule {
+            Rule::expression => parse_expression(expr_pair, &self.pratt_parser),
             _ => unreachable!(),
-        };
-
-        let mut num = parse_num!(digits_node, i64, radix)?;
-
-        if let Some('-') = input.as_str().chars().next() {
-            num = -num;
         }
-
-        Ok(num)
-    }
-
-    fn rhs(input: Node) -> ParseResult<Value> {
-        Ok(match_nodes! { input.children();
-            [str_literal(s)] => Value::String(s),
-            [ip_literal(ip)] => Value::IpCidr(ip),
-            [int_literal(i)] => Value::Int(i),
-        })
-    }
-
-    fn transform_func(input: Node) -> ParseResult<Lhs> {
-        Ok(match_nodes! { input.children();
-            [func_name, lhs(mut lhs)] => {
-                lhs.transformations.push(match func_name.as_str() {
-                    "lower" => LhsTransformations::Lower,
-                    "any" => LhsTransformations::Any,
-                    unknown => {
-                        return Err(ParseError::new_from_span(
-                            ErrorVariant::CustomError {
-                                message: format!("unknown transformation function: {}", unknown),
-                            },
-                            input.as_span()));
-                    },
-                });
-
-                lhs
-            },
-        })
-    }
-
-    fn lhs(input: Node) -> ParseResult<Lhs> {
-        Ok(match_nodes! { input.children();
-            [transform_func(t)] => t,
-            [ident(var)] => Lhs { var_name: var, transformations: Vec::new() },
-        })
-    }
-
-    fn binary_operator(input: Node) -> ParseResult<BinaryOperator> {
-        use BinaryOperator::*;
-
-        Ok(match input.as_str() {
-            "==" => Equals,
-            "!=" => NotEquals,
-            "~" => Regex,
-            "^=" => Prefix,
-            "=^" => Postfix,
-            ">" => Greater,
-            ">=" => GreaterOrEqual,
-            "<" => Lesser,
-            "<=" => LesserOrEqual,
-            "in" => In,
-            "contains" => Contains,
-            _ => NotIn,
-        })
-    }
-
-    fn predicate(input: Node) -> ParseResult<Expression> {
-        Ok(match_nodes! { input.children();
-            [lhs(lhs), binary_operator(op), rhs(rhs)] => {
-                Expression::Predicate(Predicate{ lhs,
-                    rhs: if op == BinaryOperator::Regex {
-                        if let Value::String(s) = rhs {
-                            let r = Regex::new(&s)
-                                .map_err(|e| ParseError::new_from_span(
-                                ErrorVariant::CustomError {
-                                    message: e.to_string(),
-                                }, input.as_span()))?;
-
-                            Value::Regex(r)
-                        } else {
-                            return Err(ParseError::new_from_span(
-                                ErrorVariant::CustomError {
-                                    message: "regex operator can only be used with String operands".to_string(),
-                                },
-                            input.as_span()));
-                        }
-                    } else {
-                        rhs
-                    },
-                    op })
-            },
-        })
-    }
-
-    fn parenthesised_expression(input: Node) -> ParseResult<Expression> {
-        Ok(match_nodes! { input.children();
-            [expression(expr)] => expr,
-        })
-    }
-
-    #[prec_climb(term, PRECCLIMBER)]
-    fn expression(l: Expression, op: Node, r: Expression) -> ParseResult<Expression> {
-        Ok(match op.as_rule() {
-            Rule::and_op => Expression::Logical(Box::new(LogicalExpression::And(l, r))),
-            Rule::or_op => Expression::Logical(Box::new(LogicalExpression::Or(l, r))),
-            _ => unreachable!(),
-        })
-    }
-
-    fn term(input: Node) -> ParseResult<Expression> {
-        Ok(match_nodes! { input.children();
-            [predicate(expr)] => expr,
-            [parenthesised_expression(expr)] => expr,
-        })
-    }
-
-    fn matcher(input: Node) -> ParseResult<Expression> {
-        Ok(match_nodes! { input.children();
-            [expression(expr), EOI(_)] => expr,
-        })
     }
 }
 
-pub fn parse(atc: &str) -> ParseResult<Expression> {
-    let matchers = ATCParser::parse(Rule::matcher, atc)?;
-    let matcher = matchers.single()?;
-    ATCParser::matcher(matcher)
+fn parse_ident(pair: Pair<Rule>) -> ParseResult<String> {
+    Ok(pair.as_str().into())
+}
+fn parse_lhs(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Lhs> {
+    let pairs = pair.into_inner();
+    let pair = pairs.peek().unwrap();
+    let rule = pair.as_rule();
+    Ok(match rule {
+        Rule::transform_func => parse_transform_func(pair, pratt)?,
+        Rule::ident => {
+            let var = parse_ident(pair)?;
+            Lhs {
+                var_name: var,
+                transformations: Vec::new(),
+            }
+        }
+        _ => unreachable!(),
+    })
+}
+// rhs = { str_literal | ip_literal | int_literal }
+fn parse_rhs(pair: Pair<Rule>) -> ParseResult<Value> {
+    let pairs = pair.into_inner();
+    let pair = pairs.peek().unwrap();
+    let rule = pair.as_rule();
+    Ok(match rule {
+        Rule::str_literal => Value::String(parse_str_literal(pair)?),
+        Rule::ip_literal => Value::IpCidr(parse_ip_literal(pair)?),
+        Rule::int_literal => Value::Int(parse_int_literal(pair)?),
+        _ => unreachable!(),
+    })
+}
+
+// str_literal = ${ "\"" ~ str_inner ~ "\"" }
+fn parse_str_literal(pair: Pair<Rule>) -> ParseResult<String> {
+    let char_pairs = pair.into_inner();
+    let mut s = String::new();
+    for char_pair in char_pairs {
+        let rule = char_pair.as_rule();
+        match rule {
+            Rule::str_esc => s.push(parse_str_esc(char_pair)),
+            Rule::str_char => s.push(parse_str_char(char_pair)),
+            _ => unreachable!(),
+        }
+    }
+    Ok(s)
+}
+
+fn parse_str_esc(pair: Pair<Rule>) -> char {
+    let pairs = pair.into_inner();
+    match pairs.as_str() {
+        "\\\"" => '"',
+        "\\\\" => '\\',
+        "\\n" => '\n',
+        "\\r" => '\r',
+        "\\t" => '\t',
+        _ => unreachable!(),
+    }
+}
+fn parse_str_char(pair: Pair<Rule>) -> char {
+    return pair.as_str().chars().next().unwrap();
+}
+fn parse_ipv4_cidr_literal(pair: Pair<Rule>) -> ParseResult<Ipv4Cidr> {
+    pair.as_str().parse().into_parse_result(&pair)
+}
+fn parse_ipv6_cidr_literal(pair: Pair<Rule>) -> ParseResult<Ipv6Cidr> {
+    pair.as_str().parse().into_parse_result(&pair)
+}
+fn parse_ipv4_literal(pair: Pair<Rule>) -> ParseResult<Ipv4Cidr> {
+    format!("{}/32", pair.as_str())
+        .parse()
+        .into_parse_result(&pair)
+}
+fn parse_ipv6_literal(pair: Pair<Rule>) -> ParseResult<Ipv6Cidr> {
+    format!("{}/128", pair.as_str())
+        .parse()
+        .into_parse_result(&pair)
+}
+
+fn parse_ip_literal(pair: Pair<Rule>) -> ParseResult<IpCidr> {
+    let pairs = pair.into_inner();
+    let pair = pairs.peek().unwrap();
+    let rule = pair.as_rule();
+    Ok(match rule {
+        Rule::ipv4_cidr_literal => IpCidr::V4(parse_ipv4_cidr_literal(pair)?),
+        Rule::ipv6_cidr_literal => IpCidr::V6(parse_ipv6_cidr_literal(pair)?),
+        Rule::ipv4_literal => IpCidr::V4(parse_ipv4_literal(pair)?),
+        Rule::ipv6_literal => IpCidr::V6(parse_ipv6_literal(pair)?),
+        _ => unreachable!(),
+    })
+}
+fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
+    let is_neg = pair.as_str().starts_with('-');
+    let pairs = pair.into_inner();
+    let pair = pairs.peek().unwrap(); // digits
+    let rule = pair.as_rule();
+    let radix = match rule {
+        Rule::hex_digits => 16,
+        Rule::oct_digits => 8,
+        Rule::dec_digits => 10,
+        _ => unreachable!(),
+    };
+
+    let mut num = parse_num!(pair, i64, radix)?;
+
+    if is_neg {
+        num = -num;
+    }
+
+    Ok(num)
+}
+
+// predicate = { lhs ~ binary_operator ~ rhs }
+fn parse_predicate(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Predicate> {
+    let mut pairs = pair.into_inner();
+    let lhs = parse_lhs(pairs.next().unwrap(), pratt)?;
+    let op = parse_binary_operator(pairs.next().unwrap());
+    let rhs = parse_rhs(pairs.next().unwrap())?;
+    Ok(Predicate {
+        lhs: lhs,
+        rhs: rhs,
+        op: op,
+    })
+}
+// transform_func = { ident ~ "(" ~ lhs ~ ")" }
+fn parse_transform_func(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Lhs> {
+    let span = pair.as_span();
+    let pairs = pair.into_inner();
+    let mut pairs = pairs.peekable();
+    let func_name = pairs.next().unwrap().as_str().to_string();
+    let mut lhs = parse_lhs(pairs.next().unwrap(), pratt)?;
+    lhs.transformations.push(match func_name.as_str() {
+        "lower" => LhsTransformations::Lower,
+        "any" => LhsTransformations::Any,
+        unknown => {
+            return Err(ParseError::new_from_span(
+                ErrorVariant::CustomError {
+                    message: format!("unknown transformation function: {}", unknown),
+                },
+                span,
+            ));
+        }
+    });
+
+    Ok(lhs)
+}
+// binary_operator = { "==" | "!=" | "~" | "^=" | "=^" | ">=" |
+//                     ">" | "<=" | "<" | "in" | "not" ~ "in" }
+fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
+    let rule = pair.as_str();
+    use BinaryOperator as BinaryOp;
+    match rule {
+        "==" => BinaryOp::Equals,
+        "!=" => BinaryOp::NotEquals,
+        "~" => BinaryOp::Regex,
+        "^=" => BinaryOp::Prefix,
+        "=^" => BinaryOp::Postfix,
+        ">=" => BinaryOp::GreaterOrEqual,
+        ">" => BinaryOp::Greater,
+        "<=" => BinaryOp::LessOrEqual,
+        "<" => BinaryOp::Less,
+        "in" => BinaryOp::In,
+        "not in" => BinaryOp::NotIn,
+        _ => unreachable!(),
+    }
+}
+
+// parenthesised_expression = { "(" ~ expression ~ ")" }
+fn parse_parenthesised_expression(
+    pair: Pair<Rule>,
+    pratt: &PrattParser<Rule>,
+) -> ParseResult<Expression> {
+    let pairs = pair.into_inner();
+    let pair = pairs.peek().unwrap();
+    let rule = pair.as_rule();
+    match rule {
+        Rule::expression => parse_expression(pair, pratt),
+        _ => unreachable!(),
+    }
+}
+
+// term = { predicate | parenthesised_expression }
+fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
+    let pairs = pair.into_inner();
+    let inner_rule = pairs.peek().unwrap();
+    let rule = inner_rule.as_rule();
+    match rule {
+        Rule::predicate => Ok(Expression::Predicate(parse_predicate(inner_rule, pratt)?)),
+        Rule::parenthesised_expression => parse_parenthesised_expression(inner_rule, pratt),
+        _ => unreachable!(),
+    }
+}
+
+// expression = { term ~ ( logical_operator ~ term )* }
+fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
+    let pairs = pair.into_inner();
+    pratt
+        .map_primary(|operand| match operand.as_rule() {
+            Rule::term => parse_term(operand, pratt),
+            _ => unreachable!(),
+        })
+        .map_infix(|lhs, op, rhs| {
+            Ok(match op.as_rule() {
+                Rule::and_op => Expression::Logical(Box::new(LogicalExpression::And(
+                    lhs.unwrap(),
+                    rhs.unwrap(),
+                ))),
+                Rule::or_op => {
+                    Expression::Logical(Box::new(LogicalExpression::Or(lhs.unwrap(), rhs.unwrap())))
+                }
+                _ => unreachable!(),
+            })
+        })
+        .parse(pairs)
+}
+
+pub fn parse(source: &str) -> ParseResult<Expression> {
+    return ATCParser::new().parse_matcher(source);
 }
