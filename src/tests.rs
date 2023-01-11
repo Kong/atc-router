@@ -5,93 +5,98 @@ use crate::ast::*;
 #[cfg(test)]
 use crate::parser::parse;
 
-impl Expression {
-    pub fn to_string(&self) -> String {
-        match self {
-            Expression::Logical(logical) => logical.to_string(),
-            Expression::Predicate(predicate) => predicate.to_string(),
-        }
-    }
-}
-impl LogicalExpression {
-    pub fn to_string(&self) -> String {
-        match self {
-            LogicalExpression::And(left, right) => {
-                format!("({} && {})", left.to_string(), right.to_string())
-            }
-            LogicalExpression::Or(left, right) => {
-                format!("({} || {})", left.to_string(), right.to_string())
-            }
-        }
-    }
-}
-
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Expression::Logical(logical) => logical.to_string(),
+                Expression::Predicate(predicate) => predicate.to_string(),
+            }
+        )
+    }
+}
+
+impl fmt::Display for LogicalExpression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                LogicalExpression::And(left, right) => {
+                    format!("({} && {})", left, right)
+                }
+                LogicalExpression::Or(left, right) => {
+                    format!("({} || {})", left, right)
+                }
+            }
+        )
+    }
+}
+
+impl fmt::Display for LhsTransformations {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                LhsTransformations::Lower => "lower".to_string(),
+                LhsTransformations::Any => "any".to_string(),
+            }
+        )
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Expression::Logical(logical) => write!(f, "{}", logical.to_string()),
-            Expression::Predicate(predicate) => write!(f, "{}", predicate.to_string()),
+            Value::String(s) => write!(f, "\"{}\"", s),
+            Value::IpCidr(cidr) => write!(f, "{}", cidr),
+            Value::IpAddr(addr) => write!(f, "{}", addr),
+            Value::Int(i) => write!(f, "{}", i),
+            Value::Regex(re) => write!(f, "{}", re),
         }
     }
 }
 
-impl LhsTransformations {
-    pub fn to_string(&self) -> String {
-        match self {
-            LhsTransformations::Lower => "lower".to_string(),
-            LhsTransformations::Any => "any".to_string(),
-        }
-    }
-}
-impl BinaryOperator {
-    pub fn to_string(&self) -> String {
-        use BinaryOperator::*;
-        match self {
-            Equals => "==",
-            NotEquals => "!=",
-            Regex => "~",
-            Prefix => "^=",
-            Postfix => "=^",
-            Greater => ">",
-            GreaterOrEqual => ">=",
-            Less => "<",
-            LessOrEqual => "<=",
-            In => "in",
-            NotIn => "not in",
-        }
-        .to_string()
-    }
-}
-
-impl Value {
-    pub fn to_string(&self) -> String {
-        match self {
-            Value::String(s) => format!("\"{}\"", s),
-            Value::IpCidr(cidr) => cidr.to_string(),
-            Value::IpAddr(addr) => addr.to_string(),
-            Value::Int(i) => i.to_string(),
-            Value::Regex(re) => re.to_string(),
-        }
-    }
-}
-
-impl Lhs {
-    pub fn to_string(&self) -> String {
+impl fmt::Display for Lhs {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut s = self.var_name.to_string();
         for transformation in &self.transformations {
-            s = format!("{}({})", transformation.to_string(), s);
+            s = format!("{}({})", transformation, s);
         }
-        s
+        write!(f, "{}", s)
     }
 }
-impl Predicate {
-    pub fn to_string(&self) -> String {
-        format!(
-            "({} {} {})",
-            self.lhs.to_string(),
-            self.op.to_string(),
-            self.rhs.to_string()
+
+impl fmt::Display for BinaryOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use BinaryOperator::*;
+
+        write!(
+            f,
+            "{}",
+            match self {
+                Equals => "==",
+                NotEquals => "!=",
+                Regex => "~",
+                Prefix => "^=",
+                Postfix => "=^",
+                Greater => ">",
+                GreaterOrEqual => ">=",
+                Less => "<",
+                LessOrEqual => "<=",
+                In => "in",
+                NotIn => "not in",
+            }
         )
+    }
+}
+
+impl fmt::Display for Predicate {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {} {}", self.lhs, self.op, self.rhs)
     }
 }
 

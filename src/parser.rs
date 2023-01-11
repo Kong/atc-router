@@ -286,5 +286,5 @@ fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<
 }
 
 pub fn parse(source: &str) -> ParseResult<Expression> {
-    return ATCParser::new().parse_matcher(source);
+    ATCParser::new().parse_matcher(source)
 }
