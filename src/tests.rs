@@ -96,7 +96,7 @@ impl fmt::Display for BinaryOperator {
 
 impl fmt::Display for Predicate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {} {}", self.lhs, self.op, self.rhs)
+        write!(f, "({} {} {})", self.lhs, self.op, self.rhs)
     }
 }
 
@@ -240,6 +240,26 @@ fn expr_transformations_nested() {
         (
             "any(any(kong.foo.foo18)) == \"foo\"",
             "(any(any(kong.foo.foo18)) == \"foo\")",
+        ),
+    ];
+    for (input, expected) in tests {
+        let result = parse(input).unwrap();
+        assert_eq!(result.to_string(), expected);
+    }
+}
+
+#[test]
+fn str_unicode_test() {
+    let tests = vec![
+        // cjk chars
+        (
+            "_msg in \"你好\"",
+            "(_msg in \"你好\")",
+        ),
+        // 0xXXX unicode
+        (
+            "_msg in \"\u{4f60}\u{597d}\"",
+            "(_msg in \"你好\")",
         ),
     ];
     for (input, expected) in tests {
