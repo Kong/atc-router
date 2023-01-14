@@ -1,6 +1,6 @@
 """Setup dependencies after repostories are downloaded."""
 
-load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains", "rust_repository_set")
 load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
 load("@rules_rust//crate_universe:defs.bzl", "crates_repository")
 
@@ -15,7 +15,19 @@ def atc_router_dependencies(cargo_home_isolated = True):
     """
     rules_rust_dependencies()
 
-    rust_register_toolchains(version = "1.65.0", edition = "2021")
+    rust_register_toolchains(
+        versions = ["1.65.0"],
+        edition = "2021",
+        extra_target_triples = ["aarch64-unknown-linux-gnu"],
+    )
+
+    rust_repository_set(
+        name = "rust_linux_arm64_linux_tuple",
+        edition = "2021",
+        exec_triple = "x86_64-unknown-linux-gnu",
+        extra_target_triples = ["aarch64-unknown-linux-gnu"],
+        versions = ["1.65.0"],
+    )
 
     crate_universe_dependencies()
 
