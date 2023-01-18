@@ -108,7 +108,7 @@ ok
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
             assert(r:add_matcher(1, "E5B04957-F47C-4205-AF06-B9651043067B",
-                                 string.format("http.path ^- \"/%s\" && tcp.port == 80", bigstring)))
+                                 string.format("http.path ^= \"/%s\" && tcp.port == 80", bigstring)))
 
             local c = context.new(s)
             c:add_value("http.path", "/foo/bar")
