@@ -10,7 +10,7 @@ use std::slice::from_raw_parts_mut;
 use uuid::fmt::Hyphenated;
 use uuid::Uuid;
 
-pub const ERR_BUF_MAX_LEN: usize = 8192;
+pub const ERR_BUF_MAX_LEN: usize = 2048;
 
 #[derive(Debug)]
 #[repr(C)]
