@@ -110,6 +110,7 @@ ok
 
             local c = context.new(s)
             c:add_value("http.path", bigstring)
+            c:add_value("tcp.port", bigstring)
             c:add_value("tcp.port", 80)
 
             local matched = r:execute(c)
