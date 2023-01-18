@@ -94,7 +94,7 @@ ok
             local router = require("resty.router.router")
             local context = require("resty.router.context")
 
-            local bigstring = ""
+            local bigstring = "/foo/"
             for i = 1,4097 do
               bigstring = bigstring .. "X"
             end
@@ -107,11 +107,9 @@ ok
             local r = router.new(s)
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
-            assert(r:add_matcher(1, "E5B04957-F47C-4205-AF06-B9651043067B",
-                                 string.format("http.path ^= \"/%s\" && tcp.port == 80", bigstring)))
 
             local c = context.new(s)
-            c:add_value("http.path", "/foo/bar")
+            c:add_value("http.path", bigstring)
             c:add_value("tcp.port", 80)
 
             local matched = r:execute(c)
