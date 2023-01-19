@@ -106,6 +106,7 @@ pub unsafe extern "C" fn router_add_matcher(
 
     if let Err(e) = router.add_matcher(priority, uuid, atc) {
         let errlen = min(e.len(), *errbuf_len);
+        println!("e.len() {} errlen {} e >>{}<<", e.len(), *errbuf_len, e);
         errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
         *errbuf_len = errlen;
         return false;
@@ -281,6 +282,27 @@ mod tests {
                                             &mut errbuf_len);
             assert_eq!(result, false);
             assert_eq!(errbuf_len, ERR_BUF_MAX_LEN);
+        }
+    }
+
+    #[test]
+    fn test_short_error_message() {
+        unsafe {
+            let schema = Schema::default();
+            let mut router = Router::new(&schema);
+            let uuid = ffi::CString::new("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c").unwrap();
+            let junk = ffi::CString::new("aaaa").unwrap();
+            let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
+            let mut errbuf_len = ERR_BUF_MAX_LEN;
+
+            let result = router_add_matcher(&mut router,
+                                            1,
+                                            uuid.as_ptr(),
+                                            junk.as_ptr(),
+                                            errbuf.as_mut_ptr(),
+                                            &mut errbuf_len);
+            assert_eq!(result, false);
+            assert!(errbuf_len < ERR_BUF_MAX_LEN);
         }
     }
 }
