@@ -54,6 +54,9 @@ jobs:
     - name: Run lint
       run: cargo clippy --verbose
 
+    - name: Run unit tests
+      run: cargo test --verbose
+
     - name: Build
       run: cargo build --verbose
 
