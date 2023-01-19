@@ -89,7 +89,7 @@ intptr_t context_get_result(const struct Context *context,
 ]])
 
 
-local ERR_BUF_MAX_LEN = 2048
+local ERR_BUF_MAX_LEN = 4096
 
 
 -- From: https://github.com/openresty/lua-resty-signal/blob/master/lib/resty/signal.lua

@@ -62,6 +62,7 @@ function _M:add_value(field, value)
 
     local errbuf = get_string_buf(ERR_BUF_MAX_LEN)
     local errbuf_len = get_size_ptr()
+    errbuf_len[0] = ERR_BUF_MAX_LEN
 
     if clib.context_add_value(self.context, field, CACHED_VALUE, errbuf, errbuf_len) == false then
         return nil, ffi_string(errbuf, errbuf_len[0])

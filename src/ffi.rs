@@ -4,13 +4,14 @@ use crate::router::Router;
 use crate::schema::Schema;
 use cidr::IpCidr;
 use std::ffi;
+use std::cmp::min;
 use std::net::IpAddr;
 use std::os::raw::c_char;
 use std::slice::from_raw_parts_mut;
 use uuid::fmt::Hyphenated;
 use uuid::Uuid;
 
-pub const ERR_BUF_MAX_LEN: usize = 2048;
+pub const ERR_BUF_MAX_LEN: usize = 4096;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -104,8 +105,9 @@ pub unsafe extern "C" fn router_add_matcher(
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
 
     if let Err(e) = router.add_matcher(priority, uuid, atc) {
-        errbuf[..e.len()].copy_from_slice(e.as_bytes());
-        *errbuf_len = e.len();
+        let errlen = min(e.len(), *errbuf_len);
+        errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
+        *errbuf_len = errlen;
         return false;
     }
 
@@ -177,8 +179,9 @@ pub unsafe extern "C" fn context_add_value(
 
     let value: Result<Value, _> = value.try_into();
     if let Err(e) = value {
-        errbuf[..e.len()].copy_from_slice(e.as_bytes());
-        *errbuf_len = e.len();
+        let errlen = min(e.len(), *errbuf_len);
+        errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
+        *errbuf_len = errlen;
         return false;
     }
 
@@ -254,4 +257,51 @@ pub unsafe extern "C" fn context_get_result(
         .len()
         .try_into()
         .unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_long_error_message() {
+        unsafe {
+            let schema = Schema::default();
+            let mut router = Router::new(&schema);
+            let uuid = ffi::CString::new("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c").unwrap();
+            let junk = ffi::CString::new(vec![b'a'; ERR_BUF_MAX_LEN * 2]).unwrap();
+            let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
+            let mut errbuf_len = ERR_BUF_MAX_LEN;
+
+            let result = router_add_matcher(&mut router,
+                                            1,
+                                            uuid.as_ptr(),
+                                            junk.as_ptr(),
+                                            errbuf.as_mut_ptr(),
+                                            &mut errbuf_len);
+            assert_eq!(result, false);
+            assert_eq!(errbuf_len, ERR_BUF_MAX_LEN);
+        }
+    }
+
+    #[test]
+    fn test_short_error_message() {
+        unsafe {
+            let schema = Schema::default();
+            let mut router = Router::new(&schema);
+            let uuid = ffi::CString::new("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c").unwrap();
+            let junk = ffi::CString::new("aaaa").unwrap();
+            let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
+            let mut errbuf_len = ERR_BUF_MAX_LEN;
+
+            let result = router_add_matcher(&mut router,
+                                            1,
+                                            uuid.as_ptr(),
+                                            junk.as_ptr(),
+                                            errbuf.as_mut_ptr(),
+                                            &mut errbuf_len);
+            assert_eq!(result, false);
+            assert!(errbuf_len < ERR_BUF_MAX_LEN);
+        }
+    }
 }
