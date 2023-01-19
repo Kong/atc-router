@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 extern crate pest;
 
 use crate::ast::{
