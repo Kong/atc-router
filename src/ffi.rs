@@ -106,7 +106,6 @@ pub unsafe extern "C" fn router_add_matcher(
 
     if let Err(e) = router.add_matcher(priority, uuid, atc) {
         let errlen = min(e.len(), *errbuf_len);
-        println!("e.len() {} errlen {} e >>{}<<", e.len(), *errbuf_len, e);
         errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
         *errbuf_len = errlen;
         return false;
