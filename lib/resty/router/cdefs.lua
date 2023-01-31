@@ -131,7 +131,7 @@ local lib_name = ffi.os == "OSX" and "libatc_router.dylib" or "libatc_router.so"
 
 local clib, tried_paths = load_shared_lib(lib_name)
 if not clib then
-    error(("could not load %s shared library from the following paths:\n" % lib_name) ..
+    error(("could not load %s shared library from the following paths:\n"):format(lib_name) ..
           table.concat(tried_paths, "\n"), 2)
 end
 
