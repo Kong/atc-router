@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 pest = "2.1"
-pest_derive = "2.1"
+pest_derive = "2.5"
 #cidr = { version = "0.2", features = ["serde"] }
 cidr = "0.2"
 pest_consume = "1.1"
