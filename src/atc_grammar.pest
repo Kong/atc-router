@@ -18,7 +18,7 @@ str_char = { !("\"" | "\\") ~ ANY }
 str_esc = { "\\" ~ ("\"" | "\\" | "n" | "r" | "t") }
 
 rawstr_literal = ${ "`" ~ rawstr_char* ~ "`" }
-rawstr_char = { !"`" ~ ANY}
+rawstr_char = { !"`" ~ ANY }
 
 ipv4_literal = @{ ASCII_DIGIT{1,3} ~ ( "." ~ ASCII_DIGIT{1,3} ){3} }
 ipv6_literal = @{
