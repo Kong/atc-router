@@ -22,7 +22,7 @@ jobs:
 
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Build
       run: bazel build :atc_router --verbose_failures
