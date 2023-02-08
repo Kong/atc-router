@@ -41,8 +41,8 @@ impl Execute for Expression {
                     match p.op {
                         BinaryOperator::Equals => {
                             if lhs_value == &p.rhs {
-                                m.matches.insert(p.lhs.var_name.clone(), p.rhs.clone());
                                 if any || remaining == 1{
+                                    m.matches.insert(p.lhs.var_name.clone(), p.rhs.clone());
                                     return true;
                                 }
                                 remaining -= 1;
