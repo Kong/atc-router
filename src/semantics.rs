@@ -130,6 +130,14 @@ impl Validate for Expression {
                             _ => Err("In/NotIn operators only supports string/IP cidr operands".to_string())
                         }
                     },
+                    BinaryOperator::Contains => {
+                        match p.rhs {
+                            Value::String(_) => {
+                                Ok(())
+                            }
+                            _ => Err("Contains operator only supports string operands".to_string())
+                        }
+                    }
                 }
             }
         }

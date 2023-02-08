@@ -197,6 +197,20 @@ impl Execute for Expression {
                                 return true;
                             }
                         }
+                        BinaryOperator::Contains => {
+                            let rhs = match &p.rhs {
+                                Value::String(s) => s,
+                                _ => unreachable!(),
+                            };
+                            let lhs = match lhs_value {
+                                Value::String(s) => s,
+                                _ => unreachable!(),
+                            };
+
+                            if lhs.contains(rhs) {
+                                return true;
+                            }
+                        }
                     }
                 }
 

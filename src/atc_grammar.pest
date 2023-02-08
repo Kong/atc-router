@@ -28,7 +28,7 @@ ip_literal = { ipv4_cidr_literal | ipv6_cidr_literal | ipv4_literal | ipv6_liter
 
 
 binary_operator = { "==" | "!=" | "~" | "^=" | "=^" | ">=" |
-                    ">" | "<=" | "<" | "in" | "not" ~ "in" }
+                    ">" | "<=" | "<" | "in" | "not" ~ "in" | "contains" }
 logical_operator = _{ and_op | or_op }
 and_op = { "&&" }
 or_op = { "||" }
