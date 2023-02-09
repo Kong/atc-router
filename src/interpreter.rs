@@ -20,14 +20,11 @@ impl Execute for Expression {
 
                 let (lower, any) = p.lhs.get_transformations();
 
-                // if not in "any" mode, then we need to check all values. 
-                // `remaining` is the count of unchecked values.
-                let mut remaining = lhs_values.len();
-                for mut lhs_value in lhs_values
-                    .iter()
-                {
+                // only can be "all" or "any" mode.
+                // - all: all values must match (default)
+                // - any: ok if any any matched
+                for mut lhs_value in lhs_values.iter() {
                     let lhs_value_transformed;
-
                     if lower {
                         match lhs_value {
                             Value::String(s) => {
@@ -37,21 +34,17 @@ impl Execute for Expression {
                             _ => unreachable!(),
                         }
                     }
-
+                    let mut curr_match = false;
                     match p.op {
                         BinaryOperator::Equals => {
                             if lhs_value == &p.rhs {
-                                if any || remaining == 1{
-                                    m.matches.insert(p.lhs.var_name.clone(), p.rhs.clone());
-                                    return true;
-                                }
-                                remaining -= 1;
-                                continue;
+                                m.matches.insert(p.lhs.var_name.clone(), p.rhs.clone());
+                                curr_match = true && any && return true;
                             }
                         }
                         BinaryOperator::NotEquals => {
                             if lhs_value != &p.rhs {
-                                return true;
+                                curr_match = true && any && return true;
                             }
                         }
                         BinaryOperator::Regex => {
@@ -85,7 +78,7 @@ impl Execute for Expression {
                                     }
                                 }
 
-                                return true;
+                                curr_match = true && any && return true;
                             }
                         }
                         BinaryOperator::Prefix => {
@@ -100,8 +93,7 @@ impl Execute for Expression {
 
                             if lhs.starts_with(rhs) {
                                 m.matches.insert(p.lhs.var_name.clone(), p.rhs.clone());
-
-                                return true;
+                                curr_match = true && any && return true;
                             }
                         }
                         BinaryOperator::Postfix => {
@@ -116,8 +108,7 @@ impl Execute for Expression {
 
                             if lhs.ends_with(rhs) {
                                 m.matches.insert(p.lhs.var_name.clone(), p.rhs.clone());
-
-                                return true;
+                                curr_match = true && any && return true;
                             }
                         }
                         BinaryOperator::Greater => {
@@ -131,7 +122,7 @@ impl Execute for Expression {
                             };
 
                             if lhs > rhs {
-                                return true;
+                                curr_match = true && any && return true;
                             }
                         }
                         BinaryOperator::GreaterOrEqual => {
@@ -145,7 +136,7 @@ impl Execute for Expression {
                             };
 
                             if lhs >= rhs {
-                                return true;
+                                curr_match = true && any && return true;
                             }
                         }
                         BinaryOperator::Lesser => {
@@ -159,7 +150,7 @@ impl Execute for Expression {
                             };
 
                             if lhs < rhs {
-                                return true;
+                                curr_match = true && any && return true;
                             }
                         }
                         BinaryOperator::LesserOrEqual => {
@@ -173,18 +164,18 @@ impl Execute for Expression {
                             };
 
                             if lhs <= rhs {
-                                return true;
+                                curr_match = true && any && return true;
                             }
                         }
                         BinaryOperator::In => match (lhs_value, &p.rhs) {
                             (Value::String(l), Value::String(r)) => {
                                 if r.contains(l) {
-                                    return true;
+                                    curr_match = true && any && return true;
                                 }
                             }
                             (Value::IpAddr(l), Value::IpCidr(r)) => {
                                 if r.contains(l) {
-                                    return true;
+                                    curr_match = true && any && return true;
                                 }
                             }
                             _ => unreachable!(),
@@ -200,14 +191,15 @@ impl Execute for Expression {
                             };
 
                             if !rhs.contains(lhs) {
-                                return true;
+                                curr_match = true && any && return true;
                             }
                         }
+                    } // match
+                    if !any && !curr_match {
+                        return false;
                     }
-                }
-
-                // no match for all values
-                false
+                } // for iter
+                return !any;
             }
         }
     }
