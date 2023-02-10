@@ -84,3 +84,45 @@ ok
 [error]
 [warn]
 [crit]
+
+
+
+=== TEST 3: Long strings don't cause a panic when parsing fails
+--- http_config eval: $::HttpConfig
+--- config
+    location = /t {
+        content_by_lua_block {
+            local schema = require("resty.router.schema")
+            local router = require("resty.router.router")
+
+            local s = schema.new()
+            s:add_field("http.path", "String")
+
+            local r = router.new(s)
+            local uuid = "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c"
+
+            for _, len in ipairs({
+                128,
+                256,
+                512,
+                1024,
+                2048,
+                4096,
+            }) do
+                local input = string.rep("a", len)
+                local ok, err = r:add_matcher(0, uuid, input)
+                assert(not ok, "expected add_matcher() to fail")
+                assert(type(err) == "string", "expected an error string")
+            end
+
+            ngx.say("ok")
+        }
+    }
+--- request
+GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+[warn]
+[crit]

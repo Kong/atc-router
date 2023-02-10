@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 extern crate pest;
 
 use crate::ast::{
@@ -187,6 +188,7 @@ impl ATCParser {
             "<" => Lesser,
             "<=" => LesserOrEqual,
             "in" => In,
+            "contains" => Contains,
             _ => NotIn,
         })
     }

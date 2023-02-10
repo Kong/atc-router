@@ -54,11 +54,14 @@ jobs:
     - name: Run lint
       run: cargo clippy --verbose
 
+    - name: Run unit tests
+      run: cargo test --verbose
+
     - name: Build
       run: cargo build --verbose
 
     - name: Setup Nginx binary cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           /home/runner/work/cache
