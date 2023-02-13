@@ -219,20 +219,6 @@ impl Execute for ast::Predicate {
                                 return true;
                             }
                         }
-                        BinaryOperator::Contains => {
-                            let rhs = match &p.rhs {
-                                Value::String(s) => s,
-                                _ => unreachable!(),
-                            };
-                            let lhs = match lhs_value {
-                                Value::String(s) => s,
-                                _ => unreachable!(),
-                            };
-
-                            if lhs.contains(rhs) {
-                                return true;
-                            }
-                        }
                     }
                     _ => unreachable!(),
                 },
@@ -251,6 +237,20 @@ impl Execute for ast::Predicate {
                         if any {
                             return true;
                         }
+                    }
+                },
+                BinaryOperator::Contains => {
+                    let rhs = match &self.rhs {
+                        Value::String(s) => s,
+                        _ => unreachable!(),
+                    };
+                    let lhs = match lhs_value {
+                        Value::String(s) => s,
+                        _ => unreachable!(),
+                    };
+
+                    if lhs.contains(rhs) {
+                        return true;
                     }
                 }
             } // match
@@ -390,4 +390,28 @@ fn test_predicate() {
     };
 
     assert_eq!(p.execute(&mut ctx, &mut mat), true);
+
+    // check if any value matches contains `ob` -- should be true
+    let p = ast::Predicate {
+        lhs: ast::Lhs {
+            var_name: "my_key".to_string(),
+            transformations: vec![ast::LhsTransformations::Any],
+        },
+        rhs: Value::String("ob".to_string()),
+        op: BinaryOperator::Contains,
+    };
+
+    assert_eq!(p.execute(&mut ctx, &mut mat), true);
+
+    // check if any value matches contains `ok` -- should be false
+    let p = ast::Predicate {
+        lhs: ast::Lhs {
+            var_name: "my_key".to_string(),
+            transformations: vec![ast::LhsTransformations::Any],
+        },
+        rhs: Value::String("ok".to_string()),
+        op: BinaryOperator::Contains,
+    };
+
+    assert_eq!(p.execute(&mut ctx, &mut mat), false);
 }
