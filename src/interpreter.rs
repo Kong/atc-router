@@ -1,6 +1,5 @@
-use crate::ast::{self, Predicate, BinaryOperator, Expression, LogicalExpression, Value, Type};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Value};
 use crate::context::{Context, Match};
-use crate::schema;
 
 pub trait Execute {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
@@ -284,9 +283,12 @@ impl Execute for Predicate {
 
 #[test]
 fn test_predicate() {
+    use crate::ast;
+    use crate::schema;
+
     let mut mat = Match::new();
     let mut schema = schema::Schema::default();
-    schema.add_field("my_key", Type::String);
+    schema.add_field("my_key", ast::Type::String);
     let mut ctx = Context::new(&schema);
 
     // check when value list is empty
