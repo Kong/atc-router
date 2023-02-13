@@ -49,18 +49,21 @@ impl Execute for ast::Predicate {
                     if lhs_value == &self.rhs {
                         m.matches
                             .insert(self.lhs.var_name.clone(), self.rhs.clone());
-                        curr_match = true;
+
                         if any {
                             return true;
                         }
+
+                        matched = true;
                     }
                 }
                 BinaryOperator::NotEquals => {
                     if lhs_value != &self.rhs {
-                        curr_match = true;
                         if any {
                             return true;
                         }
+
+                        matched = true;
                     }
                 }
                 BinaryOperator::Regex => {
@@ -74,6 +77,7 @@ impl Execute for ast::Predicate {
                     };
 
                     let reg_cap = rhs.captures(lhs);
+
                     if let Some(reg_cap) = reg_cap {
                         m.matches.insert(
                             self.lhs.var_name.clone(),
@@ -93,10 +97,11 @@ impl Execute for ast::Predicate {
                             }
                         }
 
-                        curr_match = true;
                         if any {
                             return true;
                         }
+
+                        matched = true;
                     }
                 }
                 BinaryOperator::Prefix => {
@@ -112,10 +117,11 @@ impl Execute for ast::Predicate {
                     if lhs.starts_with(rhs) {
                         m.matches
                             .insert(self.lhs.var_name.clone(), self.rhs.clone());
-                        curr_match = true;
                         if any {
                             return true;
                         }
+
+                        matched = true;
                     }
                 }
                 BinaryOperator::Postfix => {
@@ -131,10 +137,11 @@ impl Execute for ast::Predicate {
                     if lhs.ends_with(rhs) {
                         m.matches
                             .insert(self.lhs.var_name.clone(), self.rhs.clone());
-                        curr_match = true;
                         if any {
                             return true;
                         }
+
+                        matched = true;
                     }
                 }
                 BinaryOperator::Greater => {
@@ -148,10 +155,11 @@ impl Execute for ast::Predicate {
                     };
 
                     if lhs > rhs {
-                        curr_match = true;
                         if any {
                             return true;
                         }
+
+                        matched = true;
                     }
                 }
                 BinaryOperator::GreaterOrEqual => {
@@ -165,10 +173,11 @@ impl Execute for ast::Predicate {
                     };
 
                     if lhs >= rhs {
-                        curr_match = true;
                         if any {
                             return true;
                         }
+
+                        matched = true;
                     }
                 }
                 BinaryOperator::Lesser => {
@@ -182,10 +191,11 @@ impl Execute for ast::Predicate {
                     };
 
                     if lhs < rhs {
-                        curr_match = true;
                         if any {
                             return true;
                         }
+
+                        matched = true;
                     }
                 }
                 BinaryOperator::LesserOrEqual => {
@@ -199,16 +209,17 @@ impl Execute for ast::Predicate {
                     };
 
                     if lhs <= rhs {
-                        curr_match = true;
                         if any {
                             return true;
                         }
+
+                        matched = true;
                     }
                 }
                 BinaryOperator::In => match (lhs_value, &self.rhs) {
                     (Value::String(l), Value::String(r)) => {
                         if r.contains(l) {
-                            curr_match = true;
+                            matched = true;
                             if any {
                                 return true;
                             }
@@ -216,7 +227,7 @@ impl Execute for ast::Predicate {
                     }
                     (Value::IpAddr(l), Value::IpCidr(r)) => {
                         if r.contains(l) {
-                            curr_match = true;
+                            matched = true;
                             if any {
                                 return true;
                             }
@@ -235,12 +246,13 @@ impl Execute for ast::Predicate {
                     };
 
                     if !rhs.contains(lhs) {
-                        curr_match = true;
                         if any {
                             return true;
                         }
+
+                        matched = true;
                     }
-                },
+                }
                 BinaryOperator::Contains => {
                     let rhs = match &self.rhs {
                         Value::String(s) => s,
@@ -257,7 +269,7 @@ impl Execute for ast::Predicate {
                 }
             } // match
 
-            if !any && !curr_match {
+            if !any && !matched {
                 return false;
             }
         } // for iter
