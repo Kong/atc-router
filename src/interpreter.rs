@@ -275,7 +275,10 @@ impl Execute for Predicate {
             }
         } // for iter
 
-        return lhs_values.len() > 0 && !any;
+        // if we reached here, it means that `any` did not find a match,
+        // or we passed all matches for `all`. So we simply need to return
+        // !any && lhs_values.len() > 0 to cover both cases
+        return !any && lhs_values.len() > 0;
     }
 }
 
