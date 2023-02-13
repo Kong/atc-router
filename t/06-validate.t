@@ -49,7 +49,7 @@ nil
 [warn]
 [crit]
 
-=== TEST 2: test invalid schema + expr
+=== TEST 2: test type inconsistency (schema is String, expr is Int)
 --- http_config eval: $::HttpConfig
 --- config
     location = /t {
