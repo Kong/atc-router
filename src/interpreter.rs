@@ -27,11 +27,12 @@ impl Execute for ast::Predicate {
 
         let (lower, any) = self.lhs.get_transformations();
 
-        // only can be "all" or "any" mode.
+        // can only be "all" or "any" mode.
         // - all: all values must match (default)
         // - any: ok if any any matched
         for mut lhs_value in lhs_values.iter() {
             let lhs_value_transformed;
+
             if lower {
                 match lhs_value {
                     Value::String(s) => {
@@ -41,7 +42,8 @@ impl Execute for ast::Predicate {
                     _ => unreachable!(),
                 }
             }
-            let mut curr_match = false;
+
+            let mut matched = false;
             match self.op {
                 BinaryOperator::Equals => {
                     if lhs_value == &self.rhs {
