@@ -256,6 +256,7 @@ impl Execute for ast::Predicate {
                     }
                 }
             } // match
+
             if !any && !curr_match {
                 return false;
             }
