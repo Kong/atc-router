@@ -1,4 +1,4 @@
-use crate::ast::{self, BinaryOperator, Expression, LogicalExpression, Type, Value};
+use crate::ast::{self, Predicate, BinaryOperator, Expression, LogicalExpression, Value, Type};
 use crate::context::{Context, Match};
 use crate::schema;
 
@@ -291,7 +291,7 @@ fn test_predicate() {
 
     // check when value list is empty
     // check if all values match starts_with foo -- should be false
-    let p = ast::Predicate {
+    let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
             transformations: vec![],
@@ -303,7 +303,7 @@ fn test_predicate() {
     assert_eq!(p.execute(&mut ctx, &mut mat), false);
 
     // check if any value matches starts_with foo -- should be false
-    let p = ast::Predicate {
+    let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
             transformations: vec![],
@@ -327,7 +327,7 @@ fn test_predicate() {
     }
 
     // check if all values match starts_with foo -- should be true
-    let p = ast::Predicate {
+    let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
             transformations: vec![],
@@ -339,7 +339,7 @@ fn test_predicate() {
     assert_eq!(p.execute(&mut ctx, &mut mat), true);
 
     // check if all values match ends_with foo -- should be false
-    let p = ast::Predicate {
+    let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
             transformations: vec![],
@@ -351,7 +351,7 @@ fn test_predicate() {
     assert_eq!(p.execute(&mut ctx, &mut mat), false);
 
     // check if any value matches ends_with foo -- should be true
-    let p = ast::Predicate {
+    let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
             transformations: vec![ast::LhsTransformations::Any],
@@ -363,7 +363,7 @@ fn test_predicate() {
     assert_eq!(p.execute(&mut ctx, &mut mat), true);
 
     // check if any value matches starts_with foo -- should be true
-    let p = ast::Predicate {
+    let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
             transformations: vec![ast::LhsTransformations::Any],
@@ -375,7 +375,7 @@ fn test_predicate() {
     assert_eq!(p.execute(&mut ctx, &mut mat), true);
 
     // check if any value matches ends_with nar -- should be false
-    let p = ast::Predicate {
+    let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
             transformations: vec![ast::LhsTransformations::Any],
@@ -387,7 +387,7 @@ fn test_predicate() {
     assert_eq!(p.execute(&mut ctx, &mut mat), false);
 
     // check if any value matches ends_with empty string -- should be true
-    let p = ast::Predicate {
+    let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
             transformations: vec![ast::LhsTransformations::Any],
@@ -399,7 +399,7 @@ fn test_predicate() {
     assert_eq!(p.execute(&mut ctx, &mut mat), true);
 
     // check if any value matches starts_with empty string -- should be true
-    let p = ast::Predicate {
+    let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
             transformations: vec![ast::LhsTransformations::Any],
@@ -411,7 +411,7 @@ fn test_predicate() {
     assert_eq!(p.execute(&mut ctx, &mut mat), true);
 
     // check if any value matches contains `ob` -- should be true
-    let p = ast::Predicate {
+    let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
             transformations: vec![ast::LhsTransformations::Any],
@@ -423,7 +423,7 @@ fn test_predicate() {
     assert_eq!(p.execute(&mut ctx, &mut mat), true);
 
     // check if any value matches contains `ok` -- should be false
-    let p = ast::Predicate {
+    let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
             transformations: vec![ast::LhsTransformations::Any],
