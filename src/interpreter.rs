@@ -270,6 +270,7 @@ impl Execute for Predicate {
             } // match
 
             if !any && !matched {
+                // all and nothing matched
                 return false;
             }
         } // for iter
