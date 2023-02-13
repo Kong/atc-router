@@ -40,3 +40,6 @@ configure_make(
     ],
 )
 ```
+
+When building this library in Bazel, ensure `-c opt` is turned on; even `fastbuild` mode result in a binary
+that are significantly not performant than `opt` mode.
