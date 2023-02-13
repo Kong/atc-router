@@ -18,7 +18,7 @@ impl Execute for Expression {
     }
 }
 
-impl Execute for ast::Predicate {
+impl Execute for Predicate {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
         let lhs_values = match ctx.value_of(&self.lhs.var_name) {
             None => return false,
