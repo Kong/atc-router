@@ -99,6 +99,7 @@ end
 
 do 
     local routers = {}
+    local default_uuid = "00000000-0000-0000-0000-000000000000"
     -- validate an expression against a schema
     -- @param expr the expression to validate
     -- @param schema the schema to validate against
@@ -111,9 +112,8 @@ do
             routers[schema] = r
         end
 
-        local uuid = "00000000-0000-0000-0000-000000000000"
 
-        local res, err = r:add_matcher(0, uuid, expr)
+        local res, err = r:add_matcher(0, default_uuid, expr)
         if not res then
             return nil, "invalid expression: " .. err
         end
