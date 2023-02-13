@@ -124,7 +124,7 @@ do
         end
 
         if clib.router_remove_matcher(r, default_priority, default_uuid) == false then
-            return nil, "failed when call router_remove_matcher"
+            routers[schema] = nil
         end
     
         return true
