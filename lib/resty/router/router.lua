@@ -97,5 +97,31 @@ function _M:get_fields()
     return out
 end
 
+do 
+    local routers = {}
+    -- validate an expression against a schema
+    -- @param expr the expression to validate
+    -- @param schema the schema to validate against
+    -- @return true if the expression is valid, (nil, error) otherwise
+    function _M.validate(schema, expr)
+        local r = routers[schema]
+
+        if not r then
+            r = ffi_gc(clib.router_new(schema.schema), router_free)
+            routers[schema] = r
+        end
+
+        local uuid = "00000000-0000-0000-0000-000000000000"
+
+        local res, err = r:add_matcher(0, uuid, expr)
+        if not res then
+            return nil, "invalid expression: " .. err
+        end
+
+        r:remove_matcher(uuid)
+
+        return true
+    end
+end
 
 return _M
