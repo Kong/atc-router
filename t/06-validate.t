@@ -28,11 +28,10 @@ __DATA__
         content_by_lua_block {
             local schema = require("resty.router.schema")
             local router = require("resty.router.router")
-            local context = require("resty.router.context")
 
             local s = schema.new()
-
             s:add_field("http.headers.foo", "String")
+
             local expr = "http.headers.foo == \"bar\""
             local r, err = router.validate(s, expr)
 
@@ -57,21 +56,21 @@ nil
         content_by_lua_block {
             local schema = require("resty.router.schema")
             local router = require("resty.router.router")
-            local context = require("resty.router.context")
 
             local s = schema.new()
-
             s:add_field("http.headers.foo", "String")
+
             local expr = "http.headers.foo == 123"
             local r, err = router.validate(s, expr)
 
             ngx.say(r)
+            ngx.say(err)
         }
     }
 --- request
 GET /t
---- response_body
-nil
+--- response_body_like
+^nil\ninvalid expression.*$
 --- no_error_log
 [error]
 [warn]
@@ -85,21 +84,21 @@ nil
         content_by_lua_block {
             local schema = require("resty.router.schema")
             local router = require("resty.router.router")
-            local context = require("resty.router.context")
 
             local s = schema.new()
-
             s:add_field("http.headers.foo", "String")
+
             local expr = "== 123"
             local r, err = router.validate(s, expr)
 
             ngx.say(r)
+            ngx.say(err)
         }
     }
 --- request
 GET /t
---- response_body
-nil
+--- response_body_like
+^nil\ninvalid expression.*$
 --- no_error_log
 [error]
 [warn]
@@ -112,21 +111,21 @@ nil
         content_by_lua_block {
             local schema = require("resty.router.schema")
             local router = require("resty.router.router")
-            local context = require("resty.router.context")
 
             local s = schema.new()
-
             s:add_field("http.headers.foo", "String")
+
             local expr = "== \"bar\""
             local r, err = router.validate(s, expr)
 
             ngx.say(r)
+            ngx.say(err)
         }
     }
 --- request
 GET /t
---- response_body
-nil
+--- response_body_like
+^nil\ninvalid expression.*$
 --- no_error_log
 [error]
 [warn]
