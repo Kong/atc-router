@@ -100,6 +100,8 @@ end
 do 
     local routers = {}
     local default_uuid = "00000000-0000-0000-0000-000000000000"
+    local default_priority = 0
+
     -- validate an expression against a schema
     -- @param expr the expression to validate
     -- @param schema the schema to validate against
@@ -112,14 +114,19 @@ do
             routers[schema] = r
         end
 
-
-        local res, err = r:add_matcher(0, default_uuid, expr)
-        if not res then
-            return nil, "invalid expression: " .. err
+        local errbuf = get_string_buf(ERR_BUF_MAX_LEN)
+        local errbuf_len = get_size_ptr()
+        errbuf_len[0] = ERR_BUF_MAX_LEN
+    
+        if clib.router_add_matcher(r, default_priority, default_uuid, expr,
+                                   errbuf, errbuf_len) == false then
+            return nil, "invalid expression: " .. ffi_string(errbuf, errbuf_len[0])
         end
 
-        r:remove_matcher(uuid)
-
+        if clib.router_remove_matcher(r, default_priority, default_uuid) == false then
+            return nil, "failed when call router_remove_matcher"
+        end
+    
         return true
     end
 end
