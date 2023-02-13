@@ -120,7 +120,7 @@ do
     
         if clib.router_add_matcher(r, default_priority, default_uuid, expr,
                                    errbuf, errbuf_len) == false then
-            return nil, "invalid expression: " .. ffi_string(errbuf, errbuf_len[0])
+            return nil, ffi_string(errbuf, errbuf_len[0])
         end
 
         if clib.router_remove_matcher(r, default_priority, default_uuid) == false then
