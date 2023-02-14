@@ -216,3 +216,43 @@ error: unclosed character class
 [error]
 [warn]
 [crit]
+
+=== TEST 6: invalid regex 2
+--- http_config eval: $::HttpConfig
+--- config
+    location = /t {
+        content_by_lua_block {
+            local schema = require("resty.router.schema")
+            local router = require("resty.router.router")
+
+            local s = schema.new()
+            s:add_field("http.headers.foo", "String")
+
+            local expr
+            local r
+            local err
+
+            expr = [[http.headers.foo ~ "/\\/*user$"]]
+            r, err = router.validate(s, expr)
+            ngx.say(r)
+            ngx.say(err)
+        }
+    }
+--- request
+GET /t
+--- response_body
+nil
+ --> 1:1
+  |
+1 | http.headers.foo ~ "/\\/*user$"
+  | ^-----------------------------^
+  |
+  = regex parse error:
+    /\/*user$
+     ^^
+error: unrecognized escape sequence
+
+--- no_error_log
+[error]
+[warn]
+[crit]
