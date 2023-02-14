@@ -49,6 +49,7 @@ nil
 [warn]
 [crit]
 
+
 === TEST 2: test type inconsistency (schema is String, expr is Int)
 --- http_config eval: $::HttpConfig
 --- config
@@ -112,6 +113,7 @@ nil
 [warn]
 [crit]
 
+
 === TEST 4: test valid schema + invalid expr
 --- http_config eval: $::HttpConfig
 --- config
@@ -146,6 +148,7 @@ nil
 [warn]
 [crit]
 
+
 === TEST 5: valid regex
 --- http_config eval: $::HttpConfig
 --- config
@@ -157,12 +160,8 @@ nil
             local s = schema.new()
             s:add_field("http.headers.foo", "String")
 
-            local expr
-            local r
-            local err
-
-            expr = "http.headers.foo ~ \"/\\\\\\\\/*user$\""
-            r, err = router.validate(s, expr)
+            local expr = "http.headers.foo ~ \"/\\\\\\\\/*user$\""
+            local r, err = router.validate(s, expr)
             ngx.say(r)
             ngx.say(err)
         }
@@ -177,6 +176,7 @@ nil
 [warn]
 [crit]
 
+
 === TEST 6: invalid regex
 --- http_config eval: $::HttpConfig
 --- config
@@ -188,12 +188,8 @@ nil
             local s = schema.new()
             s:add_field("http.headers.foo", "String")
 
-            local expr
-            local r
-            local err
-
-            expr = "http.headers.foo ~ \"([.\""
-            r, err = router.validate(s, expr)
+            local expr = "http.headers.foo ~ \"([.\""
+            local r, err = router.validate(s, expr)
             ngx.say(r)
             ngx.say(err)
         }
@@ -217,6 +213,7 @@ error: unclosed character class
 [warn]
 [crit]
 
+
 === TEST 6: invalid regex 2
 --- http_config eval: $::HttpConfig
 --- config
@@ -228,12 +225,8 @@ error: unclosed character class
             local s = schema.new()
             s:add_field("http.headers.foo", "String")
 
-            local expr
-            local r
-            local err
-
-            expr = [[http.headers.foo ~ "/\\/*user$"]]
-            r, err = router.validate(s, expr)
+            local expr = [[http.headers.foo ~ "/\\/*user$"]]
+            local r, err = router.validate(s, expr)
             ngx.say(r)
             ngx.say(err)
         }
