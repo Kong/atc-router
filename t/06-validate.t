@@ -70,8 +70,8 @@ nil
 --- request
 GET /t
 --- response_body_like
-^nil
-predicate type mismatch.*$
+nil
+Type mismatch between the LHS and RHS values of predicate
 --- no_error_log
 [error]
 [warn]
