@@ -188,7 +188,7 @@ nil
             local s = schema.new()
             s:add_field("http.headers.foo", "String")
 
-            local expr = [[http.headers.foo ~ "(["]]
+            local expr = [[http.headers.foo ~ "([."]]
             local r, err = router.validate(s, expr)
             ngx.say(r)
             ngx.say(err)
