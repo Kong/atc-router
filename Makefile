@@ -18,7 +18,7 @@ INSTALL ?= install
 
 all: ;
 
-build: target/release/libatc_router.so target/release/libatc_router.a
+build: target/release/libatc_router.$(SHLIB_EXT) target/release/libatc_router.a
 
 target/release/libatc_router.%: src/*.rs
 	cargo build --release
@@ -26,7 +26,7 @@ target/release/libatc_router.%: src/*.rs
 install: build
 	$(INSTALL) -d $(DESTDIR)$(LUA_LIB_DIR)/resty/router/
 	$(INSTALL) -m 664 lib/resty/router/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/router/
-	$(INSTALL) -m 775 target/release/libatc_router.$(SHLIB_EXT) $(DESTDIR)$(LUA_LIB_DIR)/libatc_router.so
+	$(INSTALL) -m 775 target/release/libatc_router.$(SHLIB_EXT) $(DESTDIR)$(LUA_LIB_DIR)/libatc_router.$(SHLIB_EXT)
 
 clean:
 	rm -rf target
