@@ -40,3 +40,5 @@ configure_make(
     ],
 )
 ```
+
+When building this library in Bazel, use the `-c opt` flag to ensure optimal performance. The default fastbuild mode produces a less performant binary.
