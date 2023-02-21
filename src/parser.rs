@@ -188,9 +188,9 @@ fn parse_predicate(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<P
     let op = parse_binary_operator(pairs.next().unwrap());
     let rhs = parse_rhs(pairs.next().unwrap())?;
     Ok(Predicate {
-        lhs: lhs,
-        rhs: rhs,
-        op: op,
+        lhs,
+        rhs,
+        op,
     })
 }
 // transform_func = { ident ~ "(" ~ lhs ~ ")" }
@@ -216,7 +216,7 @@ fn parse_transform_func(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseRes
     Ok(lhs)
 }
 // binary_operator = { "==" | "!=" | "~" | "^=" | "=^" | ">=" |
-//                     ">" | "<=" | "<" | "in" | "not" ~ "in" }
+//                     ">" | "<=" | "<" | "in" | "not" ~ "in" | "contains" }
 fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
     let rule = pair.as_str();
     use BinaryOperator as BinaryOp;
@@ -232,6 +232,7 @@ fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
         "<" => BinaryOp::Less,
         "in" => BinaryOp::In,
         "not in" => BinaryOp::NotIn,
+        "contains" => BinaryOp::Contains,
         _ => unreachable!(),
     }
 }
