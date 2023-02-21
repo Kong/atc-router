@@ -6,7 +6,7 @@ mod parser;
 mod router;
 mod schema;
 mod semantics;
-mod tests;
+mod ast_tests;
 
 #[macro_use]
 extern crate pest_derive;

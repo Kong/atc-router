@@ -89,6 +89,7 @@ impl fmt::Display for BinaryOperator {
                 LessOrEqual => "<=",
                 In => "in",
                 NotIn => "not in",
+                Contains => "contains"
             }
         )
     }

@@ -263,7 +263,11 @@ impl Execute for Predicate {
                     };
 
                     if lhs.contains(rhs) {
-                        return true;
+                        if any {
+                            return true;
+                        }
+
+                        matched = true;
                     }
                 }
             } // match
