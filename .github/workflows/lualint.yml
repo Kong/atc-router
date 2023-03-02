@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Lint changed-files
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      # Example 1
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v35
+
+      - name: Download Lualint
+        uses: robinraju/release-downloader@v1.7
+        with:
+          repository: "kong/lualint"
+          token: ${{ secrets.LUALINT_REPO_ACCESS_TOKEN }}
+          latest: true
+          fileName: "*_x86_64-unknown-linux-musl.tar.gz"
+
+      - name: Lint all changed lua files
+        run: |
+          tar -zvxf ./*_x86_64-unknown-linux-musl.tar.gz;
+          chmod +x ./lualint;
+          for file in ${{steps.changed-files.outputs.all_changed_files}}; do
+            echo "found $file";
+            ALL_PASSED="true";
+            if [[ $file == *.lua ]]; then
+              ./lualint run --rules '{
+                  "max_column_width": {},
+                  "one_line_before_else": {},
+                  "eof_blank_line": {},
+                  "table_ctor_comma": {},
+                  "func_separation": {}
+              }' "$file";
+              if [[ $? -ne 0 ]]; then
+                ALL_PASSED="false";
+              fi;
+            fi;
+          done;
+          if [[ $ALL_PASSED == "false" ]]; then
+            exit 1;
+          fi;
