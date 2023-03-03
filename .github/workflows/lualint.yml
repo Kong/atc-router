@@ -32,7 +32,7 @@ jobs:
         uses: robinraju/release-downloader@v1.7
         with:
           repository: "kong/lualint"
-          token: ${{ secrets.LUALINT_REPO_ACCESS_TOKEN }}
+          token: ${{ steps.github-app-token.outputs.token }}
           latest: true
           fileName: "*_x86_64-unknown-linux-musl.tar.gz"
 
