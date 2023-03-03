@@ -21,6 +21,13 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v35
 
+      - name: Generate token
+        id: github-app-token
+        uses: tibdex/github-app-token@021a2405c7f990db57f5eae5397423dcc554159c # v1.7.0
+        with:
+          app_id: ${{ vars.KONG_GH_APP_ID }}
+          private_key: ${{ secrets.KONG_GH_APP_PRIVATE_KEY }}
+
       - name: Download Lualint
         uses: robinraju/release-downloader@v1.7
         with:
