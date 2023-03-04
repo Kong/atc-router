@@ -38,7 +38,7 @@ jobs:
 
       - name: Lint all changed lua files
         run: |
-          tar -zvxf lualint_x86_64-unknown-linux-gnu.zip;
+          tar -zvxf lualint_v0.1.0-1_x86_64-unknown-linux-musl.tar.gz;
           chmod +x ./lualint;
           for file in ${{steps.changed-files.outputs.all_changed_files}}; do
             echo "found $file";
