@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pest = "2.1"
+pest = "2.5"
 pest_derive = "2.5"
 #cidr = { version = "0.2", features = ["serde"] }
 cidr = "0.2"
