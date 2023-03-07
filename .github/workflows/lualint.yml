@@ -34,11 +34,11 @@ jobs:
           repository: "kong/lualint"
           token: ${{ steps.github-app-token.outputs.token }}
           latest: true
-          fileName: "*_x86_64-unknown-linux-musl.tar.gz"
+          fileName: "lualint_x86_64-unknown-linux-gnu.zip"
 
       - name: Lint all changed lua files
         run: |
-          tar -zvxf lualint_v0.1.0-1_x86_64-unknown-linux-musl.tar.gz;
+          unzip lualint_x86_64-unknown-linux-gnu.zip;
           chmod +x ./lualint;
           for file in ${{steps.changed-files.outputs.all_changed_files}}; do
             echo "found $file";
