@@ -33,7 +33,7 @@ jobs:
       - name: Generate release name
         id: generate-release-name
         run:
-          RELEASE_NAME=lualint_$(uname -m)-unknown-linux-gnu.zip
+          echo "lualint_$(uname -m)-unknown-linux-gnu.zip" >> $GITHUB_OUTPUT
 
       - name: Download Lualint
         uses: robinraju/release-downloader@768b85c8d69164800db5fc00337ab917daf3ce68
