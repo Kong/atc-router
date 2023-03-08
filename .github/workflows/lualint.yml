@@ -30,17 +30,22 @@ jobs:
           app_id: ${{ vars.KONG_GH_APP_ID }}
           private_key: ${{ secrets.KONG_GH_APP_PRIVATE_KEY }}
 
+      - name: Generate release name
+        id: generate-release-name
+        run:
+          RELEASE_NAME=lualint_$(uname -m)-unknown-linux-gnu.zip
+
       - name: Download Lualint
         uses: robinraju/release-downloader@768b85c8d69164800db5fc00337ab917daf3ce68
         with:
           repository: "kong/lualint"
           token: ${{ steps.github-app-token.outputs.token }}
           latest: true
-          fileName: lualint_$(uname -m)-unknown-linux-gnu.zip
+          fileName: ${{ steps.generate-release-name.outputs.RELEASE_NAME }}
 
       - name: Lint all changed lua files
         run: |
-          unzip "lualint_$(uname -m)-unknown-linux-gnu.zip";
+          unzip ${{ steps.generate-release-name.outputs.RELEASE_NAME }};
           chmod +x ./lualint;
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
             echo "found $file";
