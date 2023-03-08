@@ -36,7 +36,7 @@ jobs:
           repository: "kong/lualint"
           token: ${{ steps.github-app-token.outputs.token }}
           latest: true
-          fileName: "lualint_$(uname -m)-unknown-linux-gnu.zip"
+          fileName: lualint_$(uname -m)-unknown-linux-gnu.zip
 
       - name: Lint all changed lua files
         run: |
