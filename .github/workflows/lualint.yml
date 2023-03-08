@@ -1,4 +1,4 @@
-name: CI
+name: Lua lint```
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
         run: |
           unzip lualint_x86_64-unknown-linux-gnu.zip;
           chmod +x ./lualint;
-          for file in ${{steps.changed-files.outputs.all_changed_files}}; do
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
             echo "found $file";
             ALL_PASSED="true";
             if [[ $file == *.lua ]]; then
@@ -56,6 +56,7 @@ jobs:
               fi;
             fi;
           done;
+
           if [[ $ALL_PASSED == "false" ]]; then
             exit 1;
           fi;
