@@ -1,4 +1,4 @@
-name: Lua lint```
+name: Lua lint
 
 on:
   push:
@@ -36,11 +36,11 @@ jobs:
           repository: "kong/lualint"
           token: ${{ steps.github-app-token.outputs.token }}
           latest: true
-          fileName: "lualint_x86_64-unknown-linux-gnu.zip"
+          fileName: "lualint_$(uname -m)-unknown-linux-gnu.zip"
 
       - name: Lint all changed lua files
         run: |
-          unzip lualint_x86_64-unknown-linux-gnu.zip;
+          unzip "lualint_$(uname -m)-unknown-linux-gnu.zip";
           chmod +x ./lualint;
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
             echo "found $file";
