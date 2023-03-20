@@ -98,9 +98,9 @@ function _M:get_fields()
 end
 
 do 
-    local routers = {}
-    local default_uuid = "00000000-0000-0000-0000-000000000000"
-    local default_priority = 0
+    local ROUTERS = {}
+    local DEFAULT_UUID = "00000000-0000-0000-0000-000000000000"
+    local DEFAULT_PRIORITY = 0
 
     -- validate an expression against a schema
     -- @param expr the expression to validate
