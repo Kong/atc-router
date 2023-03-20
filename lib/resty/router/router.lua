@@ -98,7 +98,7 @@ function _M:get_fields()
 end
 
 do 
-    local ROUTERS = {}
+    local routers = {}
     local DEFAULT_UUID = "00000000-0000-0000-0000-000000000000"
     local DEFAULT_PRIORITY = 0
 
@@ -118,12 +118,12 @@ do
         local errbuf_len = get_size_ptr()
         errbuf_len[0] = ERR_BUF_MAX_LEN
     
-        if clib.router_add_matcher(r, default_priority, default_uuid, expr,
+        if clib.router_add_matcher(r, DEFAULT_PRIORITY, DEFAULT_UUID, expr,
                                    errbuf, errbuf_len) == false then
             return nil, ffi_string(errbuf, errbuf_len[0])
         end
 
-        if clib.router_remove_matcher(r, default_priority, default_uuid) == false then
+        if clib.router_remove_matcher(r, DEFAULT_PRIORITY, DEFAULT_UUID) == false then
             routers[schema] = nil
         end
     
