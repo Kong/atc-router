@@ -11,9 +11,9 @@ on:
 jobs:
   lualint:
     runs-on: ubuntu-latest
-    name: A job to say hello
+    name: Lua code style check
     steps:
-      - uses: kong/lualint@v0.1.1
+      - uses: Kong/public-shared-actions/code-check-actions/lualint@feat-lualint
         with:
           kong_gh_app_id: ${{ vars.KONG_GH_APP_ID }}
           kong_gh_app_private_key: ${{ secrets.KONG_GH_APP_PRIVATE_KEY }}
