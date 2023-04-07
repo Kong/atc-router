@@ -27,7 +27,7 @@ function _M.new(schema, routes_n)
     --
     -- You may be tempted to change it to ffi_gc(router, clib.router_free)
     -- This isn't 100% safe, particularly with `busted` clearing the global
-    -- environment between each runs. `clib` could be GC'ed before this entity,
+    -- environment between each runs. `clib` could be GC'ed before this entity,aaaaaa
     -- causing instruction fetch faults because the `router` finalizer will
     -- attempt to execute from unmapped memory region
     local r = setmetatable({
