@@ -15,5 +15,5 @@ jobs:
     steps:
       - uses: Kong/public-shared-actions/code-check-actions/lualint@feat-lualint
         with:
-          kong_gh_app_id: ${{ vars.KONG_GH_APP_ID }}
-          kong_gh_app_private_key: ${{ secrets.KONG_GH_APP_PRIVATE_KEY }}
+          kong_gh_app_id: ${{ vars.GH_APP__KONG_LUALINT__APP_ID }}
+          kong_gh_app_private_key: ${{ secrets.GH_APP__KONG_LUALINT__PRIVATE_KEY }}
