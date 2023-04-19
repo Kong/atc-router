@@ -53,9 +53,6 @@ jobs:
 
     - name: Run lint
       run: cargo clippy --verbose
-    
-    - name: Run rust test
-      run: cargo test --verbose -- --nocapture
 
     - name: Run unit tests
       run: cargo test --verbose
