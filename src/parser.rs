@@ -120,11 +120,11 @@ fn parse_str_literal(pair: Pair<Rule>) -> ParseResult<String> {
 fn parse_str_esc(pair: Pair<Rule>) -> char {
     let pairs = pair.into_inner();
     match pairs.as_str() {
-        "\\\"" => '"',
-        "\\\\" => '\\',
-        "\\n" => '\n',
-        "\\r" => '\r',
-        "\\t" => '\t',
+        r#"\""# => '"',
+        r#"\\"# => '\\',
+        r#"\n"# => '\n',
+        r#"\r"# => '\r',
+        r#"\t"# => '\t',
         _ => unreachable!(),
     }
 }
