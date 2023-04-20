@@ -1,5 +1,5 @@
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
-ident = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_" | ".")* }
+ident = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_" | ".")* }
 rhs = { str_literal | ip_literal | int_literal }
 transform_func = { ident ~ "(" ~ lhs ~ ")" }
 lhs = { transform_func | ident }
