@@ -147,7 +147,7 @@ actually used by the user supplied matchers.
 
 ### validate
 
-**syntax:** *isValid, err = r:validate(schema, expr)*
+**syntax:** *isValid, err = r.validate(schema, expr)*
 
 **context:** *any*
 
