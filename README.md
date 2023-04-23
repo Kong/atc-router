@@ -147,11 +147,11 @@ actually used by the user supplied matchers.
 
 ### validate
 
-**syntax:** *isValid, err = r.validate(schema, expr)*
+**syntax:** *ok, err = r.validate(schema, expr)*
 
 **context:** *any*
 
-Validates an expression against a given schema. It checks if the expression complies with the schema's constraints and structure.
+Validates an expression against a given schema.
 
 **params:**
 
@@ -161,7 +161,7 @@ Validates an expression against a given schema. It checks if the expression comp
 **returns:**
 
 - *is_valid*: A boolean value, true if the expression is valid according to the schema, false otherwise.
-- *err*: A string describing the error, if the expression is not valid. If the expression is valid, this value will be nil.
+- *err*: A string describing the error, if the expression is not valid. Otherwise, this value will be nil.
 
 [Back to TOC](#table-of-contents)
 
