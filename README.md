@@ -160,8 +160,7 @@ Validates an expression against a given schema.
 
 **returns:**
 
-- *is_valid*: A boolean value, true if the expression is valid according to the schema, false otherwise.
-- *err*: A string describing the error, if the expression is not valid. Otherwise, this value will be nil.
+Returns `ok` when valid. If an error occurred, `false` and a string describing the error will be returned.
 
 [Back to TOC](#table-of-contents)
 
