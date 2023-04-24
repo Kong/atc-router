@@ -153,14 +153,10 @@ actually used by the user supplied matchers.
 
 Validates an expression against a given schema.
 
-**params:**
+Returns `true` when the expression is valid.
 
-- *expr*: The expression to validate.
-- *schema*: The schema to validate against.
-
-**returns:**
-
-Returns `ok` when valid. If an error occurred, `false` and a string describing the error will be returned.
+If the expression is invalid,
+`nil` and a string describing the reason will be returned.
 
 [Back to TOC](#table-of-contents)
 
