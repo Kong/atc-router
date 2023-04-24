@@ -117,16 +117,14 @@ do
         local errbuf = get_string_buf(ERR_BUF_MAX_LEN)
         local errbuf_len = get_size_ptr()
         errbuf_len[0] = ERR_BUF_MAX_LEN
-    
+
         if clib.router_add_matcher(r, DEFAULT_PRIORITY, DEFAULT_UUID, expr,
                                    errbuf, errbuf_len) == false then
             return nil, ffi_string(errbuf, errbuf_len[0])
         end
 
-        if clib.router_remove_matcher(r, DEFAULT_PRIORITY, DEFAULT_UUID) == false then
-            routers[schema] = nil
-        end
-    
+        assert(clib.router_remove_matcher(r, DEFAULT_PRIORITY, DEFAULT_UUID))
+
         return true
     end
 end
