@@ -37,7 +37,7 @@ __DATA__
 
             local r = router.new(s)
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
-                                 "http.path ^= `/foo` && tcp.port == 80"))
+                                 "http.path ^= r#\"/foo\"# && tcp.port == 80"))
 
             local c = context.new(s)
             c:add_value("http.path", "/foo/bar")
@@ -80,7 +80,7 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
 
             local r = router.new(s)
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
-                                 "http.path ^= `/foo\"\'` && tcp.port == 80"))
+                                 "http.path ^= r#\"/foo\"\'\"# && tcp.port == 80"))
 
             local c = context.new(s)
             c:add_value("http.path", "/foo\"\'/bar")
@@ -124,7 +124,7 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
 
             local r = router.new(s)
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
-                                 "http.path ~ `^/\\d+/test$` && tcp.port == 80"))
+                                 "http.path ~ r#\"^/\\d+/test$\"# && tcp.port == 80"))
 
             local c = context.new(s)
             c:add_value("http.path", "/123/test")
@@ -167,7 +167,7 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
 
             local r = router.new(s)
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
-                                 "http.path ~ `^/\\D+/test$` && tcp.port == 80"))
+                                 "http.path ~ r#\"^/\\D+/test$\"# && tcp.port == 80"))
 
             local c = context.new(s)
             c:add_value("http.path", "/123/test")
