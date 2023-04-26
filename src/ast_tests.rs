@@ -254,13 +254,13 @@ fn str_unicode_test() {
     let tests = vec![
         // cjk chars
         (
-            "_msg in \"你好\"",
-            "(_msg in \"你好\")",
+            "t_msg in \"你好\"",
+            "(t_msg in \"你好\")",
         ),
         // 0xXXX unicode
         (
-            "_msg in \"\u{4f60}\u{597d}\"",
-            "(_msg in \"你好\")",
+            "t_msg in \"\u{4f60}\u{597d}\"",
+            "(t_msg in \"你好\")",
         ),
     ];
     for (input, expected) in tests {
