@@ -11,7 +11,7 @@ repository = "https://github.com/Kong/atc-router"
 
 [dependencies]
 pest = "2.1"
-pest_derive = "2.5"
+pest_derive = "2.6"
 cidr = "0.2"
 pest_consume = "1.1"
 lazy_static = "1.4"
