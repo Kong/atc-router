@@ -225,7 +225,7 @@ error: unclosed character class
             local s = schema.new()
             s:add_field("http.headers.foo", "String")
 
-            local expr = [[http.headers.foo ~ "/\\/*user$"]]
+            local expr = [[http.headers.foo ~ "/\/*user$"]]
             local r, err = router.validate(s, expr)
             ngx.say(r)
             ngx.say(err)
@@ -237,7 +237,7 @@ GET /t
 nil
  --> 1:1
   |
-1 | http.headers.foo ~ "/\\/*user$"
+1 | http.headers.foo ~ "/\/*user$"
   | ^-----------------------------^
   |
   = regex parse error:
