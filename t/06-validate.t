@@ -214,7 +214,7 @@ error: unclosed character class
 [crit]
 
 
-=== TEST 6: invalid regex 2
+=== TEST 6: Rust regex 1.8.x will not think the regex is invalid
 --- http_config eval: $::HttpConfig
 --- config
     location = /t {
@@ -234,17 +234,8 @@ error: unclosed character class
 --- request
 GET /t
 --- response_body
+true
 nil
- --> 1:1
-  |
-1 | http.headers.foo ~ "/\\/*user$"
-  | ^-----------------------------^
-  |
-  = regex parse error:
-    /\/*user$
-     ^^
-error: unrecognized escape sequence
-
 --- no_error_log
 [error]
 [warn]
