@@ -23,9 +23,11 @@ build: target/release/libatc_router.$(SHLIB_EXT) target/release/libatc_router.a
 target/release/libatc_router.%: src/*.rs
 	cargo build --release
 
-install: build
+install-lualib:
 	$(INSTALL) -d $(DESTDIR)$(LUA_LIB_DIR)/resty/router/
 	$(INSTALL) -m 664 lib/resty/router/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/router/
+
+install: build install-lualib
 	$(INSTALL) -m 775 target/release/libatc_router.$(SHLIB_EXT) $(DESTDIR)$(LUA_LIB_DIR)/libatc_router.$(SHLIB_EXT)
 
 clean:
