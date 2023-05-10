@@ -111,20 +111,16 @@ do
         local r = ROUTERS[schema]
 
         if not r then
-            r = ffi_gc(clib.router_new(schema.schema), router_free)
+            r = _M.new(schema, 1)
             ROUTERS[schema] = r
         end
 
-        local errbuf = get_string_buf(ERR_BUF_MAX_LEN)
-        local errbuf_len = get_size_ptr()
-        errbuf_len[0] = ERR_BUF_MAX_LEN
-
-        if clib.router_add_matcher(r, DEFAULT_PRIORITY, DEFAULT_UUID, expr,
-                                   errbuf, errbuf_len) == false then
-            return nil, ffi_string(errbuf, errbuf_len[0])
+        local ok, err = r:add_matcher(DEFAULT_PRIORITY, DEFAULT_UUID, expr)
+        if not ok then
+            return nil, err
         end
 
-        assert(clib.router_remove_matcher(r, DEFAULT_PRIORITY, DEFAULT_UUID))
+        assert(r:remove_matcher(DEFAULT_UUID))
 
         return true
     end
