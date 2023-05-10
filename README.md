@@ -147,7 +147,7 @@ actually used by the user supplied matchers.
 
 ### validate
 
-**syntax:** *ok, err = r.validate(schema, expr)*
+**syntax:** *ok, err = router.validate(schema, expr)*
 
 **context:** *any*
 
