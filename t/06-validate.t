@@ -214,7 +214,7 @@ error: unclosed character class
 [crit]
 
 
-=== TEST 6: Rust regex 1.8.x will not think the regex is invalid
+=== TEST 7: Rust regex 1.8.x will not think the regex is invalid
 --- http_config eval: $::HttpConfig
 --- config
     location = /t {
