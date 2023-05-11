@@ -18,6 +18,7 @@ Table of Contents
         * [remove\_matcher](#remove_matcher)
         * [execute](#execute)
         * [get\_fields](#get_fields)
+        * [validate](#validate)
     * [resty.router.context](#restyroutercontext)
         * [new](#new)
         * [add\_value](#add_value)
@@ -141,6 +142,21 @@ none of the matcher matched.
 Returns the currently used field names by all matchers inside the router as
 an Lua array. It can help reduce unnecessarily producing values that are not
 actually used by the user supplied matchers.
+
+[Back to TOC](#table-of-contents)
+
+### validate
+
+**syntax:** *ok, err = router.validate(schema, expr)*
+
+**context:** *any*
+
+Validates an expression against a given schema.
+
+Returns `true` when the expression is valid.
+
+If the expression is invalid,
+`nil` and a string describing the reason will be returned.
 
 [Back to TOC](#table-of-contents)
 
