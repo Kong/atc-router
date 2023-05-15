@@ -88,6 +88,18 @@ impl ATCParser {
 
         Ok(s)
     }
+    fn rawstr_literal(input: Node) -> ParseResult<String> {
+        let mut s = String::new();
+       
+        for node in input.into_children() {
+            match node.as_rule() {
+                Rule::rawstr_char => s.push_str(node.as_str()),
+                _ => unreachable!(),
+            }
+        }
+
+        Ok(s)
+    }
 
     fn ipv4_cidr_literal(input: Node) -> ParseResult<Ipv4Cidr> {
         input.as_str().parse().into_parse_result(&input)
@@ -142,6 +154,7 @@ impl ATCParser {
     fn rhs(input: Node) -> ParseResult<Value> {
         Ok(match_nodes! { input.children();
             [str_literal(s)] => Value::String(s),
+            [rawstr_literal(s)] => Value::String(s),
             [ip_literal(ip)] => Value::IpCidr(ip),
             [int_literal(i)] => Value::Int(i),
         })

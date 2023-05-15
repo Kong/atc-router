@@ -1,6 +1,6 @@
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 ident = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_" | ".")* }
-rhs = { str_literal | ip_literal | int_literal }
+rhs = { str_literal | rawstr_literal | ip_literal | int_literal }
 transform_func = { ident ~ "(" ~ lhs ~ ")" }
 lhs = { transform_func | ident }
 
@@ -17,6 +17,8 @@ str_inner = _{ (str_esc | str_char)* }
 str_char = { !("\"" | "\\") ~ ANY }
 str_esc = { "\\" ~ ("\"" | "\\" | "n" | "r" | "t") }
 
+rawstr_literal = ${ "r#\"" ~ rawstr_char* ~ "\"#" }
+rawstr_char = { !"\"#" ~ ANY }
 
 ipv4_literal = @{ ASCII_DIGIT{1,3} ~ ( "." ~ ASCII_DIGIT{1,3} ){3} }
 ipv6_literal = @{
