@@ -1,0 +1,1998 @@
+{
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "runs": [
+    {
+      "results": [
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/dirty.rs"
+                },
+                "region": {
+                  "byteLength": 15,
+                  "byteOffset": 4,
+                  "endColumn": 20,
+                  "endLine": 1,
+                  "startColumn": 5,
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unused import: `reqwest::header`"
+          },
+          "ruleId": "unused_imports",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/dirty.rs"
+                },
+                "region": {
+                  "byteLength": 1,
+                  "byteOffset": 60,
+                  "endColumn": 10,
+                  "endLine": 5,
+                  "startColumn": 9,
+                  "startLine": 5
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unused variable: `y`"
+          },
+          "ruleId": "unused_variables",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/dirty.rs"
+                },
+                "region": {
+                  "byteLength": 6,
+                  "byteOffset": 122,
+                  "endColumn": 15,
+                  "endLine": 8,
+                  "startColumn": 9,
+                  "startLine": 8
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unused variable: `client`"
+          },
+          "ruleId": "unused_variables",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/dirty.rs"
+                },
+                "region": {
+                  "byteLength": 6,
+                  "byteOffset": 227,
+                  "endColumn": 15,
+                  "endLine": 12,
+                  "startColumn": 9,
+                  "startLine": 12
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unused variable: `client`"
+          },
+          "ruleId": "unused_variables",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/dirty.rs"
+                },
+                "region": {
+                  "byteLength": 4,
+                  "byteOffset": 25,
+                  "endColumn": 8,
+                  "endLine": 3,
+                  "startColumn": 4,
+                  "startLine": 3
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "function `main` is never used"
+          },
+          "ruleId": "dead_code",
+          "ruleIndex": 2
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib.rs"
+                },
+                "region": {
+                  "byteLength": 0,
+                  "byteOffset": 0,
+                  "endColumn": 1,
+                  "endLine": 1,
+                  "startColumn": 1,
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "package `atc-router` is missing `package.keywords` metadata"
+          },
+          "ruleId": "clippy::cargo_common_metadata",
+          "ruleIndex": 3
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib.rs"
+                },
+                "region": {
+                  "byteLength": 0,
+                  "byteOffset": 0,
+                  "endColumn": 1,
+                  "endLine": 1,
+                  "startColumn": 1,
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "package `atc-router` is missing `package.categories` metadata"
+          },
+          "ruleId": "clippy::cargo_common_metadata",
+          "ruleIndex": 3
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/context.rs"
+                },
+                "region": {
+                  "byteLength": 131,
+                  "byteOffset": 868,
+                  "endColumn": 10,
+                  "endLine": 46,
+                  "startColumn": 9,
+                  "startLine": 44
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "only a `panic!` in `if`-then statement"
+          },
+          "ruleId": "clippy::manual_assert",
+          "ruleIndex": 4
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/context.rs"
+                },
+                "region": {
+                  "byteLength": 16,
+                  "byteOffset": 1215,
+                  "endColumn": 52,
+                  "endLine": 55,
+                  "startColumn": 36,
+                  "startLine": 55
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "redundant closure"
+          },
+          "ruleId": "clippy::redundant_closure_for_method_calls",
+          "ruleIndex": 5
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 19,
+                  "byteOffset": 740,
+                  "endColumn": 56,
+                  "endLine": 32,
+                  "startColumn": 37,
+                  "startLine": 32
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`as` casting between raw pointers without changing its mutability"
+          },
+          "ruleId": "clippy::ptr_as_ptr",
+          "ruleIndex": 6
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 19,
+                  "byteOffset": 1002,
+                  "endColumn": 60,
+                  "endLine": 39,
+                  "startColumn": 41,
+                  "startLine": 39
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`as` casting between raw pointers without changing its mutability"
+          },
+          "ruleId": "clippy::ptr_as_ptr",
+          "ruleIndex": 6
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 19,
+                  "byteOffset": 1374,
+                  "endColumn": 60,
+                  "endLine": 49,
+                  "startColumn": 41,
+                  "startLine": 49
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`as` casting between raw pointers without changing its mutability"
+          },
+          "ruleId": "clippy::ptr_as_ptr",
+          "ruleIndex": 6
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 27,
+                  "byteOffset": 1778,
+                  "endColumn": 46,
+                  "endLine": 64,
+                  "startColumn": 19,
+                  "startLine": 64
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`Box::new(_)` of default value"
+          },
+          "ruleId": "clippy::box_default",
+          "ruleIndex": 7
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 57,
+                  "byteOffset": 1823,
+                  "endColumn": 58,
+                  "endLine": 68,
+                  "startColumn": 1,
+                  "startLine": 68
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 91,
+                  "byteOffset": 1932,
+                  "endColumn": 92,
+                  "endLine": 73,
+                  "startColumn": 1,
+                  "startLine": 73
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 91,
+                  "byteOffset": 1932,
+                  "endColumn": 92,
+                  "endLine": 73,
+                  "startColumn": 1,
+                  "startLine": 73
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "docs for function which may panic missing `# Panics` section"
+          },
+          "ruleId": "clippy::missing_panics_doc",
+          "ruleIndex": 9
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 28,
+                  "byteOffset": 2128,
+                  "endColumn": 33,
+                  "endLine": 78,
+                  "startColumn": 5,
+                  "startLine": 78
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "consider adding a `;` to the last statement for consistent formatting"
+          },
+          "ruleId": "clippy::semicolon_if_nothing_returned",
+          "ruleIndex": 10
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 22,
+                  "byteOffset": 2062,
+                  "endColumn": 59,
+                  "endLine": 74,
+                  "startColumn": 37,
+                  "startLine": 74
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`as` casting between raw pointers without changing its mutability"
+          },
+          "ruleId": "clippy::ptr_as_ptr",
+          "ruleIndex": 6
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 67,
+                  "byteOffset": 2173,
+                  "endColumn": 68,
+                  "endLine": 82,
+                  "startColumn": 1,
+                  "startLine": 82
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 57,
+                  "byteOffset": 2308,
+                  "endColumn": 58,
+                  "endLine": 87,
+                  "startColumn": 1,
+                  "startLine": 87
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 190,
+                  "byteOffset": 2470,
+                  "endColumn": 10,
+                  "endLine": 100,
+                  "startColumn": 1,
+                  "startLine": 93
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 190,
+                  "byteOffset": 2470,
+                  "endColumn": 10,
+                  "endLine": 100,
+                  "startColumn": 1,
+                  "startLine": 93
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "docs for function which may panic missing `# Panics` section"
+          },
+          "ruleId": "clippy::missing_panics_doc",
+          "ruleIndex": 9
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 21,
+                  "byteOffset": 2698,
+                  "endColumn": 57,
+                  "endLine": 101,
+                  "startColumn": 36,
+                  "startLine": 101
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`as` casting between raw pointers without changing its mutability"
+          },
+          "ruleId": "clippy::ptr_as_ptr",
+          "ruleIndex": 6
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 20,
+                  "byteOffset": 2774,
+                  "endColumn": 55,
+                  "endLine": 102,
+                  "startColumn": 35,
+                  "startLine": 102
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`as` casting between raw pointers without changing its mutability"
+          },
+          "ruleId": "clippy::ptr_as_ptr",
+          "ruleIndex": 6
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 124,
+                  "byteOffset": 3261,
+                  "endColumn": 10,
+                  "endLine": 123,
+                  "startColumn": 1,
+                  "startLine": 119
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 124,
+                  "byteOffset": 3261,
+                  "endColumn": 10,
+                  "endLine": 123,
+                  "startColumn": 1,
+                  "startLine": 119
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "docs for function which may panic missing `# Panics` section"
+          },
+          "ruleId": "clippy::missing_panics_doc",
+          "ruleIndex": 9
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 21,
+                  "byteOffset": 3423,
+                  "endColumn": 57,
+                  "endLine": 124,
+                  "startColumn": 36,
+                  "startLine": 124
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`as` casting between raw pointers without changing its mutability"
+          },
+          "ruleId": "clippy::ptr_as_ptr",
+          "ruleIndex": 6
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 87,
+                  "byteOffset": 3592,
+                  "endColumn": 88,
+                  "endLine": 131,
+                  "startColumn": 1,
+                  "startLine": 131
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 131,
+                  "byteOffset": 3726,
+                  "endColumn": 11,
+                  "endLine": 140,
+                  "startColumn": 1,
+                  "startLine": 136
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 131,
+                  "byteOffset": 3726,
+                  "endColumn": 11,
+                  "endLine": 140,
+                  "startColumn": 1,
+                  "startLine": 136
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "docs for function which may panic missing `# Panics` section"
+          },
+          "ruleId": "clippy::missing_panics_doc",
+          "ruleIndex": 9
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 23,
+                  "byteOffset": 4230,
+                  "endColumn": 36,
+                  "endLine": 150,
+                  "startColumn": 13,
+                  "startLine": 150
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "consider adding a `;` to the last statement for consistent formatting"
+          },
+          "ruleId": "clippy::semicolon_if_nothing_returned",
+          "ruleIndex": 10
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 69,
+                  "byteOffset": 4311,
+                  "endColumn": 70,
+                  "endLine": 158,
+                  "startColumn": 1,
+                  "startLine": 158
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 60,
+                  "byteOffset": 4449,
+                  "endColumn": 61,
+                  "endLine": 163,
+                  "startColumn": 1,
+                  "startLine": 163
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 171,
+                  "byteOffset": 4562,
+                  "endColumn": 10,
+                  "endLine": 174,
+                  "startColumn": 1,
+                  "startLine": 168
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 171,
+                  "byteOffset": 4562,
+                  "endColumn": 10,
+                  "endLine": 174,
+                  "startColumn": 1,
+                  "startLine": 168
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "docs for function which may panic missing `# Panics` section"
+          },
+          "ruleId": "clippy::missing_panics_doc",
+          "ruleIndex": 9
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 22,
+                  "byteOffset": 4772,
+                  "endColumn": 59,
+                  "endLine": 175,
+                  "startColumn": 37,
+                  "startLine": 175
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`as` casting between raw pointers without changing its mutability"
+          },
+          "ruleId": "clippy::ptr_as_ptr",
+          "ruleIndex": 6
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 343,
+                  "byteOffset": 5222,
+                  "endColumn": 11,
+                  "endLine": 204,
+                  "startColumn": 1,
+                  "startLine": 194
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unsafe function's docs miss `# Safety` section"
+          },
+          "ruleId": "clippy::missing_safety_doc",
+          "ruleIndex": 8
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 343,
+                  "byteOffset": 5222,
+                  "endColumn": 11,
+                  "endLine": 204,
+                  "startColumn": 1,
+                  "startLine": 194
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "docs for function which may panic missing `# Panics` section"
+          },
+          "ruleId": "clippy::missing_panics_doc",
+          "ruleIndex": 9
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/ffi.rs"
+                },
+                "region": {
+                  "byteLength": 30,
+                  "byteOffset": 5931,
+                  "endColumn": 83,
+                  "endLine": 216,
+                  "startColumn": 53,
+                  "startLine": 216
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`as` casting between raw pointers without changing its mutability"
+          },
+          "ruleId": "clippy::ptr_as_ptr",
+          "ruleIndex": 6
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 9039,
+                  "byteOffset": 685,
+                  "endColumn": 6,
+                  "endLine": 281,
+                  "startColumn": 5,
+                  "startLine": 21
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this function has too many lines (221/100)"
+          },
+          "ruleId": "clippy::too_many_lines",
+          "ruleIndex": 11
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 35,
+                  "byteOffset": 9682,
+                  "endColumn": 44,
+                  "endLine": 280,
+                  "startColumn": 9,
+                  "startLine": 280
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "unneeded `return` statement"
+          },
+          "ruleId": "clippy::needless_return",
+          "ruleIndex": 12
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 141,
+                  "byteOffset": 2298,
+                  "endColumn": 23,
+                  "endLine": 72,
+                  "startColumn": 21,
+                  "startLine": 69
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 142,
+                  "byteOffset": 2460,
+                  "endColumn": 23,
+                  "endLine": 76,
+                  "startColumn": 21,
+                  "startLine": 73
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 142,
+                  "byteOffset": 3758,
+                  "endColumn": 23,
+                  "endLine": 110,
+                  "startColumn": 21,
+                  "startLine": 107
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 142,
+                  "byteOffset": 3921,
+                  "endColumn": 23,
+                  "endLine": 114,
+                  "startColumn": 21,
+                  "startLine": 111
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 142,
+                  "byteOffset": 4473,
+                  "endColumn": 23,
+                  "endLine": 130,
+                  "startColumn": 21,
+                  "startLine": 127
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 142,
+                  "byteOffset": 4636,
+                  "endColumn": 23,
+                  "endLine": 134,
+                  "startColumn": 21,
+                  "startLine": 131
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 139,
+                  "byteOffset": 5186,
+                  "endColumn": 23,
+                  "endLine": 150,
+                  "startColumn": 21,
+                  "startLine": 147
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 139,
+                  "byteOffset": 5346,
+                  "endColumn": 23,
+                  "endLine": 154,
+                  "startColumn": 21,
+                  "startLine": 151
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 139,
+                  "byteOffset": 5775,
+                  "endColumn": 23,
+                  "endLine": 168,
+                  "startColumn": 21,
+                  "startLine": 165
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 139,
+                  "byteOffset": 5935,
+                  "endColumn": 23,
+                  "endLine": 172,
+                  "startColumn": 21,
+                  "startLine": 169
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 139,
+                  "byteOffset": 6357,
+                  "endColumn": 23,
+                  "endLine": 186,
+                  "startColumn": 21,
+                  "startLine": 183
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 139,
+                  "byteOffset": 6517,
+                  "endColumn": 23,
+                  "endLine": 190,
+                  "startColumn": 21,
+                  "startLine": 187
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 139,
+                  "byteOffset": 6945,
+                  "endColumn": 23,
+                  "endLine": 204,
+                  "startColumn": 21,
+                  "startLine": 201
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 139,
+                  "byteOffset": 7105,
+                  "endColumn": 23,
+                  "endLine": 208,
+                  "startColumn": 21,
+                  "startLine": 205
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 142,
+                  "byteOffset": 8273,
+                  "endColumn": 23,
+                  "endLine": 241,
+                  "startColumn": 21,
+                  "startLine": 238
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 142,
+                  "byteOffset": 8436,
+                  "endColumn": 23,
+                  "endLine": 245,
+                  "startColumn": 21,
+                  "startLine": 242
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 142,
+                  "byteOffset": 8871,
+                  "endColumn": 23,
+                  "endLine": 259,
+                  "startColumn": 21,
+                  "startLine": 256
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 142,
+                  "byteOffset": 9034,
+                  "endColumn": 23,
+                  "endLine": 263,
+                  "startColumn": 21,
+                  "startLine": 260
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this could be rewritten as `let...else`"
+          },
+          "ruleId": "clippy::manual_let_else",
+          "ruleIndex": 13
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/interpreter.rs"
+                },
+                "region": {
+                  "byteLength": 20,
+                  "byteOffset": 9697,
+                  "endColumn": 44,
+                  "endLine": 280,
+                  "startColumn": 24,
+                  "startLine": 280
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "length comparison to zero"
+          },
+          "ruleId": "clippy::len_zero",
+          "ruleIndex": 14
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/parser.rs"
+                },
+                "region": {
+                  "byteLength": 14,
+                  "byteOffset": 615,
+                  "endColumn": 62,
+                  "endLine": 19,
+                  "startColumn": 48,
+                  "startLine": 19
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "the `Err`-variant returned from this function is very large"
+          },
+          "ruleId": "clippy::result_large_err",
+          "ruleIndex": 15
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/parser.rs"
+                },
+                "region": {
+                  "byteLength": 6,
+                  "byteOffset": 1524,
+                  "endColumn": 18,
+                  "endLine": 59,
+                  "startColumn": 12,
+                  "startLine": 59
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "used binding `_input` which is prefixed with an underscore. A leading underscore signals that a binding will not be used"
+          },
+          "ruleId": "clippy::used_underscore_binding",
+          "ruleIndex": 16
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/parser.rs"
+                },
+                "region": {
+                  "byteLength": 7,
+                  "byteOffset": 3638,
+                  "endColumn": 20,
+                  "endLine": 134,
+                  "startColumn": 13,
+                  "startLine": 134
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "usage of wildcard import for enum variants"
+          },
+          "ruleId": "clippy::enum_glob_use",
+          "ruleIndex": 17
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/parser.rs"
+                },
+                "region": {
+                  "byteLength": 55,
+                  "byteOffset": 4900,
+                  "endColumn": 97,
+                  "endLine": 172,
+                  "startColumn": 42,
+                  "startLine": 172
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "variables can be used directly in the `format!` string"
+          },
+          "ruleId": "clippy::uninlined_format_args",
+          "ruleIndex": 18
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/parser.rs"
+                },
+                "region": {
+                  "byteLength": 17,
+                  "byteOffset": 5439,
+                  "endColumn": 30,
+                  "endLine": 191,
+                  "startColumn": 13,
+                  "startLine": 191
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "usage of wildcard import for enum variants"
+          },
+          "ruleId": "clippy::enum_glob_use",
+          "ruleIndex": 17
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/parser.rs"
+                },
+                "region": {
+                  "byteLength": 23,
+                  "byteOffset": 7329,
+                  "endColumn": 85,
+                  "endLine": 244,
+                  "startColumn": 62,
+                  "startLine": 244
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "the `Err`-variant returned from this function is very large"
+          },
+          "ruleId": "clippy::result_large_err",
+          "ruleIndex": 15
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/parser.rs"
+                },
+                "region": {
+                  "byteLength": 4,
+                  "byteOffset": 7305,
+                  "endColumn": 42,
+                  "endLine": 244,
+                  "startColumn": 38,
+                  "startLine": 244
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this argument is passed by value, but not consumed in the function body"
+          },
+          "ruleId": "clippy::needless_pass_by_value",
+          "ruleIndex": 19
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/parser.rs"
+                },
+                "region": {
+                  "byteLength": 340,
+                  "byteOffset": 7272,
+                  "endColumn": 6,
+                  "endLine": 250,
+                  "startColumn": 5,
+                  "startLine": 244
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this function's return value is unnecessarily wrapped by `Result`"
+          },
+          "ruleId": "clippy::unnecessary_wraps",
+          "ruleIndex": 20
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/parser.rs"
+                },
+                "region": {
+                  "byteLength": 23,
+                  "byteOffset": 8019,
+                  "endColumn": 51,
+                  "endLine": 266,
+                  "startColumn": 28,
+                  "startLine": 266
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "the `Err`-variant returned from this function is very large"
+          },
+          "ruleId": "clippy::result_large_err",
+          "ruleIndex": 15
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/semantics.rs"
+                },
+                "region": {
+                  "byteLength": 136,
+                  "byteOffset": 776,
+                  "endColumn": 18,
+                  "endLine": 27,
+                  "startColumn": 17,
+                  "startLine": 24
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this match arm has an identical body to another arm"
+          },
+          "ruleId": "clippy::match_same_arms",
+          "ruleIndex": 21
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/semantics.rs"
+                },
+                "region": {
+                  "byteLength": 146,
+                  "byteOffset": 1399,
+                  "endColumn": 18,
+                  "endLine": 45,
+                  "startColumn": 17,
+                  "startLine": 42
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this match arm has an identical body to another arm"
+          },
+          "ruleId": "clippy::match_same_arms",
+          "ruleIndex": 21
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/semantics.rs"
+                },
+                "region": {
+                  "byteLength": 144,
+                  "byteOffset": 2221,
+                  "endColumn": 22,
+                  "endLine": 71,
+                  "startColumn": 21,
+                  "startLine": 68
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "this match arm has an identical body to another arm"
+          },
+          "ruleId": "clippy::match_same_arms",
+          "ruleIndex": 21
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/dirty.rs"
+                },
+                "region": {
+                  "byteLength": 4,
+                  "byteOffset": 46,
+                  "endColumn": 17,
+                  "endLine": 4,
+                  "startColumn": 13,
+                  "startLine": 4
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "approximate value of `f{32, 64}::consts::PI` found"
+          },
+          "ruleId": "clippy::approx_constant",
+          "ruleIndex": 22
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://rust-lang.github.io/rust-clippy/",
+          "name": "clippy",
+          "rules": [
+            {
+              "fullDescription": {
+                "text": "`#[warn(unused_imports)]` on by default\n"
+              },
+              "id": "unused_imports"
+            },
+            {
+              "fullDescription": {
+                "text": "`#[warn(unused_variables)]` on by default\n"
+              },
+              "id": "unused_variables"
+            },
+            {
+              "fullDescription": {
+                "text": "`#[warn(dead_code)]` on by default\n"
+              },
+              "id": "dead_code"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#cargo_common_metadata\n`-W clippy::cargo-common-metadata` implied by `-W clippy::cargo`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#cargo_common_metadata",
+              "id": "clippy::cargo_common_metadata"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_assert\n`-W clippy::manual-assert` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#manual_assert",
+              "id": "clippy::manual_assert"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#redundant_closure_for_method_calls\n`-W clippy::redundant-closure-for-method-calls` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#redundant_closure_for_method_calls",
+              "id": "clippy::redundant_closure_for_method_calls"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#ptr_as_ptr\n`-W clippy::ptr-as-ptr` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#ptr_as_ptr",
+              "id": "clippy::ptr_as_ptr"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#box_default\n`#[warn(clippy::box_default)]` on by default\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#box_default",
+              "id": "clippy::box_default"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#missing_safety_doc\n`#[warn(clippy::missing_safety_doc)]` on by default\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#missing_safety_doc",
+              "id": "clippy::missing_safety_doc"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#missing_panics_doc\n`-W clippy::missing-panics-doc` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#missing_panics_doc",
+              "id": "clippy::missing_panics_doc"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#semicolon_if_nothing_returned\n`-W clippy::semicolon-if-nothing-returned` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#semicolon_if_nothing_returned",
+              "id": "clippy::semicolon_if_nothing_returned"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_lines\n`-W clippy::too-many-lines` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#too_many_lines",
+              "id": "clippy::too_many_lines"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_return\n`#[warn(clippy::needless_return)]` on by default\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#needless_return",
+              "id": "clippy::needless_return"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_let_else\n`-W clippy::manual-let-else` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#manual_let_else",
+              "id": "clippy::manual_let_else"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#len_zero\n`#[warn(clippy::len_zero)]` on by default\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#len_zero",
+              "id": "clippy::len_zero"
+            },
+            {
+              "fullDescription": {
+                "text": "try reducing the size of `pest_consume::Error<parser::Rule>`, for example by boxing large elements or replacing it with `Box<pest_consume::Error<parser::Rule>>`\nfor further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err\n`#[warn(clippy::result_large_err)]` on by default\n"
+              },
+              "id": "clippy::result_large_err"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#used_underscore_binding\n`-W clippy::used-underscore-binding` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#used_underscore_binding",
+              "id": "clippy::used_underscore_binding"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#enum_glob_use\n`-W clippy::enum-glob-use` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#enum_glob_use",
+              "id": "clippy::enum_glob_use"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#uninlined_format_args\n`-W clippy::uninlined-format-args` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#uninlined_format_args",
+              "id": "clippy::uninlined_format_args"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_pass_by_value\n`-W clippy::needless-pass-by-value` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#needless_pass_by_value",
+              "id": "clippy::needless_pass_by_value"
+            },
+            {
+              "fullDescription": {
+                "text": "for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_wraps\n`-W clippy::unnecessary-wraps` implied by `-W clippy::pedantic`\n"
+              },
+              "helpUri": "https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_wraps",
+              "id": "clippy::unnecessary_wraps"
+            },
+            {
+              "fullDescription": {
+                "text": "or try changing either arm body\nfor further information visit https://rust-lang.github.io/rust-clippy/master/index.html#match_same_arms\n`-W clippy::match-same-arms` implied by `-W clippy::pedantic`\n"
+              },
+              "id": "clippy::match_same_arms"
+            },
+            {
+              "fullDescription": {
+                "text": "consider using the constant directly\nfor further information visit https://rust-lang.github.io/rust-clippy/master/index.html#approx_constant\n`-D clippy::approx-constant` implied by `-D clippy::correctness`\n"
+              },
+              "id": "clippy::approx_constant"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

@@ -1,5 +1,5 @@
 std             = "ngx_lua"
-unused_args     = false
+unused_args     = true
 redefined       = false
 max_line_length = false
 

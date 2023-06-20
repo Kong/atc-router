@@ -1,0 +1,2189 @@
+{
+ "spdxVersion": "SPDX-2.3",
+ "dataLicense": "CC0-1.0",
+ "SPDXID": "SPDXRef-DOCUMENT",
+ "name": ".",
+ "documentNamespace": "https://anchore.com/syft/dir/8085f813-0212-4d20-90ce-d4ee9eec74c0",
+ "creationInfo": {
+  "licenseListVersion": "3.20",
+  "creators": [
+   "Organization: Anchore, Inc",
+   "Tool: syft-0.83.0"
+  ],
+  "created": "2023-06-15T16:37:59Z"
+ },
+ "packages": [
+  {
+   "name": "aho-corasick",
+   "SPDXID": "SPDXRef-Package-rust-crate-aho-corasick-6ac977717549dbf5",
+   "versionInfo": "1.0.2",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:aho-corasick:aho-corasick:1.0.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:aho-corasick:aho_corasick:1.0.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:aho_corasick:aho-corasick:1.0.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:aho_corasick:aho_corasick:1.0.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:aho:aho-corasick:1.0.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:aho:aho_corasick:1.0.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/aho-corasick@1.0.2"
+    }
+   ]
+  },
+  {
+   "name": "atc-router",
+   "SPDXID": "SPDXRef-Package-rust-crate-atc-router-220b2146bcf3b09d",
+   "versionInfo": "1.0.5",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:atc-router:atc-router:1.0.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:atc-router:atc_router:1.0.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:atc_router:atc-router:1.0.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:atc_router:atc_router:1.0.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:atc:atc-router:1.0.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:atc:atc_router:1.0.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/atc-router@1.0.5"
+    }
+   ]
+  },
+  {
+   "name": "autocfg",
+   "SPDXID": "SPDXRef-Package-rust-crate-autocfg-3a56acfdb94ab4c9",
+   "versionInfo": "1.1.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:autocfg:autocfg:1.1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/autocfg@1.1.0"
+    }
+   ]
+  },
+  {
+   "name": "block-buffer",
+   "SPDXID": "SPDXRef-Package-rust-crate-block-buffer-1102d63e577d0918",
+   "versionInfo": "0.10.4",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:block-buffer:block-buffer:0.10.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:block-buffer:block_buffer:0.10.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:block_buffer:block-buffer:0.10.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:block_buffer:block_buffer:0.10.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:block:block-buffer:0.10.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:block:block_buffer:0.10.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/block-buffer@0.10.4"
+    }
+   ]
+  },
+  {
+   "name": "cfg-if",
+   "SPDXID": "SPDXRef-Package-rust-crate-cfg-if-ee718caf117c8c36",
+   "versionInfo": "1.0.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:cfg-if:cfg-if:1.0.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:cfg-if:cfg_if:1.0.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:cfg_if:cfg-if:1.0.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:cfg_if:cfg_if:1.0.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:cfg:cfg-if:1.0.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:cfg:cfg_if:1.0.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/cfg-if@1.0.0"
+    }
+   ]
+  },
+  {
+   "name": "chrono",
+   "SPDXID": "SPDXRef-Package-rust-crate-chrono-1b89fcb993538d51",
+   "versionInfo": "0.2.25",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:chrono:chrono:0.2.25:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/chrono@0.2.25"
+    }
+   ]
+  },
+  {
+   "name": "cidr",
+   "SPDXID": "SPDXRef-Package-rust-crate-cidr-9da0e1b86098d99c",
+   "versionInfo": "0.2.1",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:cidr:cidr:0.2.1:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/cidr@0.2.1"
+    }
+   ]
+  },
+  {
+   "name": "cpufeatures",
+   "SPDXID": "SPDXRef-Package-rust-crate-cpufeatures-3f2d9f3909f02162",
+   "versionInfo": "0.2.7",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:cpufeatures:cpufeatures:0.2.7:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/cpufeatures@0.2.7"
+    }
+   ]
+  },
+  {
+   "name": "crypto-common",
+   "SPDXID": "SPDXRef-Package-rust-crate-crypto-common-e58b400328eada97",
+   "versionInfo": "0.1.6",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:crypto-common:crypto-common:0.1.6:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:crypto-common:crypto_common:0.1.6:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:crypto_common:crypto-common:0.1.6:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:crypto_common:crypto_common:0.1.6:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:crypto:crypto-common:0.1.6:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:crypto:crypto_common:0.1.6:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/crypto-common@0.1.6"
+    }
+   ]
+  },
+  {
+   "name": "digest",
+   "SPDXID": "SPDXRef-Package-rust-crate-digest-b428f2de61acd5a8",
+   "versionInfo": "0.10.7",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:digest:digest:0.10.7:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/digest@0.10.7"
+    }
+   ]
+  },
+  {
+   "name": "generic-array",
+   "SPDXID": "SPDXRef-Package-rust-crate-generic-array-705c5e4eb6a31f91",
+   "versionInfo": "0.14.7",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:generic-array:generic-array:0.14.7:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:generic-array:generic_array:0.14.7:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:generic_array:generic-array:0.14.7:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:generic_array:generic_array:0.14.7:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:generic:generic-array:0.14.7:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:generic:generic_array:0.14.7:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/generic-array@0.14.7"
+    }
+   ]
+  },
+  {
+   "name": "lazy_static",
+   "SPDXID": "SPDXRef-Package-rust-crate-lazy-static-474fda3f8de90822",
+   "versionInfo": "1.4.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:lazy-static:lazy-static:1.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:lazy-static:lazy_static:1.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:lazy_static:lazy-static:1.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:lazy_static:lazy_static:1.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:lazy:lazy-static:1.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:lazy:lazy_static:1.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/lazy_static@1.4.0"
+    }
+   ]
+  },
+  {
+   "name": "libc",
+   "SPDXID": "SPDXRef-Package-rust-crate-libc-c3ff599aa96bc255",
+   "versionInfo": "0.2.146",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:libc:libc:0.2.146:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/libc@0.2.146"
+    }
+   ]
+  },
+  {
+   "name": "memchr",
+   "SPDXID": "SPDXRef-Package-rust-crate-memchr-3e5e2df9bfda98dc",
+   "versionInfo": "2.5.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:memchr:memchr:2.5.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/memchr@2.5.0"
+    }
+   ]
+  },
+  {
+   "name": "num",
+   "SPDXID": "SPDXRef-Package-rust-crate-num-241ae8a90615894d",
+   "versionInfo": "0.1.42",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num:num:0.1.42:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/num@0.1.42"
+    }
+   ]
+  },
+  {
+   "name": "num-integer",
+   "SPDXID": "SPDXRef-Package-rust-crate-num-integer-7617f2e84730d170",
+   "versionInfo": "0.1.45",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num-integer:num-integer:0.1.45:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num-integer:num_integer:0.1.45:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num_integer:num-integer:0.1.45:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num_integer:num_integer:0.1.45:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num:num-integer:0.1.45:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num:num_integer:0.1.45:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/num-integer@0.1.45"
+    }
+   ]
+  },
+  {
+   "name": "num-iter",
+   "SPDXID": "SPDXRef-Package-rust-crate-num-iter-bfa0d8de408ae1fa",
+   "versionInfo": "0.1.43",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num-iter:num-iter:0.1.43:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num-iter:num_iter:0.1.43:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num_iter:num-iter:0.1.43:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num_iter:num_iter:0.1.43:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num:num-iter:0.1.43:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num:num_iter:0.1.43:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/num-iter@0.1.43"
+    }
+   ]
+  },
+  {
+   "name": "num-traits",
+   "SPDXID": "SPDXRef-Package-rust-crate-num-traits-66bbfa6a398318b1",
+   "versionInfo": "0.2.15",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num-traits:num-traits:0.2.15:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num-traits:num_traits:0.2.15:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num_traits:num-traits:0.2.15:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num_traits:num_traits:0.2.15:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num:num-traits:0.2.15:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:num:num_traits:0.2.15:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/num-traits@0.2.15"
+    }
+   ]
+  },
+  {
+   "name": "once_cell",
+   "SPDXID": "SPDXRef-Package-rust-crate-once-cell-16158bdeb9b986c",
+   "versionInfo": "1.18.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:once-cell:once-cell:1.18.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:once-cell:once_cell:1.18.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:once_cell:once-cell:1.18.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:once_cell:once_cell:1.18.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:once:once-cell:1.18.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:once:once_cell:1.18.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/once_cell@1.18.0"
+    }
+   ]
+  },
+  {
+   "name": "pest",
+   "SPDXID": "SPDXRef-Package-rust-crate-pest-46a35b6810d271cd",
+   "versionInfo": "2.6.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest:pest:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/pest@2.6.0"
+    }
+   ]
+  },
+  {
+   "name": "pest_consume",
+   "SPDXID": "SPDXRef-Package-rust-crate-pest-consume-966bad8f69cd43a8",
+   "versionInfo": "1.1.3",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-consume:pest-consume:1.1.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-consume:pest_consume:1.1.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_consume:pest-consume:1.1.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_consume:pest_consume:1.1.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest:pest-consume:1.1.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest:pest_consume:1.1.3:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/pest_consume@1.1.3"
+    }
+   ]
+  },
+  {
+   "name": "pest_consume_macros",
+   "SPDXID": "SPDXRef-Package-rust-crate-pest-consume-macros-65fd09cfdf995f94",
+   "versionInfo": "1.1.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-consume-macros:pest-consume-macros:1.1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-consume-macros:pest_consume_macros:1.1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_consume_macros:pest-consume-macros:1.1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_consume_macros:pest_consume_macros:1.1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-consume:pest-consume-macros:1.1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-consume:pest_consume_macros:1.1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_consume:pest-consume-macros:1.1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_consume:pest_consume_macros:1.1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest:pest-consume-macros:1.1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest:pest_consume_macros:1.1.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/pest_consume_macros@1.1.0"
+    }
+   ]
+  },
+  {
+   "name": "pest_derive",
+   "SPDXID": "SPDXRef-Package-rust-crate-pest-derive-a6d6e63d1dd56761",
+   "versionInfo": "2.6.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-derive:pest-derive:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-derive:pest_derive:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_derive:pest-derive:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_derive:pest_derive:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest:pest-derive:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest:pest_derive:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/pest_derive@2.6.0"
+    }
+   ]
+  },
+  {
+   "name": "pest_generator",
+   "SPDXID": "SPDXRef-Package-rust-crate-pest-generator-15560a7ccce4a16",
+   "versionInfo": "2.6.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-generator:pest-generator:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-generator:pest_generator:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_generator:pest-generator:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_generator:pest_generator:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest:pest-generator:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest:pest_generator:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/pest_generator@2.6.0"
+    }
+   ]
+  },
+  {
+   "name": "pest_meta",
+   "SPDXID": "SPDXRef-Package-rust-crate-pest-meta-a05c2546f11d1664",
+   "versionInfo": "2.6.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-meta:pest-meta:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest-meta:pest_meta:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_meta:pest-meta:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest_meta:pest_meta:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest:pest-meta:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:pest:pest_meta:2.6.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/pest_meta@2.6.0"
+    }
+   ]
+  },
+  {
+   "name": "proc-macro2",
+   "SPDXID": "SPDXRef-Package-rust-crate-proc-macro2-fe5490f48acb5e76",
+   "versionInfo": "1.0.60",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:proc-macro2:proc-macro2:1.0.60:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:proc-macro2:proc_macro2:1.0.60:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:proc_macro2:proc-macro2:1.0.60:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:proc_macro2:proc_macro2:1.0.60:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:proc:proc-macro2:1.0.60:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:proc:proc_macro2:1.0.60:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/proc-macro2@1.0.60"
+    }
+   ]
+  },
+  {
+   "name": "quote",
+   "SPDXID": "SPDXRef-Package-rust-crate-quote-47d8a0ba4ed60a4e",
+   "versionInfo": "1.0.28",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:quote:quote:1.0.28:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/quote@1.0.28"
+    }
+   ]
+  },
+  {
+   "name": "regex",
+   "SPDXID": "SPDXRef-Package-rust-crate-regex-7fe342d002451096",
+   "versionInfo": "1.8.4",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:regex:regex:1.8.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/regex@1.8.4"
+    }
+   ]
+  },
+  {
+   "name": "regex-syntax",
+   "SPDXID": "SPDXRef-Package-rust-crate-regex-syntax-da9e28408439e13a",
+   "versionInfo": "0.7.2",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:regex-syntax:regex-syntax:0.7.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:regex-syntax:regex_syntax:0.7.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:regex_syntax:regex-syntax:0.7.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:regex_syntax:regex_syntax:0.7.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:regex:regex-syntax:0.7.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:regex:regex_syntax:0.7.2:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/regex-syntax@0.7.2"
+    }
+   ]
+  },
+  {
+   "name": "sha2",
+   "SPDXID": "SPDXRef-Package-rust-crate-sha2-49747c05d8403452",
+   "versionInfo": "0.10.6",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:sha2:sha2:0.10.6:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/sha2@0.10.6"
+    }
+   ]
+  },
+  {
+   "name": "syn",
+   "SPDXID": "SPDXRef-Package-rust-crate-syn-67801c7524a056e4",
+   "versionInfo": "1.0.109",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:syn:syn:1.0.109:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/syn@1.0.109"
+    }
+   ]
+  },
+  {
+   "name": "syn",
+   "SPDXID": "SPDXRef-Package-rust-crate-syn-c27d82789e1b04f1",
+   "versionInfo": "2.0.18",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:syn:syn:2.0.18:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/syn@2.0.18"
+    }
+   ]
+  },
+  {
+   "name": "thiserror",
+   "SPDXID": "SPDXRef-Package-rust-crate-thiserror-f1e49d6bec114701",
+   "versionInfo": "1.0.40",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:thiserror:thiserror:1.0.40:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/thiserror@1.0.40"
+    }
+   ]
+  },
+  {
+   "name": "thiserror-impl",
+   "SPDXID": "SPDXRef-Package-rust-crate-thiserror-impl-524a89d5eda4b37a",
+   "versionInfo": "1.0.40",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:thiserror-impl:thiserror-impl:1.0.40:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:thiserror-impl:thiserror_impl:1.0.40:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:thiserror_impl:thiserror-impl:1.0.40:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:thiserror_impl:thiserror_impl:1.0.40:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:thiserror:thiserror-impl:1.0.40:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:thiserror:thiserror_impl:1.0.40:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/thiserror-impl@1.0.40"
+    }
+   ]
+  },
+  {
+   "name": "time",
+   "SPDXID": "SPDXRef-Package-rust-crate-time-dbb3aebaa50145a3",
+   "versionInfo": "0.1.45",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:time:time:0.1.45:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/time@0.1.45"
+    }
+   ]
+  },
+  {
+   "name": "typenum",
+   "SPDXID": "SPDXRef-Package-rust-crate-typenum-de200501156d4cfc",
+   "versionInfo": "1.16.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:typenum:typenum:1.16.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/typenum@1.16.0"
+    }
+   ]
+  },
+  {
+   "name": "ucd-trie",
+   "SPDXID": "SPDXRef-Package-rust-crate-ucd-trie-3353075217f0bd5f",
+   "versionInfo": "0.1.5",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:ucd-trie:ucd-trie:0.1.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:ucd-trie:ucd_trie:0.1.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:ucd_trie:ucd-trie:0.1.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:ucd_trie:ucd_trie:0.1.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:ucd:ucd-trie:0.1.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:ucd:ucd_trie:0.1.5:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/ucd-trie@0.1.5"
+    }
+   ]
+  },
+  {
+   "name": "unicode-ident",
+   "SPDXID": "SPDXRef-Package-rust-crate-unicode-ident-36b731b74fa8576c",
+   "versionInfo": "1.0.9",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:unicode-ident:unicode-ident:1.0.9:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:unicode-ident:unicode_ident:1.0.9:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:unicode_ident:unicode-ident:1.0.9:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:unicode_ident:unicode_ident:1.0.9:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:unicode:unicode-ident:1.0.9:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:unicode:unicode_ident:1.0.9:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/unicode-ident@1.0.9"
+    }
+   ]
+  },
+  {
+   "name": "uuid",
+   "SPDXID": "SPDXRef-Package-rust-crate-uuid-1f7ab4fe0cb906df",
+   "versionInfo": "1.3.4",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:uuid:uuid:1.3.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/uuid@1.3.4"
+    }
+   ]
+  },
+  {
+   "name": "version_check",
+   "SPDXID": "SPDXRef-Package-rust-crate-version-check-671a56822e61628b",
+   "versionInfo": "0.9.4",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:version-check:version-check:0.9.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:version-check:version_check:0.9.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:version_check:version-check:0.9.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:version_check:version_check:0.9.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:version:version-check:0.9.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:version:version_check:0.9.4:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/version_check@0.9.4"
+    }
+   ]
+  },
+  {
+   "name": "wasi",
+   "SPDXID": "SPDXRef-Package-rust-crate-wasi-ab06e0df4c5d0d3f",
+   "versionInfo": "0.10.0+wasi-snapshot-preview1",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:wasi:wasi:0.10.0\\+wasi-snapshot-preview1:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/wasi@0.10.0+wasi-snapshot-preview1"
+    }
+   ]
+  },
+  {
+   "name": "winapi",
+   "SPDXID": "SPDXRef-Package-rust-crate-winapi-3cde8668d34e41cf",
+   "versionInfo": "0.3.9",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi:winapi:0.3.9:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/winapi@0.3.9"
+    }
+   ]
+  },
+  {
+   "name": "winapi-i686-pc-windows-gnu",
+   "SPDXID": "SPDXRef-Package-rust-crate-winapi-i686-pc-windows-gnu-b163513b4180ff7d",
+   "versionInfo": "0.4.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-i686-pc-windows-gnu:winapi-i686-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-i686-pc-windows-gnu:winapi_i686_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_i686_pc_windows_gnu:winapi-i686-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_i686_pc_windows_gnu:winapi_i686_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-i686-pc-windows:winapi-i686-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-i686-pc-windows:winapi_i686_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_i686_pc_windows:winapi-i686-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_i686_pc_windows:winapi_i686_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-i686-pc:winapi-i686-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-i686-pc:winapi_i686_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_i686_pc:winapi-i686-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_i686_pc:winapi_i686_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-i686:winapi-i686-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-i686:winapi_i686_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_i686:winapi-i686-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_i686:winapi_i686_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi:winapi-i686-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi:winapi_i686_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/winapi-i686-pc-windows-gnu@0.4.0"
+    }
+   ]
+  },
+  {
+   "name": "winapi-x86_64-pc-windows-gnu",
+   "SPDXID": "SPDXRef-Package-rust-crate-winapi-x86-64-pc-windows-gnu-c95400ce3d57649a",
+   "versionInfo": "0.4.0",
+   "downloadLocation": "NOASSERTION",
+   "filesAnalyzed": false,
+   "sourceInfo": "acquired package info from rust cargo manifest: Cargo.lock",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "externalRefs": [
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64-pc-windows-gnu:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64-pc-windows-gnu:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64-pc-windows-gnu:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64-pc-windows-gnu:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64-pc-windows-gnu:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64-pc-windows-gnu:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64_pc_windows_gnu:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64_pc_windows_gnu:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64_pc_windows_gnu:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64-pc-windows:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64-pc-windows:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64-pc-windows:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64-pc-windows:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64-pc-windows:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64-pc-windows:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64_pc_windows:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64_pc_windows:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64_pc_windows:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64-pc:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64-pc:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64-pc:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64-pc:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64-pc:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64-pc:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64_pc:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64_pc:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64_pc:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86-64:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86_64:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86_64:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi-x86:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi_x86:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi:winapi-x86-64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi:winapi-x86_64-pc-windows-gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "SECURITY",
+     "referenceType": "cpe23Type",
+     "referenceLocator": "cpe:2.3:a:winapi:winapi_x86_64_pc_windows_gnu:0.4.0:*:*:*:*:*:*:*"
+    },
+    {
+     "referenceCategory": "PACKAGE-MANAGER",
+     "referenceType": "purl",
+     "referenceLocator": "pkg:cargo/winapi-x86_64-pc-windows-gnu@0.4.0"
+    }
+   ]
+  }
+ ],
+ "files": [
+  {
+   "fileName": "Cargo.lock",
+   "SPDXID": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "checksums": [
+    {
+     "algorithm": "SHA1",
+     "checksumValue": "0000000000000000000000000000000000000000"
+    }
+   ],
+   "licenseConcluded": "NOASSERTION",
+   "copyrightText": ""
+  }
+ ],
+ "relationships": [
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-block-buffer-1102d63e577d0918",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-pest-generator-15560a7ccce4a16",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-once-cell-16158bdeb9b986c",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-chrono-1b89fcb993538d51",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-uuid-1f7ab4fe0cb906df",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-atc-router-220b2146bcf3b09d",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-num-241ae8a90615894d",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-ucd-trie-3353075217f0bd5f",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-unicode-ident-36b731b74fa8576c",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-autocfg-3a56acfdb94ab4c9",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-winapi-3cde8668d34e41cf",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-memchr-3e5e2df9bfda98dc",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-cpufeatures-3f2d9f3909f02162",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-pest-46a35b6810d271cd",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-lazy-static-474fda3f8de90822",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-quote-47d8a0ba4ed60a4e",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-sha2-49747c05d8403452",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-thiserror-impl-524a89d5eda4b37a",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-pest-consume-macros-65fd09cfdf995f94",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-num-traits-66bbfa6a398318b1",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-version-check-671a56822e61628b",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-syn-67801c7524a056e4",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-aho-corasick-6ac977717549dbf5",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-generic-array-705c5e4eb6a31f91",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-num-integer-7617f2e84730d170",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-regex-7fe342d002451096",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-pest-consume-966bad8f69cd43a8",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-cidr-9da0e1b86098d99c",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-pest-meta-a05c2546f11d1664",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-pest-derive-a6d6e63d1dd56761",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-wasi-ab06e0df4c5d0d3f",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-winapi-i686-pc-windows-gnu-b163513b4180ff7d",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-digest-b428f2de61acd5a8",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-num-iter-bfa0d8de408ae1fa",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-syn-c27d82789e1b04f1",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-libc-c3ff599aa96bc255",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-winapi-x86-64-pc-windows-gnu-c95400ce3d57649a",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-regex-syntax-da9e28408439e13a",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-time-dbb3aebaa50145a3",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-typenum-de200501156d4cfc",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-crypto-common-e58b400328eada97",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-cfg-if-ee718caf117c8c36",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-thiserror-f1e49d6bec114701",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-rust-crate-proc-macro2-fe5490f48acb5e76",
+   "relatedSpdxElement": "SPDXRef-File-Cargo.lock-17618ad3aaba20e4",
+   "relationshipType": "OTHER",
+   "comment": "evident-by: indicates the package's existence is evident by the given file"
+  },
+  {
+   "spdxElementId": "SPDXRef-DOCUMENT",
+   "relatedSpdxElement": "SPDXRef-DOCUMENT",
+   "relationshipType": "DESCRIBES"
+  }
+ ]
+}

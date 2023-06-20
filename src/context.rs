@@ -42,7 +42,7 @@ impl<'a> Context<'a> {
 
     pub fn add_value(&mut self, field: &str, value: Value) {
         if &value.my_type() != self.schema.type_of(field).unwrap() {
-            panic!("value provided does not match schema");
+            panic!("value provided does not match schemas");
         }
 
         self.values

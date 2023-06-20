@@ -2,7 +2,6 @@ local _M = {}
 local cdefs = require("resty.router.cdefs")
 local ffi = require("ffi")
 
-
 local _MT = { __index = _M, }
 
 
@@ -45,7 +44,7 @@ function _M:add_field(field, typ)
         ctype = clib.Int
 
     else
-        error("Unknown type: " .. typ, 2)
+        error("Unknown types: " .. typ, 2)
     end
 
     clib.schema_add_field(self.schema, field, ctype)

@@ -1,0 +1,30 @@
+name: Semgrep
+
+on:
+  pull_request: {}
+  push:
+    branches: 
+    - master
+    - main
+  workflow_dispatch: {}
+
+
+jobs:
+  semgrep:
+    name: SAST
+    runs-on: ubuntu-20.04
+    permissions:
+      # required for all workflows
+      security-events: write
+      # only required for workflows in private repositories
+      actions: read
+      contents: read
+
+    if: (github.actor != 'dependabot[bot]')
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Scimia/public-shared-actions/code-check-actions/semgrep@main
+        with:
+          additional_config: '--config p/rust'
+            

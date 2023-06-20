@@ -1,0 +1,56 @@
+name: Code Quality
+
+on:
+  pull_request: {}
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lua:
+    name: Lua Lint
+    runs-on: ubuntu-20.04
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+    if: (github.actor != 'dependabot[bot]')
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+          
+    - name: Lua Check
+      uses: Scimia/public-shared-actions/code-check-actions/luacheck@main
+      with:
+        additional_args: '--no-default-config --config .luacheckrc'
+        files: 'lib'
+  
+  rust:
+    name: Rust Clippy & SCA
+    runs-on: ubuntu-20.04
+    
+    permissions:
+      # required for all workflows
+      security-events: write
+      # only required for workflows in private repositories
+      actions: read
+      contents: read
+  
+    if: (github.actor != 'dependabot[bot]')
+    
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+      
+    - name: Rust Check
+      uses: Scimia/public-shared-actions/code-check-actions/rustcheck@main
+      with:
+        asset_prefix: 'atc-router'
+        
