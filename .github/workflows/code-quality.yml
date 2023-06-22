@@ -25,12 +25,20 @@ jobs:
     steps:
     - name: Checkout source code
       uses: actions/checkout@v3
-          
+    
+    # Optional step to run on only changed files
+    - name: Get changed files
+      id: changed-files
+      uses: tj-actions/changed-files@v36
+      files: |
+        **.lua
+    
     - name: Lua Check
+      if: steps.changed-files.outputs.any_changed == 'true'
       uses: Scimia/public-shared-actions/code-check-actions/luacheck@main
       with:
         additional_args: '--no-default-config --config .luacheckrc'
-        files: 'lib'
+        files: ${{ steps.changed-files.outputs.all_changed_files }}
   
   rust:
     name: Rust Clippy & SCA
@@ -53,4 +61,5 @@ jobs:
       uses: Scimia/public-shared-actions/code-check-actions/rustcheck@main
       with:
         asset_prefix: 'atc-router'
+        path: .
         
