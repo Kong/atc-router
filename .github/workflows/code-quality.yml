@@ -48,17 +48,18 @@ jobs:
     permissions:
       # required for all workflows
       security-events: write
+      checks: write
+      pull-requests: write
       # only required for workflows in private repositories
       actions: read
       contents: read
-      pull-requests: write
   
     if: (github.actor != 'dependabot[bot]')
     
     steps:
     - name: Checkout source code
       uses: actions/checkout@v3
-      
+
     - name: Rust Check
       uses: Scimia/public-shared-actions/code-check-actions/rustcheck@main
       with:
