@@ -62,5 +62,5 @@ jobs:
       uses: Scimia/public-shared-actions/code-check-actions/rustcheck@main
       with:
         asset_prefix: 'atc-router'
-        path: .
+        token: ${{ secrets.GITHUB_TOKEN }}
         
