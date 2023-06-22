@@ -6,4 +6,3 @@ mod parser;
 mod router;
 mod schema;
 mod semantics;
-mod dirty;
