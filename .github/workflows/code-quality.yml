@@ -51,6 +51,7 @@ jobs:
       # only required for workflows in private repositories
       actions: read
       contents: read
+      pull-requests: write
   
     if: (github.actor != 'dependabot[bot]')
     
