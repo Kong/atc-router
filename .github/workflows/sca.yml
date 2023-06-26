@@ -1,0 +1,39 @@
+name: Source code analysis
+
+on:
+  pull_request: {}
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+
+  rust-sca:
+    name: Rust SCA
+    runs-on: ubuntu-20.04
+    
+    permissions:
+      # required for all workflows
+      security-events: write
+      checks: write
+      pull-requests: write
+      actions: read
+      contents: read
+  
+    if: (github.actor != 'dependabot[bot]')
+    
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    - name: Rust Check
+      uses: Kong/public-shared-actions/security-actions/scan-rust@v1
+      with:
+        asset_prefix: 'atc-router'
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
