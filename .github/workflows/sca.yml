@@ -1,4 +1,4 @@
-name: Source code analysis
+name: SCA
 
 on:
   pull_request: {}
@@ -31,9 +31,7 @@ jobs:
     - name: Checkout source code
       uses: actions/checkout@v3
 
-    - name: Rust Check
+    - name: Rust SCA
       uses: Kong/public-shared-actions/security-actions/scan-rust@v1
       with:
         asset_prefix: 'atc-router'
-        token: ${{ secrets.GITHUB_TOKEN }}
-        

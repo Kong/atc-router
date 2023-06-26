@@ -12,8 +12,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  lua-lint:
-    name: Lua Lint
+  lua-check:
+    name: Lua Check
     runs-on: ubuntu-20.04
     permissions:
       contents: read
@@ -41,7 +41,7 @@ jobs:
         additional_args: '--no-default-config --config .luacheckrc'
         files: ${{ steps.changed-files.outputs.all_changed_files }}
   
-  rust-lint:
+  rust-clippy:
     name: Rust Clippy
     runs-on: ubuntu-20.04
     
@@ -72,6 +72,5 @@ jobs:
       if: steps.changed-files.outputs.any_changed == 'true'
       uses: Kong/public-shared-actions/code-check-actions/rust-lint@v1
       with:
-        asset_prefix: 'atc-router'
         token: ${{ secrets.GITHUB_TOKEN }}
         
