@@ -2,6 +2,7 @@ name: Lint
 
 on:
   pull_request: {}
+  workflow_dispatch: {}
   push:
     branches:
       - main
@@ -11,24 +12,65 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  tests:
-    name: Lint
+  lua-check:
+    name: Lua Check
     runs-on: ubuntu-20.04
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+    if: (github.actor != 'dependabot[bot]')
 
     steps:
     - name: Checkout source code
       uses: actions/checkout@v3
-    - uses: Jayrgo/luacheck-action@v1
-      name: luacheck
+    
+    # Optional step to run on only changed files
+    - name: Get changed files
+      id: changed-files
+      uses: tj-actions/changed-files@v36
+      with: 
+        files: |
+          **.lua
+    
+    - name: Lua Check
+      if: steps.changed-files.outputs.any_changed == 'true'
+      uses: Kong/public-shared-actions/code-check-actions/lua-lint@v1
       with:
-        # List of files, directories and rockspecs to check.
-        # Default: .
-        files: 'lib'
+        additional_args: '--no-default-config --config .luacheckrc'
+        files: ${{ steps.changed-files.outputs.all_changed_files }}
+  
+  rust-clippy:
+    name: Rust Clippy
+    runs-on: ubuntu-20.04
+    
+    permissions:
+      # required for all workflows
+      security-events: write
+      checks: write
+      pull-requests: write
+      # only required for workflows in private repositories
+      actions: read
+      contents: read
+  
+    if: (github.actor != 'dependabot[bot]')
+    
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+    
+    # Optional step to run on only changed files
+    - name: Get changed files
+      id: changed-files
+      uses: tj-actions/changed-files@v36
+      with: 
+        files: |
+          **.rs
 
-        # Path to configuration file.
-        # Default: .luacheckrc
-        config: '.luacheckrc'
-
-        # Arguments passed to luacheck.
-        # Default: -q
-        args: '-q'
+    - name: Rust Clippy
+      if: steps.changed-files.outputs.any_changed == 'true'
+      uses: Kong/public-shared-actions/code-check-actions/rust-lint@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
