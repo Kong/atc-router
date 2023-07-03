@@ -15,8 +15,8 @@ jobs:
 
   rust-sca:
     name: Rust SCA
-    runs-on: ubuntu-20.04
-    
+    runs-on: ubuntu-latest
+
     permissions:
       # required for all workflows
       security-events: write
@@ -24,9 +24,9 @@ jobs:
       pull-requests: write
       actions: read
       contents: read
-  
+
     if: (github.actor != 'dependabot[bot]')
-    
+
     steps:
     - name: Checkout source code
       uses: actions/checkout@v3
