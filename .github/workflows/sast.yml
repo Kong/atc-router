@@ -3,7 +3,7 @@ name: SAST
 on:
   pull_request: {}
   push:
-    branches: 
+    branches:
     - master
     - main
   workflow_dispatch: {}
@@ -12,7 +12,7 @@ on:
 jobs:
   semgrep:
     name: Semgrep SAST
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     permissions:
       # required for all workflows
       security-events: write
@@ -27,4 +27,4 @@ jobs:
       - uses: Kong/public-shared-actions/security-actions/semgrep@v1
         with:
           additional_config: '--config p/rust'
-            
+

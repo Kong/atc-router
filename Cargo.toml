@@ -10,12 +10,12 @@ Versatile DSL based rule matching engine used by the Kong API Gateway
 repository = "https://github.com/Kong/atc-router"
 
 [dependencies]
-pest = "2.1"
+pest = "2.7"
 pest_derive = "2.6"
 cidr = "0.2"
 pest_consume = "1.1"
 lazy_static = "1.4"
-uuid = "1.3"
+uuid = "1.4"
 regex = "1.8"
 
 [lib]
