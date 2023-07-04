@@ -54,6 +54,7 @@ impl PartialEq for Value {
             }
             (Self::String(s1), Self::String(s2)) => s1 == s2,
             (Self::IpCidr(i1), Self::IpCidr(i2)) => i1 == i2,
+            (Self::IpAddr(i1), Self::IpAddr(i2)) => i1 == i2,
             (Self::Int(i1), Self::Int(i2)) => i1 == i2,
             _ => false,
         }
