@@ -55,10 +55,6 @@ function _M:add_value(field, value)
         CACHED_VALUE[0].tag = C.CIpAddr
         CACHED_VALUE[0].c_ip_addr = value
 
-    elseif typ == "IpCidr" then
-        CACHED_VALUE[0].tag = C.CIpCidr
-        CACHED_VALUE[0].c_ip_cidr = value
-
     elseif typ == "Int" then
         CACHED_VALUE[0].tag = C.CInt
         CACHED_VALUE[0].c_int = value
