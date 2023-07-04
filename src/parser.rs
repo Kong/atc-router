@@ -90,7 +90,7 @@ impl ATCParser {
     }
     fn rawstr_literal(input: Node) -> ParseResult<String> {
         let mut s = String::new();
-       
+
         for node in input.into_children() {
             match node.as_rule() {
                 Rule::rawstr_char => s.push_str(node.as_str()),

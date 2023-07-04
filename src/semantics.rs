@@ -81,7 +81,11 @@ impl Validate for Expression {
                 }
                 let lhs_type = lhs_type.unwrap();
 
-                if p.op != BinaryOperator::Regex && lhs_type != &p.rhs.my_type() {
+                if p.op != BinaryOperator::Regex // Regex RHS is always Regex, and LHS is always String
+                    && p.op != BinaryOperator::In // In/NotIn supports String in String or IPAddr in IpCidr
+                    && p.op != BinaryOperator::NotIn
+                    && lhs_type != &p.rhs.my_type()
+                {
                     return Err(
                         "Type mismatch between the LHS and RHS values of predicate".to_string()
                     );
@@ -123,11 +127,11 @@ impl Validate for Expression {
                         }
                     },
                     BinaryOperator::In | BinaryOperator::NotIn => {
-                        match p.rhs {
-                            Value::String(_) | Value::IpCidr(_) => {
+                        match (lhs_type, &p.rhs,) {
+                            (Type::String, Value::String(_)) | (Type::IpAddr, Value::IpCidr(_)) => {
                                 Ok(())
                             }
-                            _ => Err("In/NotIn operators only supports string/IP cidr operands".to_string())
+                            _ => Err("In/NotIn operators only supports string in string or IP in CIDR".to_string())
                         }
                     },
                     BinaryOperator::Contains => {
