@@ -9,6 +9,7 @@ use pest::error::ErrorVariant;
 use pest::prec_climber::{Assoc, Operator, PrecClimber};
 use pest_consume::{match_nodes, Error as ParseError, Parser};
 use regex::Regex;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
 /// cbindgen:ignore
@@ -109,25 +110,12 @@ impl ATCParser {
         input.as_str().parse().into_parse_result(&input)
     }
 
-    fn ipv4_literal(input: Node) -> ParseResult<Ipv4Cidr> {
-        format!("{}/32", input.as_str())
-            .parse()
-            .into_parse_result(&input)
+    fn ipv4_literal(input: Node) -> ParseResult<Ipv4Addr> {
+        input.as_str().parse().into_parse_result(&input)
     }
 
-    fn ipv6_literal(input: Node) -> ParseResult<Ipv6Cidr> {
-        format!("{}/128", input.as_str())
-            .parse()
-            .into_parse_result(&input)
-    }
-
-    fn ip_literal(input: Node) -> ParseResult<IpCidr> {
-        Ok(match_nodes! { input.children();
-            [ipv4_cidr_literal(c)] => IpCidr::V4(c),
-            [ipv6_cidr_literal(c)] => IpCidr::V6(c),
-            [ipv4_literal(c)] => IpCidr::V4(c),
-            [ipv6_literal(c)] => IpCidr::V6(c),
-        })
+    fn ipv6_literal(input: Node) -> ParseResult<Ipv6Addr> {
+        input.as_str().parse().into_parse_result(&input)
     }
 
     fn int_literal(input: Node) -> ParseResult<i64> {
@@ -155,7 +143,10 @@ impl ATCParser {
         Ok(match_nodes! { input.children();
             [str_literal(s)] => Value::String(s),
             [rawstr_literal(s)] => Value::String(s),
-            [ip_literal(ip)] => Value::IpCidr(ip),
+            [ipv4_cidr_literal(c)] => Value::IpCidr(IpCidr::V4(c)),
+            [ipv6_cidr_literal(c)] => Value::IpCidr(IpCidr::V6(c)),
+            [ipv4_literal(i)] => Value::IpAddr(IpAddr::V4(i)),
+            [ipv6_literal(i)] => Value::IpAddr(IpAddr::V6(i)),
             [int_literal(i)] => Value::Int(i),
         })
     }
