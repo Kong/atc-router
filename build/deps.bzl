@@ -25,6 +25,7 @@ def atc_router_dependencies(cargo_home_isolated = True):
         edition = "2021",
         exec_triple = "x86_64-unknown-linux-gnu",
         extra_target_triples = ["aarch64-unknown-linux-gnu"],
+        versions = ["stable"],
     )
 
     crate_universe_dependencies()
