@@ -12,6 +12,7 @@ use pest::pratt_parser::{Op, PrattParser};
 use pest::Parser;
 
 use pest::error::Error as ParseError;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
 /// cbindgen:ignore
@@ -187,11 +188,7 @@ fn parse_predicate(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<P
     let lhs = parse_lhs(pairs.next().unwrap(), pratt)?;
     let op = parse_binary_operator(pairs.next().unwrap());
     let rhs = parse_rhs(pairs.next().unwrap())?;
-    Ok(Predicate {
-        lhs,
-        rhs,
-        op,
-    })
+    Ok(Predicate { lhs, rhs, op })
 }
 // transform_func = { ident ~ "(" ~ lhs ~ ")" }
 fn parse_transform_func(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Lhs> {

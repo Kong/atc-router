@@ -1,0 +1,37 @@
+name: SCA
+
+on:
+  pull_request: {}
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+
+  rust-sca:
+    name: Rust SCA
+    runs-on: ubuntu-latest
+
+    permissions:
+      # required for all workflows
+      security-events: write
+      checks: write
+      pull-requests: write
+      actions: read
+      contents: read
+
+    if: (github.actor != 'dependabot[bot]')
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    - name: Rust SCA
+      uses: Kong/public-shared-actions/security-actions/scan-rust@v1
+      with:
+        asset_prefix: 'atc-router'

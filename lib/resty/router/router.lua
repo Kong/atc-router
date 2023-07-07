@@ -98,4 +98,33 @@ function _M:get_fields()
 end
 
 
+do
+    local ROUTERS = setmetatable({}, { __mode = "k" })
+    local DEFAULT_UUID = "00000000-0000-0000-0000-000000000000"
+    local DEFAULT_PRIORITY = 0
+
+    -- validate an expression against a schema
+    -- @param expr the expression to validate
+    -- @param schema the schema to validate against
+    -- @return true if the expression is valid, (nil, error) otherwise
+    function _M.validate(schema, expr)
+        local r = ROUTERS[schema]
+
+        if not r then
+            r = _M.new(schema, 1)
+            ROUTERS[schema] = r
+        end
+
+        local ok, err = r:add_matcher(DEFAULT_PRIORITY, DEFAULT_UUID, expr)
+        if not ok then
+            return nil, err
+        end
+
+        assert(r:remove_matcher(DEFAULT_UUID))
+
+        return true
+    end
+end
+
+
 return _M
