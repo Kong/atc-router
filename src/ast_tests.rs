@@ -55,7 +55,7 @@ impl fmt::Display for Value {
             Value::IpCidr(cidr) => write!(f, "{}", cidr),
             Value::IpAddr(addr) => write!(f, "{}", addr),
             Value::Int(i) => write!(f, "{}", i),
-            Value::Regex(re) => write!(f, "{}", re),
+            Value::Regex(re) => write!(f, "\"{}\"", re),
         }
     }
 }
