@@ -4,13 +4,13 @@ use crate::ast::{
     BinaryOperator, Expression, Lhs, LhsTransformations, LogicalExpression, Predicate, Value,
 };
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
+use pest::error::Error as ParseError;
 use pest::error::ErrorVariant;
 use pest::iterators::Pair;
 use pest::pratt_parser::Assoc as AssocNew;
 use pest::pratt_parser::{Op, PrattParser};
 use pest::Parser;
-
-use pest::error::Error as ParseError;
+use regex::Regex;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
@@ -137,13 +137,13 @@ fn parse_rawstr_literal(pair: Pair<Rule>) -> ParseResult<String> {
 }
 
 fn parse_str_esc(pair: Pair<Rule>) -> char {
-    let pairs = pair.into_inner();
-    match pairs.as_str() {
+    match pair.as_str() {
         r#"\""# => '"',
         r#"\\"# => '\\',
         r#"\n"# => '\n',
         r#"\r"# => '\r',
         r#"\t"# => '\t',
+
         _ => unreachable!(),
     }
 }
@@ -189,8 +189,35 @@ fn parse_predicate(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<P
     let mut pairs = pair.into_inner();
     let lhs = parse_lhs(pairs.next().unwrap(), pratt)?;
     let op = parse_binary_operator(pairs.next().unwrap());
-    let rhs = parse_rhs(pairs.next().unwrap())?;
-    Ok(Predicate { lhs, rhs, op })
+    let rhs_pair = pairs.next().unwrap();
+    let rhs = parse_rhs(rhs_pair.clone())?;
+    Ok(Predicate {
+        lhs,
+        rhs: if op == BinaryOperator::Regex {
+            if let Value::String(s) = rhs {
+                let r = Regex::new(&s).map_err(|e| {
+                    ParseError::new_from_span(
+                        ErrorVariant::CustomError {
+                            message: e.to_string(),
+                        },
+                        rhs_pair.as_span(),
+                    )
+                })?;
+
+                Value::Regex(r)
+            } else {
+                return Err(ParseError::new_from_span(
+                    ErrorVariant::CustomError {
+                        message: "regex operator can only be used with String operands".to_string(),
+                    },
+                    rhs_pair.as_span(),
+                ));
+            }
+        } else {
+            rhs
+        },
+        op,
+    })
 }
 // transform_func = { ident ~ "(" ~ lhs ~ ")" }
 fn parse_transform_func(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Lhs> {

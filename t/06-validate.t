@@ -198,10 +198,10 @@ nil
 GET /t
 --- response_body
 nil
- --> 1:1
+ --> 1:20
   |
 1 | http.headers.foo ~ "([."
-  | ^----------------------^
+  |                    ^---^
   |
   = regex parse error:
     ([.
