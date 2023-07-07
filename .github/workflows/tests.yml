@@ -18,6 +18,12 @@ jobs:
     strategy:
       matrix:
         include:
+        - nginx: "1.23.0"
+          nginx_opts: "--without-pcre2"
+          openssl: "3.1.1"
+          valgrind: "valgrind"
+          lua_nginx_module: "v0.10.25"
+          lua_resty_core: "v0.1.27"
         - nginx: "1.21.4"
           openssl: "1.1.1p"
           valgrind: "valgrind"
@@ -77,8 +83,8 @@ jobs:
 
     - name: Setup tools
       run: |
-        sudo apt-get update
-        sudo apt-get install -qq -y cpanminus axel ca-certificates valgrind haveged
+        sudo apt update
+        sudo apt install -qq -y cpanminus axel ca-certificates valgrind haveged
         mkdir -p $OPENSSL_PREFIX $LUAJIT_PREFIX
         # perl cache
         pushd /home/runner/work/cache
@@ -135,7 +141,7 @@ jobs:
         export NGX_STREAM_LUA_LOC=$BASE_PATH/../stream-lua-nginx-module
         export
         cd $BASE_PATH
-        if [ ! -e work ]; then ngx-build ${{ matrix.nginx }} --add-module=../ndk-nginx-module --add-module=../lua-nginx-module --add-module=../lua-resty-lmdb/lua-resty-lmdb --with-http_ssl_module --with-stream --with-stream_ssl_module --with-stream_ssl_preread_module --with-cc-opt="-I$OPENSSL_INC $NGINX_CC_OPTS" --with-ld-opt="-L$OPENSSL_LIB -Wl,-rpath,$OPENSSL_LIB" --with-debug > build.log 2>&1 || (cat build.log && exit 1); fi
+        if [ ! -e work ]; then ngx-build ${{ matrix.nginx }} --add-module=../ndk-nginx-module --add-module=../lua-nginx-module --add-module=../lua-resty-lmdb/lua-resty-lmdb --with-http_ssl_module --with-stream --with-stream_ssl_module --with-stream_ssl_preread_module --with-cc-opt="-I$OPENSSL_INC $NGINX_CC_OPTS" --with-ld-opt="-L$OPENSSL_LIB -Wl,-rpath,$OPENSSL_LIB" --with-debug ${{ matrix.nginx_opts }} > build.log 2>&1 || (cat build.log && exit 1); fi
         nginx -V
         ldd `which nginx`|grep -E 'luajit|ssl|pcre'
 
