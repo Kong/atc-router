@@ -73,12 +73,12 @@ impl ATCParser {
 fn parse_ident(pair: Pair<Rule>) -> ParseResult<String> {
     Ok(pair.as_str().into())
 }
-fn parse_lhs(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Lhs> {
+fn parse_lhs(pair: Pair<Rule>) -> ParseResult<Lhs> {
     let pairs = pair.into_inner();
     let pair = pairs.peek().unwrap();
     let rule = pair.as_rule();
     Ok(match rule {
-        Rule::transform_func => parse_transform_func(pair, pratt)?,
+        Rule::transform_func => parse_transform_func(pair)?,
         Rule::ident => {
             let var = parse_ident(pair)?;
             Lhs {
@@ -185,9 +185,9 @@ fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
 }
 
 // predicate = { lhs ~ binary_operator ~ rhs }
-fn parse_predicate(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Predicate> {
+fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
     let mut pairs = pair.into_inner();
-    let lhs = parse_lhs(pairs.next().unwrap(), pratt)?;
+    let lhs = parse_lhs(pairs.next().unwrap())?;
     let op = parse_binary_operator(pairs.next().unwrap());
     let rhs_pair = pairs.next().unwrap();
     let rhs = parse_rhs(rhs_pair.clone())?;
@@ -220,12 +220,12 @@ fn parse_predicate(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<P
     })
 }
 // transform_func = { ident ~ "(" ~ lhs ~ ")" }
-fn parse_transform_func(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Lhs> {
+fn parse_transform_func(pair: Pair<Rule>) -> ParseResult<Lhs> {
     let span = pair.as_span();
     let pairs = pair.into_inner();
     let mut pairs = pairs.peekable();
     let func_name = pairs.next().unwrap().as_str().to_string();
-    let mut lhs = parse_lhs(pairs.next().unwrap(), pratt)?;
+    let mut lhs = parse_lhs(pairs.next().unwrap())?;
     lhs.transformations.push(match func_name.as_str() {
         "lower" => LhsTransformations::Lower,
         "any" => LhsTransformations::Any,
@@ -283,7 +283,7 @@ fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expres
     let inner_rule = pairs.peek().unwrap();
     let rule = inner_rule.as_rule();
     match rule {
-        Rule::predicate => Ok(Expression::Predicate(parse_predicate(inner_rule, pratt)?)),
+        Rule::predicate => Ok(Expression::Predicate(parse_predicate(inner_rule)?)),
         Rule::parenthesised_expression => parse_parenthesised_expression(inner_rule, pratt),
         _ => unreachable!(),
     }
