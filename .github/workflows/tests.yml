@@ -19,7 +19,7 @@ jobs:
       matrix:
         include:
         - nginx: "1.23.0"
-          openssl: "3.1.1"
+          openssl: "1.1.1u"
           valgrind: "valgrind"
           lua_nginx_module: "v0.10.25"
           lua_resty_core: "v0.1.27"
