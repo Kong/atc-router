@@ -18,6 +18,11 @@ jobs:
     strategy:
       matrix:
         include:
+        - nginx: "1.25.1"
+          openssl: "3.1.1"
+          valgrind: "valgrind"
+          lua_nginx_module: "v0.10.25"
+          lua_resty_core: "v0.1.27"
         - nginx: "1.21.4"
           openssl: "1.1.1p"
           valgrind: "valgrind"
