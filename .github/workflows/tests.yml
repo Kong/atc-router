@@ -83,7 +83,7 @@ jobs:
     - name: Setup tools
       run: |
         sudo apt update
-        sudo apt install -qq -y cpanminus axel ca-certificates valgrind haveged libpcre2-dev
+        sudo apt install -qq -y cpanminus axel ca-certificates valgrind haveged
         mkdir -p $OPENSSL_PREFIX $LUAJIT_PREFIX
         # perl cache
         pushd /home/runner/work/cache
