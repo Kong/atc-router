@@ -89,7 +89,7 @@ impl fmt::Display for BinaryOperator {
                 LessOrEqual => "<=",
                 In => "in",
                 NotIn => "not in",
-                Contains => "contains"
+                Contains => "contains",
             }
         )
     }
@@ -253,15 +253,23 @@ fn expr_transformations_nested() {
 fn str_unicode_test() {
     let tests = vec![
         // cjk chars
-        (
-            "t_msg in \"你好\"",
-            "(t_msg in \"你好\")",
-        ),
+        ("t_msg in \"你好\"", "(t_msg in \"你好\")"),
         // 0xXXX unicode
-        (
-            "t_msg in \"\u{4f60}\u{597d}\"",
-            "(t_msg in \"你好\")",
-        ),
+        ("t_msg in \"\u{4f60}\u{597d}\"", "(t_msg in \"你好\")"),
+    ];
+    for (input, expected) in tests {
+        let result = parse(input).unwrap();
+        assert_eq!(result.to_string(), expected);
+    }
+}
+
+#[test]
+fn rawstr_test() {
+    let tests = vec![
+        // invalid escape sequence
+        (r##"a == r#"/path/to/\d+"#"##, r#"(a == "/path/to/\d+")"#),
+        // valid escape sequence
+        (r##"a == r#"/path/to/\n+"#"##, r#"(a == "/path/to/\n+")"#),
     ];
     for (input, expected) in tests {
         let result = parse(input).unwrap();
