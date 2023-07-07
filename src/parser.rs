@@ -1,4 +1,3 @@
-#![allow(deprecated)]
 extern crate pest;
 
 use crate::ast::{
@@ -97,7 +96,11 @@ fn parse_rhs(pair: Pair<Rule>) -> ParseResult<Value> {
     let rule = pair.as_rule();
     Ok(match rule {
         Rule::str_literal => Value::String(parse_str_literal(pair)?),
-        Rule::ip_literal => Value::IpCidr(parse_ip_literal(pair)?),
+        Rule::rawstr_literal => Value::String(parse_rawstr_literal(pair)?),
+        Rule::ipv4_cidr_literal => Value::IpCidr(IpCidr::V4(parse_ipv4_cidr_literal(pair)?)),
+        Rule::ipv6_cidr_literal => Value::IpCidr(IpCidr::V6(parse_ipv6_cidr_literal(pair)?)),
+        Rule::ipv4_literal => Value::IpAddr(IpAddr::V4(parse_ipv4_literal(pair)?)),
+        Rule::ipv6_literal => Value::IpAddr(IpAddr::V6(parse_ipv6_literal(pair)?)),
         Rule::int_literal => Value::Int(parse_int_literal(pair)?),
         _ => unreachable!(),
     })
@@ -112,6 +115,21 @@ fn parse_str_literal(pair: Pair<Rule>) -> ParseResult<String> {
         match rule {
             Rule::str_esc => s.push(parse_str_esc(char_pair)),
             Rule::str_char => s.push(parse_str_char(char_pair)),
+            _ => unreachable!(),
+        }
+    }
+    Ok(s)
+}
+
+// rawstr_literal = ${ "r#\"" ~ rawstr_char* ~ "\"#" }
+// rawstr_char = { !"\"#" ~ ANY }
+fn parse_rawstr_literal(pair: Pair<Rule>) -> ParseResult<String> {
+    let char_pairs = pair.into_inner();
+    let mut s = String::new();
+    for char_pair in char_pairs {
+        let rule = char_pair.as_rule();
+        match rule {
+            Rule::rawstr_char => s.push(parse_str_char(char_pair)),
             _ => unreachable!(),
         }
     }
@@ -138,29 +156,13 @@ fn parse_ipv4_cidr_literal(pair: Pair<Rule>) -> ParseResult<Ipv4Cidr> {
 fn parse_ipv6_cidr_literal(pair: Pair<Rule>) -> ParseResult<Ipv6Cidr> {
     pair.as_str().parse().into_parse_result(&pair)
 }
-fn parse_ipv4_literal(pair: Pair<Rule>) -> ParseResult<Ipv4Cidr> {
-    format!("{}/32", pair.as_str())
-        .parse()
-        .into_parse_result(&pair)
+fn parse_ipv4_literal(pair: Pair<Rule>) -> ParseResult<Ipv4Addr> {
+    pair.as_str().parse().into_parse_result(&pair)
 }
-fn parse_ipv6_literal(pair: Pair<Rule>) -> ParseResult<Ipv6Cidr> {
-    format!("{}/128", pair.as_str())
-        .parse()
-        .into_parse_result(&pair)
+fn parse_ipv6_literal(pair: Pair<Rule>) -> ParseResult<Ipv6Addr> {
+    pair.as_str().parse().into_parse_result(&pair)
 }
 
-fn parse_ip_literal(pair: Pair<Rule>) -> ParseResult<IpCidr> {
-    let pairs = pair.into_inner();
-    let pair = pairs.peek().unwrap();
-    let rule = pair.as_rule();
-    Ok(match rule {
-        Rule::ipv4_cidr_literal => IpCidr::V4(parse_ipv4_cidr_literal(pair)?),
-        Rule::ipv6_cidr_literal => IpCidr::V6(parse_ipv6_cidr_literal(pair)?),
-        Rule::ipv4_literal => IpCidr::V4(parse_ipv4_literal(pair)?),
-        Rule::ipv6_literal => IpCidr::V6(parse_ipv6_literal(pair)?),
-        _ => unreachable!(),
-    })
-}
 fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
     let is_neg = pair.as_str().starts_with('-');
     let pairs = pair.into_inner();
