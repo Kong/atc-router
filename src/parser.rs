@@ -299,13 +299,8 @@ fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<
         })
         .map_infix(|lhs, op, rhs| {
             Ok(match op.as_rule() {
-                Rule::and_op => Expression::Logical(Box::new(LogicalExpression::And(
-                    lhs.unwrap(),
-                    rhs.unwrap(),
-                ))),
-                Rule::or_op => {
-                    Expression::Logical(Box::new(LogicalExpression::Or(lhs.unwrap(), rhs.unwrap())))
-                }
+                Rule::and_op => Expression::Logical(Box::new(LogicalExpression::And(lhs?, rhs?))),
+                Rule::or_op => Expression::Logical(Box::new(LogicalExpression::Or(lhs?, rhs?))),
                 _ => unreachable!(),
             })
         })
