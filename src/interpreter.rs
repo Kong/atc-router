@@ -216,14 +216,6 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::In => match (lhs_value, &self.rhs) {
-                    (Value::String(l), Value::String(r)) => {
-                        if r.contains(l) {
-                            matched = true;
-                            if any {
-                                return true;
-                            }
-                        }
-                    }
                     (Value::IpAddr(l), Value::IpCidr(r)) => {
                         if r.contains(l) {
                             matched = true;
@@ -234,24 +226,17 @@ impl Execute for Predicate {
                     }
                     _ => unreachable!(),
                 },
-                BinaryOperator::NotIn => {
-                    let rhs = match &self.rhs {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
-                    let lhs = match lhs_value {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
-
-                    if !rhs.contains(lhs) {
-                        if any {
-                            return true;
+                BinaryOperator::NotIn => match (lhs_value, &self.rhs) {
+                    (Value::IpAddr(l), Value::IpCidr(r)) => {
+                        if !r.contains(l) {
+                            matched = true;
+                            if any {
+                                return true;
+                            }
                         }
-
-                        matched = true;
                     }
-                }
+                    _ => unreachable!(),
+                },
                 BinaryOperator::Contains => {
                     let rhs = match &self.rhs {
                         Value::String(s) => s,
@@ -277,7 +262,7 @@ impl Execute for Predicate {
         // if we reached here, it means that `any` did not find a match,
         // or we passed all matches for `all`. So we simply need to return
         // !any && lhs_values.len() > 0 to cover both cases
-        return !any && lhs_values.len() > 0;
+        !any && !lhs_values.is_empty()
     }
 }
 

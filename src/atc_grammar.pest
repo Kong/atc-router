@@ -26,7 +26,7 @@ ipv6_literal = @{
 }
 ipv4_cidr_literal = @{ ipv4_literal ~ "/" ~ ASCII_DIGIT{1,2} }
 ipv6_cidr_literal = @{ ipv6_literal ~ "/" ~ ASCII_DIGIT{1,3} }
-ip_literal = { ipv4_cidr_literal | ipv6_cidr_literal | ipv4_literal | ipv6_literal }
+ip_literal = _{ ipv4_cidr_literal | ipv6_cidr_literal | ipv4_literal | ipv6_literal }
 
 
 binary_operator = { "==" | "!=" | "~" | "^=" | "=^" | ">=" |
