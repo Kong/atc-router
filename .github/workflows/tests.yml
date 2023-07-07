@@ -18,8 +18,8 @@ jobs:
     strategy:
       matrix:
         include:
-        - nginx: "1.23.0"
-          openssl: "1.1.1u"
+        - nginx: "1.25.1"
+          openssl: "3.1.1"
           valgrind: "valgrind"
           lua_nginx_module: "v0.10.25"
           lua_resty_core: "v0.1.27"
@@ -82,8 +82,8 @@ jobs:
 
     - name: Setup tools
       run: |
-        sudo apt-get update
-        sudo apt-get install -qq -y cpanminus axel ca-certificates valgrind haveged
+        sudo apt update
+        sudo apt install -qq -y cpanminus axel ca-certificates valgrind haveged libpcre2-dev
         mkdir -p $OPENSSL_PREFIX $LUAJIT_PREFIX
         # perl cache
         pushd /home/runner/work/cache
