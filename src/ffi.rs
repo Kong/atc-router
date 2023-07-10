@@ -3,8 +3,8 @@ use crate::context::Context;
 use crate::router::Router;
 use crate::schema::Schema;
 use cidr::IpCidr;
-use std::ffi;
 use std::cmp::min;
+use std::ffi;
 use std::net::IpAddr;
 use std::os::raw::c_char;
 use std::slice::from_raw_parts_mut;
@@ -273,12 +273,14 @@ mod tests {
             let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
             let mut errbuf_len = ERR_BUF_MAX_LEN;
 
-            let result = router_add_matcher(&mut router,
-                                            1,
-                                            uuid.as_ptr(),
-                                            junk.as_ptr(),
-                                            errbuf.as_mut_ptr(),
-                                            &mut errbuf_len);
+            let result = router_add_matcher(
+                &mut router,
+                1,
+                uuid.as_ptr() as *const i8,
+                junk.as_ptr() as *const i8,
+                errbuf.as_mut_ptr(),
+                &mut errbuf_len,
+            );
             assert_eq!(result, false);
             assert_eq!(errbuf_len, ERR_BUF_MAX_LEN);
         }
@@ -294,12 +296,14 @@ mod tests {
             let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
             let mut errbuf_len = ERR_BUF_MAX_LEN;
 
-            let result = router_add_matcher(&mut router,
-                                            1,
-                                            uuid.as_ptr(),
-                                            junk.as_ptr(),
-                                            errbuf.as_mut_ptr(),
-                                            &mut errbuf_len);
+            let result = router_add_matcher(
+                &mut router,
+                1,
+                uuid.as_ptr() as *const i8,
+                junk.as_ptr() as *const i8,
+                errbuf.as_mut_ptr(),
+                &mut errbuf_len,
+            );
             assert_eq!(result, false);
             assert!(errbuf_len < ERR_BUF_MAX_LEN);
         }

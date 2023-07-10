@@ -179,7 +179,7 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::Lesser => {
+                BinaryOperator::Less => {
                     let rhs = match &self.rhs {
                         Value::Int(i) => i,
                         _ => unreachable!(),
@@ -197,7 +197,7 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::LesserOrEqual => {
+                BinaryOperator::LessOrEqual => {
                     let rhs = match &self.rhs {
                         Value::Int(i) => i,
                         _ => unreachable!(),
@@ -248,7 +248,11 @@ impl Execute for Predicate {
                     };
 
                     if lhs.contains(rhs) {
-                        return true;
+                        if any {
+                            return true;
+                        }
+
+                        matched = true;
                     }
                 }
             } // match

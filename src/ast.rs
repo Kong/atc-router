@@ -30,8 +30,8 @@ pub enum BinaryOperator {
     Postfix,        // =^
     Greater,        // >
     GreaterOrEqual, // >=
-    Lesser,         // <
-    LesserOrEqual,  // <=
+    Less,           // <
+    LessOrEqual,    // <=
     In,             // in
     NotIn,          // not in
     Contains,       // contains

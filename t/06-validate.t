@@ -198,10 +198,10 @@ nil
 GET /t
 --- response_body
 nil
- --> 1:1
+ --> 1:20
   |
 1 | http.headers.foo ~ "([."
-  | ^----------------------^
+  |                    ^---^
   |
   = regex parse error:
     ([.
@@ -236,6 +236,44 @@ GET /t
 --- response_body
 true
 nil
+--- no_error_log
+[error]
+[warn]
+[crit]
+
+
+
+=== TEST 8: pratt parser propagates parser error
+--- http_config eval: $::HttpConfig
+--- config
+    location = /t {
+        content_by_lua_block {
+            local schema = require("resty.router.schema")
+            local router = require("resty.router.router")
+
+            local s = schema.new()
+            s:add_field("http.headers.foo", "String")
+
+            local expr = [[http.headers.foo == "a" && http.headers.foo ~ "([."]]
+            local r, err = router.validate(s, expr)
+            ngx.say(r)
+            ngx.say(err)
+        }
+    }
+--- request
+GET /t
+--- response_body
+nil
+ --> 1:47
+  |
+1 | http.headers.foo == "a" && http.headers.foo ~ "([."
+  |                                               ^---^
+  |
+  = regex parse error:
+    ([.
+     ^
+error: unclosed character class
+
 --- no_error_log
 [error]
 [warn]
