@@ -29,7 +29,7 @@ jobs:
     # Optional step to run on only changed files
     - name: Get changed files
       id: changed-files
-      uses: tj-actions/changed-files@87e23c4c79a603288642711155953c7da34b11ac # v37
+      uses: tj-actions/changed-files@39283171cefdf491e0f0d6cf285b86b31eb6f3cd # v37
       with: 
         files: |
           **.lua
@@ -63,7 +63,7 @@ jobs:
     # Optional step to run on only changed files
     - name: Get changed files
       id: changed-files
-      uses: tj-actions/changed-files@87e23c4c79a603288642711155953c7da34b11ac # v37
+      uses: tj-actions/changed-files@39283171cefdf491e0f0d6cf285b86b31eb6f3cd # v37
       with: 
         files: |
           **.rs
