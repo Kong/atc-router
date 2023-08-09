@@ -31,6 +31,7 @@ At the core of the library, ATC Router is a [DSL] that supports simple predicate
 and logical combinations between the predicates.
 
 [DSL]:https://en.wikipedia.org/wiki/Domain-specific_language
+
 Each data referred in the DSL has a type, the type can be one of the following:
 
 * `"String"` - a UTF-8 string value
@@ -211,8 +212,8 @@ regex captures from the matched route are returned.
 
 Copyright © 2022-2023 Kong, Inc.
 
-Licensed under the Apache License, Version 2.0 <LICENSE or
-[https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0)>.
+Licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+
 Files in the project may not be copied, modified, or distributed except according to those terms.
 
 [Back to TOC](#table-of-contents)
