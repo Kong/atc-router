@@ -27,9 +27,10 @@ Table of Contents
 
 # Semantics
 
-At the core of the library, ATC Router is a DSL that supports simple predicate
+At the core of the library, ATC Router is a [DSL] that supports simple predicate
 and logical combinations between the predicates.
 
+[DSL]:https://en.wikipedia.org/wiki/Domain-specific_language
 Each data referred in the DSL has a type, the type can be one of the following:
 
 * `"String"` - a UTF-8 string value
