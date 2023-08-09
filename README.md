@@ -209,7 +209,7 @@ regex captures from the matched route are returned.
 
 # Copyright and license
 
-Copyright (c) 2022-2023 Kong, Inc.
+Copyright © 2022-2023 Kong, Inc.
 
 Licensed under the Apache License, Version 2.0 <LICENSE or
 [https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0)>.
