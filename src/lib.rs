@@ -7,7 +7,7 @@ pub mod schema;
 pub mod semantics;
 mod ast_tests;
 
-#[cfg(not(feature = "no-ffi"))]
+#[cfg(feature = "ffi")]
 pub mod ffi;
 
 #[macro_use]

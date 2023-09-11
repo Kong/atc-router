@@ -23,5 +23,6 @@ serde_regex = { version = "1.1.0", optional = true }
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [features]
-no-ffi = []
+default = ["ffi"]
+ffi = []
 serde = ["cidr/serde", "dep:serde", "serde_regex"]
