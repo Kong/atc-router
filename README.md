@@ -1,6 +1,6 @@
 # Name
 
-beep
+beep beep
 
 ATC Router library for Kong.
 
