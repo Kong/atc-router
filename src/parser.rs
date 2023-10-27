@@ -12,6 +12,7 @@ use pest::pratt_parser::{Op, PrattParser};
 use pest::Parser;
 use regex::Regex;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use memoize::memoize;
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
 /// cbindgen:ignore
@@ -184,6 +185,25 @@ fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
     Ok(num)
 }
 
+#[memoize(Capacity: 1000000)]
+pub fn parse_regex(s: String) -> Result<Regex, regex::Error> {
+    Regex::new(s.as_str())
+}
+
+#[test]
+fn expr_regex_memoization() {
+    let mut count = 0u32;
+    let now = std::time::Instant::now();
+    loop {
+        parse_regex("^foo.*$".to_string()).unwrap();
+        count += 1;
+        if count == 50000 {
+            break;
+        }
+    }
+    assert!(now.elapsed().as_secs() < 1);
+}
+
 // predicate = { lhs ~ binary_operator ~ rhs }
 fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
     let mut pairs = pair.into_inner();
@@ -195,7 +215,7 @@ fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
         lhs,
         rhs: if op == BinaryOperator::Regex {
             if let Value::String(s) = rhs {
-                let r = Regex::new(&s).map_err(|e| {
+                let r = parse_regex(s).map_err(|e| {
                     ParseError::new_from_span(
                         ErrorVariant::CustomError {
                             message: e.to_string(),
