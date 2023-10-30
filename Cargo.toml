@@ -15,7 +15,7 @@ pest_derive = "2.7"
 cidr = "0.2"
 lazy_static = "1.4"
 uuid = "1.5"
-regex = "1.9"
+regex = "1.10"
 
 [lib]
 crate-type = ["cdylib", "staticlib"]
