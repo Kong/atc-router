@@ -14,6 +14,7 @@ LUA_INCLUDE_DIR ?= $(PREFIX)/include
 LUA_LIB_DIR ?=     $(PREFIX)/lib/lua/$(LUA_VERSION)
 INSTALL ?= install
 RELEASE_FOLDER = target/$(CARGO_BUILD_TARGET)/release
+DEBUG_RELEASE_FOLDER = target/$(CARGO_BUILD_TARGET)/debug
 
 .PHONY: all test install build clean
 
@@ -24,7 +25,7 @@ build: $(RELEASE_FOLDER)/libatc_router.$(SHLIB_EXT) $(RELEASE_FOLDER)/libatc_rou
 $(RELEASE_FOLDER)/libatc_router.%: src/*.rs
 	cargo build --release
 
-target/debug/libatc_router.%: src/*.rs
+$(DEBUG_RELEASE_FOLDER)/libatc_router.%: src/*.rs
 	cargo build
 
 install-lualib:
@@ -34,8 +35,8 @@ install-lualib:
 install: build install-lualib
 	$(INSTALL) -m 775 $(RELEASE_FOLDER)/libatc_router.$(SHLIB_EXT) $(DESTDIR)$(LUA_LIB_DIR)/libatc_router.$(SHLIB_EXT)
 
-install-debug: target/debug/libatc_router.% install-lualib
-	$(INSTALL) -m 775 target/debug/libatc_router.$(SHLIB_EXT) $(DESTDIR)$(LUA_LIB_DIR)/libatc_router.$(SHLIB_EXT)
+install-debug: $(DEBUG_RELEASE_FOLDER)/libatc_router.% install-lualib
+	$(INSTALL) -m 775 $(DEBUG_RELEASE_FOLDER)/libatc_router.$(SHLIB_EXT) $(DESTDIR)$(LUA_LIB_DIR)/libatc_router.$(SHLIB_EXT)
 
 clean:
 	rm -rf target
