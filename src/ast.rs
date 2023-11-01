@@ -3,24 +3,31 @@ use cidr::IpCidr;
 use regex::Regex;
 use std::net::IpAddr;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub enum Expression {
     Logical(Box<LogicalExpression>),
     Predicate(Predicate),
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub enum LogicalExpression {
     And(Expression, Expression),
     Or(Expression, Expression),
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq)]
 pub enum LhsTransformations {
     Lower,
     Any,
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Eq)]
 pub enum BinaryOperator {
     Equals,         // ==
@@ -37,12 +44,14 @@ pub enum BinaryOperator {
     Contains,       // contains
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
 pub enum Value {
     String(String),
     IpCidr(IpCidr),
     IpAddr(IpAddr),
     Int(i64),
+    #[cfg_attr(feature = "serde", serde(with = "serde_regex"))]
     Regex(Regex),
 }
 
@@ -73,6 +82,7 @@ impl Value {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Eq, PartialEq)]
 #[repr(C)]
 pub enum Type {
@@ -83,6 +93,7 @@ pub enum Type {
     Regex,
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Lhs {
     pub var_name: String,
@@ -107,6 +118,7 @@ impl Lhs {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Predicate {
     pub lhs: Lhs,
