@@ -32,9 +32,9 @@ jobs:
       run: bazel build :atc_router --verbose_failures
 
     - name: Ensure `ffi` feature is present (Linux)
-      if: ${{ matrix.os == "ubuntu-latest" }}
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: readelf -Ws --dyn-syms bazel-bin/libatc_router.so | grep router_execute
 
     - name: Ensure `ffi` feature is present (macOS)
-      if: ${{ matrix.os == "macos-latest" }}
-      run: readelf -Ws --dyn-syms bazel-bin/libatc_router.so | grep router_execute
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: nm -gU bazel-bin/libatc_router.dylib | grep router_execute
