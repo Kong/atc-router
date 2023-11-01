@@ -12,6 +12,7 @@ filegroup(
 rust_shared_library(
     name = "atc_router",
     srcs = [":all_srcs"],
+    crate_features = ["default", "ffi"],
     aliases = aliases(),
     proc_macro_deps = all_crate_deps(
         proc_macro = True,
