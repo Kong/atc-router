@@ -14,7 +14,7 @@ for more detailed explainations of the concepts and APIs.
   Builds the FFI based interface which is suitable for use by a foreign language such as
   C or LuaJIT. This feature is on by default.
 * **serde** -
-  Enable serde integration which allows data structures to be serializanle/deserializable.
+  Enable serde integration which allows data structures to be serializable/deserializable.
 */
 
 pub mod ast;
