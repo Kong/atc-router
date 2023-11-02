@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "atc-router"
-version = "1.3.0"
+version = "1.3.1"
 dependencies = [
  "cidr",
  "lazy_static",
