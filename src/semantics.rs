@@ -104,6 +104,7 @@ impl Validate for Expression {
                 match p.op {
                     BinaryOperator::Equals | BinaryOperator::NotEquals => { Ok(()) }
                     BinaryOperator::Regex => {
+                        // unchecked path above
                         if lhs_type == &Type::String {
                             Ok(())
                         } else {
@@ -127,6 +128,7 @@ impl Validate for Expression {
                         }
                     },
                     BinaryOperator::In | BinaryOperator::NotIn => {
+                        // unchecked path above
                         match (lhs_type, &p.rhs,) {
                             (Type::IpAddr, Value::IpCidr(_)) => {
                                 Ok(())
@@ -144,6 +146,114 @@ impl Validate for Expression {
                     }
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::parse;
+    use lazy_static::lazy_static;
+
+    lazy_static! {
+        static ref SCHEMA: Schema = {
+            let mut s = Schema::default();
+            s.add_field("string", Type::String);
+            s.add_field("int", Type::Int);
+            s.add_field("ipaddr", Type::IpAddr);
+            s
+        };
+    }
+
+    #[test]
+    fn unknown_field() {
+        let expression = parse(r#"unkn == "abc""#).unwrap();
+        assert_eq!(
+            expression.validate(&SCHEMA).unwrap_err(),
+            "Unknown LHS field"
+        );
+    }
+
+    #[test]
+    fn string_lhs() {
+        let tests = vec![
+            r#"string == "abc""#,
+            r#"string != "abc""#,
+            r#"string ~ "abc""#,
+            r#"string ^= "abc""#,
+            r#"string =^ "abc""#,
+            r#"lower(string) =^ "abc""#,
+        ];
+        for input in tests {
+            let expression = parse(input).unwrap();
+            expression.validate(&SCHEMA).unwrap();
+        }
+
+        let failing_tests = vec![
+            r#"string == 192.168.0.1"#,
+            r#"string == 192.168.0.0/24"#,
+            r#"string == 123"#,
+            r#"string in "abc""#,
+        ];
+        for input in failing_tests {
+            let expression = parse(input).unwrap();
+            assert!(expression.validate(&SCHEMA).is_err());
+        }
+    }
+
+    #[test]
+    fn ipaddr_lhs() {
+        let tests = vec![
+            r#"ipaddr == 192.168.0.1"#,
+            r#"ipaddr == fd00::1"#,
+            r#"ipaddr in 192.168.0.0/24"#,
+            r#"ipaddr in fd00::/64"#,
+            r#"ipaddr not in 192.168.0.0/24"#,
+            r#"ipaddr not in fd00::/64"#,
+        ];
+        for input in tests {
+            let expression = parse(input).unwrap();
+            expression.validate(&SCHEMA).unwrap();
+        }
+
+        let failing_tests = vec![
+            r#"ipaddr == "abc""#,
+            r#"ipaddr == 123"#,
+            r#"ipaddr in 192.168.0.1"#,
+            r#"ipaddr in fd00::1"#,
+            r#"ipaddr == 192.168.0.0/24"#,
+            r#"ipaddr == fd00::/64"#,
+            r#"lower(ipaddr) == fd00::1"#,
+        ];
+        for input in failing_tests {
+            let expression = parse(input).unwrap();
+            assert!(expression.validate(&SCHEMA).is_err());
+        }
+    }
+
+    #[test]
+    fn int_lhs() {
+        let tests = vec![
+            r#"int == 123"#,
+            r#"int >= 123"#,
+            r#"int <= 123"#,
+            r#"int > 123"#,
+            r#"int < 123"#,
+        ];
+        for input in tests {
+            let expression = parse(input).unwrap();
+            expression.validate(&SCHEMA).unwrap();
+        }
+
+        let failing_tests = vec![
+            r#"int == "abc""#,
+            r#"int in 192.168.0.0/24"#,
+            r#"lower(int) == 123"#,
+        ];
+        for input in failing_tests {
+            let expression = parse(input).unwrap();
+            assert!(expression.validate(&SCHEMA).is_err());
         }
     }
 }
