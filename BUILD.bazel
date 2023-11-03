@@ -4,16 +4,25 @@ load("@crate_index//:defs.bzl", "aliases", "all_crate_deps")
 filegroup(
     name = "all_srcs",
     srcs = glob(
-        include = ["**"],
-        exclude = ["*.bazel"],
+        include = [
+            "src/**",
+            "Cargo.toml",
+            "Cargo.lock",
+        ],
+        exclude = [
+            "*.bazel",
+        ],
     ),
 )
 
 rust_shared_library(
     name = "atc_router",
     srcs = [":all_srcs"],
-    crate_features = ["default", "ffi"],
     aliases = aliases(),
+    crate_features = [
+        "default",
+        "ffi",
+    ],
     proc_macro_deps = all_crate_deps(
         proc_macro = True,
     ),
