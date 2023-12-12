@@ -10,7 +10,7 @@ use pest::iterators::Pair;
 use pest::pratt_parser::Assoc as AssocNew;
 use pest::pratt_parser::{Op, PrattParser};
 use pest::Parser;
-use regex::Regex;
+use regex::RegexBuilder;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
@@ -195,14 +195,17 @@ fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
         lhs,
         rhs: if op == BinaryOperator::Regex {
             if let Value::String(s) = rhs {
-                let r = Regex::new(&s).map_err(|e| {
-                    ParseError::new_from_span(
-                        ErrorVariant::CustomError {
-                            message: e.to_string(),
-                        },
-                        rhs_pair.as_span(),
-                    )
-                })?;
+                let r = RegexBuilder::new(&s)
+                    .dfa_size_limit(usize::MAX)
+                    .build()
+                    .map_err(|e| {
+                        ParseError::new_from_span(
+                            ErrorVariant::CustomError {
+                                message: e.to_string(),
+                            },
+                            rhs_pair.as_span(),
+                        )
+                    })?;
 
                 Value::Regex(r)
             } else {
