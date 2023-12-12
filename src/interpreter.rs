@@ -75,9 +75,9 @@ impl Execute for Predicate {
                         _ => unreachable!(),
                     };
 
-                    let reg_cap = rhs.captures(lhs);
+                    if rhs.is_match(lhs) {
+                        let reg_cap = rhs.captures(lhs).unwrap();
 
-                    if let Some(reg_cap) = reg_cap {
                         m.matches.insert(
                             self.lhs.var_name.clone(),
                             Value::String(reg_cap.get(0).unwrap().as_str().to_string()),
