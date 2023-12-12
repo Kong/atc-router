@@ -1,57 +1,52 @@
 use crate::ast::Value;
-use crate::schema::Schema;
+use crate::router::Router;
 use std::collections::HashMap;
 use uuid::Uuid;
 
 pub struct Match {
     pub uuid: Uuid,
-    pub matches: HashMap<String, Value>,
+    pub matches: Vec<Option<Value>>,
     pub captures: HashMap<String, String>,
 }
 
 impl Match {
-    pub fn new() -> Self {
+    pub fn new(matches_n: usize) -> Self {
         Match {
             uuid: Uuid::default(),
-            matches: HashMap::new(),
+            matches: vec![None; matches_n],
             captures: HashMap::new(),
         }
     }
 }
 
-impl Default for Match {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 pub struct Context<'a> {
-    schema: &'a Schema,
-    values: HashMap<String, Vec<Value>>,
+    router: &'a Router<'a>,
+    values: Vec<Vec<Value>>,
     pub result: Option<Match>,
 }
 
 impl<'a> Context<'a> {
-    pub fn new(schema: &'a Schema) -> Self {
+    pub fn new(router: &'a Router) -> Self {
         Context {
-            schema,
-            values: HashMap::new(),
+            router,
+            values: vec![vec![]; router.field_index.len()],
             result: None,
         }
     }
 
     pub fn add_value(&mut self, field: &str, value: Value) {
-        if &value.my_type() != self.schema.type_of(field).unwrap() {
+        if &value.my_type() != self.router.schema.type_of(field).unwrap() {
             panic!("value provided does not match schema");
         }
 
-        self.values
-            .entry(field.to_string())
-            .or_default()
-            .push(value);
+        self.values[self
+            .router
+            .get_field_index(field)
+            .expect("unneeded field: {}")]
+        .push(value);
     }
 
-    pub fn value_of(&self, field: &str) -> Option<&[Value]> {
-        self.values.get(field).map(|v| v.as_slice())
+    pub fn value_of(&self, field_index: usize) -> Option<&[Value]> {
+        Some(self.values.get(field_index).unwrap())
     }
 }

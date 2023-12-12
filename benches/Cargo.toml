@@ -1,0 +1,12 @@
+[package]
+name = "arc-router-benches"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+debug = true
+
+[dependencies]
+atc-router = { path = "../", version = "1.3" }
+uuid = { version = "1.5", features = ["v4"] }
+rand = { version = "0.8", features = ["small_rng"] }

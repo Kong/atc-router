@@ -19,7 +19,7 @@ impl Execute for Expression {
 
 impl Execute for Predicate {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
-        let lhs_values = match ctx.value_of(&self.lhs.var_name) {
+        let lhs_values = match ctx.value_of(self.lhs.var_index) {
             None => return false,
             Some(v) => v,
         };
@@ -46,8 +46,7 @@ impl Execute for Predicate {
             match self.op {
                 BinaryOperator::Equals => {
                     if lhs_value == &self.rhs {
-                        m.matches
-                            .insert(self.lhs.var_name.clone(), self.rhs.clone());
+                        m.matches[self.lhs.var_index] = Some(self.rhs.clone());
 
                         if any {
                             return true;
@@ -78,10 +77,8 @@ impl Execute for Predicate {
                     let reg_cap = rhs.captures(lhs);
 
                     if let Some(reg_cap) = reg_cap {
-                        m.matches.insert(
-                            self.lhs.var_name.clone(),
-                            Value::String(reg_cap.get(0).unwrap().as_str().to_string()),
-                        );
+                        m.matches[self.lhs.var_index] =
+                            Some(Value::String(reg_cap.get(0).unwrap().as_str().to_string()));
 
                         for (i, c) in reg_cap.iter().enumerate() {
                             if let Some(c) = c {
@@ -114,8 +111,7 @@ impl Execute for Predicate {
                     };
 
                     if lhs.starts_with(rhs) {
-                        m.matches
-                            .insert(self.lhs.var_name.clone(), self.rhs.clone());
+                        m.matches[self.lhs.var_index] = Some(self.rhs.clone());
                         if any {
                             return true;
                         }
@@ -134,8 +130,7 @@ impl Execute for Predicate {
                     };
 
                     if lhs.ends_with(rhs) {
-                        m.matches
-                            .insert(self.lhs.var_name.clone(), self.rhs.clone());
+                        m.matches[self.lhs.var_index] = Some(self.rhs.clone());
                         if any {
                             return true;
                         }

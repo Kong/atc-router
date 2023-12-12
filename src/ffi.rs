@@ -155,8 +155,8 @@ pub unsafe extern "C" fn router_get_fields(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn context_new(schema: &Schema) -> *mut Context {
-    Box::into_raw(Box::new(Context::new(schema)))
+pub unsafe extern "C" fn context_new<'a>(router: &'a Router<'a>) -> *mut Context<'a> {
+    Box::into_raw(Box::new(Context::new(router)))
 }
 
 #[no_mangle]
@@ -194,7 +194,7 @@ pub unsafe extern "C" fn context_add_value(
 pub unsafe extern "C" fn context_get_result(
     context: &Context,
     uuid_hex: *mut u8,
-    matched_field: *const i8,
+    matched_field: usize,
     matched_value: *mut *const u8,
     matched_value_len: *mut usize,
     capture_names: *mut *const u8,
@@ -212,13 +212,10 @@ pub unsafe extern "C" fn context_get_result(
 
         res.uuid.as_hyphenated().encode_lower(uuid_hex);
 
-        if !matched_field.is_null() {
-            let matched_field = ffi::CStr::from_ptr(matched_field as *const c_char)
-                .to_str()
-                .unwrap();
+        if matched_field > 0 {
             assert!(!matched_value.is_null());
             assert!(!matched_value_len.is_null());
-            if let Some(Value::String(v)) = res.matches.get(matched_field) {
+            if let Some(Value::String(v)) = &res.matches[matched_field] {
                 *matched_value = v.as_bytes().as_ptr();
                 *matched_value_len = v.len();
             } else {

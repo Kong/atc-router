@@ -82,6 +82,12 @@ impl Value {
     }
 }
 
+impl From<String> for Value {
+    fn from(v: String) -> Self {
+        Value::String(v)
+    }
+}
+
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Eq, PartialEq)]
 #[repr(C)]
@@ -97,6 +103,7 @@ pub enum Type {
 #[derive(Debug)]
 pub struct Lhs {
     pub var_name: String,
+    pub var_index: usize,
     pub transformations: Vec<LhsTransformations>,
 }
 

@@ -1,6 +1,6 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
+use crate::router::Router;
 use crate::schema::Schema;
-use std::collections::HashMap;
 
 type ValidationResult = Result<(), String>;
 
@@ -9,48 +9,43 @@ pub trait Validate {
 }
 
 pub trait FieldCounter {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>);
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>);
+    fn add_to_counter(&mut self, router: &mut Router);
+    fn remove_from_counter(&self, router: &mut Router);
 }
 
 impl FieldCounter for Expression {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
+    fn add_to_counter(&mut self, router: &mut Router) {
         match self {
-            Expression::Logical(l) => match l.as_ref() {
+            Expression::Logical(l) => match l.as_mut() {
                 LogicalExpression::And(l, r) => {
-                    l.add_to_counter(map);
-                    r.add_to_counter(map);
+                    l.add_to_counter(router);
+                    r.add_to_counter(router);
                 }
                 LogicalExpression::Or(l, r) => {
-                    l.add_to_counter(map);
-                    r.add_to_counter(map);
+                    l.add_to_counter(router);
+                    r.add_to_counter(router);
                 }
             },
             Expression::Predicate(p) => {
-                *map.entry(p.lhs.var_name.clone()).or_default() += 1;
+                p.lhs.var_index = router.acquire_field_index(&p.lhs.var_name);
             }
         }
     }
 
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
+    fn remove_from_counter(&self, router: &mut Router) {
         match self {
             Expression::Logical(l) => match l.as_ref() {
                 LogicalExpression::And(l, r) => {
-                    l.remove_from_counter(map);
-                    r.remove_from_counter(map);
+                    l.remove_from_counter(router);
+                    r.remove_from_counter(router);
                 }
                 LogicalExpression::Or(l, r) => {
-                    l.remove_from_counter(map);
-                    r.remove_from_counter(map);
+                    l.remove_from_counter(router);
+                    r.remove_from_counter(router);
                 }
             },
             Expression::Predicate(p) => {
-                let val = map.get_mut(&p.lhs.var_name).unwrap();
-                *val -= 1;
-
-                if *val == 0 {
-                    assert!(map.remove(&p.lhs.var_name).is_some());
-                }
+                router.release_field_index(&p.lhs.var_name);
             }
         }
     }
