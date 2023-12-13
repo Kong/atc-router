@@ -35,7 +35,7 @@ impl<'a> Context<'a> {
     pub fn new(schema: &'a Schema) -> Self {
         Context {
             schema,
-            values: FnvHashMap::default(),
+            values: FnvHashMap::with_capacity_and_hasher(8, Default::default()),
             result: None,
         }
     }
@@ -53,5 +53,9 @@ impl<'a> Context<'a> {
 
     pub fn value_of(&self, field: &str) -> Option<&[Value]> {
         self.values.get(field).map(|v| v.as_slice())
+    }
+
+    pub fn reset(&mut self) {
+        self.values.clear();
     }
 }

@@ -191,6 +191,11 @@ pub unsafe extern "C" fn context_add_value(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn context_reset(context: &mut Context) {
+    context.reset();
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn context_get_result(
     context: &Context,
     uuid_hex: *mut u8,
