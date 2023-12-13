@@ -131,4 +131,8 @@ function _M:get_result(matched_field)
 end
 
 
+function _M:reset()
+    clib.context_reset(self.context)
+end
+
 return _M
