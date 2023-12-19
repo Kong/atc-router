@@ -35,7 +35,7 @@ impl<'a> Context<'a> {
     pub fn new(schema: &'a Schema) -> Self {
         Context {
             schema,
-            values: FnvHashMap::with_capacity_and_hasher(8, Default::default()),
+            values: FnvHashMap::with_hasher(Default::default()),
             result: None,
         }
     }
