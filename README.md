@@ -2,8 +2,7 @@
 
 ATC Router library for Kong.
 
-Table of Contents
-=================
+# Table of Contents
 
 * [Name](#name)
 * [Semantics](#semantics)
@@ -23,6 +22,7 @@ Table of Contents
         * [new](#new)
         * [add\_value](#add_value)
         * [get\_result](#get_result)
+        * [reset](#reset)
 * [Copyright and license](#copyright-and-license)
 
 # Semantics
@@ -205,6 +205,17 @@ If the context did not contain a valid match result, `nil` is returned.
 
 Otherwise, the string UUID, value matching field `matched_field` and
 regex captures from the matched route are returned.
+
+[Back to TOC](#table-of-contents)
+
+### reset
+
+**syntax:** *c:reset()*
+
+**context:** *any*
+
+This resets context `c` without deallocating the underlying memory
+so the context can be used again as if it was just created.
 
 [Back to TOC](#table-of-contents)
 
