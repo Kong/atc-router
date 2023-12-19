@@ -61,7 +61,7 @@ impl TryFrom<&CValue> for Value {
 
 #[no_mangle]
 pub extern "C" fn schema_new() -> *mut Schema {
-    Box::into_raw(Box::new(Schema::default()))
+    Box::into_raw(Box::default())
 }
 
 #[no_mangle]
