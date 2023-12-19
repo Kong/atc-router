@@ -46,10 +46,8 @@ impl Execute for Predicate {
             match self.op {
                 BinaryOperator::Equals => {
                     if lhs_value == &self.rhs {
-                        if self.lhs.var_name == "http.path" {
-                            m.matches
-                                .insert(self.lhs.var_name.clone(), self.rhs.clone());
-                        }
+                        m.matches
+                            .insert(self.lhs.var_name.clone(), self.rhs.clone());
 
                         if any {
                             return true;
@@ -80,12 +78,10 @@ impl Execute for Predicate {
                     if rhs.is_match(lhs) {
                         let reg_cap = rhs.captures(lhs).unwrap();
 
-                        if self.lhs.var_name == "http.path" {
-                            m.matches.insert(
-                                self.lhs.var_name.clone(),
-                                Value::String(reg_cap.get(0).unwrap().as_str().to_string()),
-                            );
-                        }
+                        m.matches.insert(
+                            self.lhs.var_name.clone(),
+                            Value::String(reg_cap.get(0).unwrap().as_str().to_string()),
+                        );
 
                         for (i, c) in reg_cap.iter().enumerate() {
                             if let Some(c) = c {
@@ -118,10 +114,8 @@ impl Execute for Predicate {
                     };
 
                     if lhs.starts_with(rhs) {
-                        if self.lhs.var_name == "http.path" {
-                            m.matches
-                                .insert(self.lhs.var_name.clone(), self.rhs.clone());
-                        }
+                        m.matches
+                            .insert(self.lhs.var_name.clone(), self.rhs.clone());
                         if any {
                             return true;
                         }
@@ -140,10 +134,8 @@ impl Execute for Predicate {
                     };
 
                     if lhs.ends_with(rhs) {
-                        if self.lhs.var_name == "http.path" {
-                            m.matches
-                                .insert(self.lhs.var_name.clone(), self.rhs.clone());
-                        }
+                        m.matches
+                            .insert(self.lhs.var_name.clone(), self.rhs.clone());
                         if any {
                             return true;
                         }
