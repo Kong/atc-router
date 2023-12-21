@@ -61,7 +61,7 @@ impl TryFrom<&CValue> for Value {
 
 #[no_mangle]
 pub extern "C" fn schema_new() -> *mut Schema {
-    Box::into_raw(Box::new(Schema::default()))
+    Box::into_raw(Box::default())
 }
 
 #[no_mangle]
@@ -188,6 +188,11 @@ pub unsafe extern "C" fn context_add_value(
     context.add_value(field, value.unwrap());
 
     true
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn context_reset(context: &mut Context) {
+    context.reset();
 }
 
 #[no_mangle]

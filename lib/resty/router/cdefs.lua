@@ -77,6 +77,8 @@ bool context_add_value(struct Context *context,
                        uint8_t *errbuf,
                        uintptr_t *errbuf_len);
 
+void context_reset(struct Context *context);
+
 intptr_t context_get_result(const struct Context *context,
                             uint8_t *uuid_hex,
                             const int8_t *matched_field,
