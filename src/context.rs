@@ -57,5 +57,6 @@ impl<'a> Context<'a> {
 
     pub fn reset(&mut self) {
         self.values.clear();
+        self.result = None;
     }
 }
