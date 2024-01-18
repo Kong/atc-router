@@ -122,7 +122,7 @@ do
 
         assert(r:remove_matcher(DEFAULT_UUID))
 
-        return true
+        return r:get_fields()
     end
 end
 

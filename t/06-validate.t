@@ -35,15 +35,19 @@ __DATA__
             local expr = "http.headers.foo == \"bar\""
             local r, err = router.validate(s, expr)
 
-            ngx.say(r)
+            ngx.say(type(r))
             ngx.say(err)
+            ngx.say(#r)
+            ngx.say(r[1])
         }
     }
 --- request
 GET /t
 --- response_body
-true
+table
 nil
+1
+http.headers.foo
 --- no_error_log
 [error]
 [warn]
@@ -162,14 +166,14 @@ nil
 
             local expr = [[http.headers.foo ~ "/\\\\/*user$"]]
             local r, err = router.validate(s, expr)
-            ngx.say(r)
+            ngx.say(type(r))
             ngx.say(err)
         }
     }
 --- request
 GET /t
 --- response_body
-true
+table
 nil
 --- no_error_log
 [error]
@@ -227,14 +231,14 @@ error: unclosed character class
 
             local expr = [[http.headers.foo ~ "/\\/*user$"]]
             local r, err = router.validate(s, expr)
-            ngx.say(r)
+            ngx.say(type(r))
             ngx.say(err)
         }
     }
 --- request
 GET /t
 --- response_body
-true
+table
 nil
 --- no_error_log
 [error]
