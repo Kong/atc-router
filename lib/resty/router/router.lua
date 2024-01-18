@@ -120,9 +120,11 @@ do
             return nil, err
         end
 
+        local fields = r:get_fields()
+
         assert(r:remove_matcher(DEFAULT_UUID))
 
-        return r:get_fields()
+        return fields
     end
 end
 
