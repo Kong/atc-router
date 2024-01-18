@@ -155,7 +155,8 @@ actually used by the user supplied matchers.
 
 Validates an expression against a given schema.
 
-Returns the used fields when the expression is valid.
+Returns the fields used in the provided expression when the expression is valid, `nil` and a string
+describing the error otherwise.
 
 If the expression is invalid,
 `nil` and a string describing the reason will be returned.
