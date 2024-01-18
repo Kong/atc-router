@@ -137,7 +137,7 @@ none of the matcher matched.
 
 ### get\_fields
 
-**syntax:** *res, err = r:get_fields()*
+**syntax:** *res = r:get_fields()*
 
 **context:** *any*
 
@@ -149,13 +149,13 @@ actually used by the user supplied matchers.
 
 ### validate
 
-**syntax:** *ok, err = router.validate(schema, expr)*
+**syntax:** *fields, err = router.validate(schema, expr)*
 
 **context:** *any*
 
 Validates an expression against a given schema.
 
-Returns `true` when the expression is valid.
+Returns the used fields when the expression is valid.
 
 If the expression is invalid,
 `nil` and a string describing the reason will be returned.
