@@ -155,10 +155,7 @@ actually used by the user supplied matchers.
 
 Validates an expression against a given schema.
 
-Returns the fields used in the provided expression when the expression is valid, `nil` and a string
-describing the error otherwise.
-
-If the expression is invalid,
+Returns the fields used in the provided expression when the expression is valid. If the expression is invalid,
 `nil` and a string describing the reason will be returned.
 
 [Back to TOC](#table-of-contents)
