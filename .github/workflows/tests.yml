@@ -13,29 +13,35 @@ concurrency:
 jobs:
   tests:
     name: Tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
         include:
+        - nginx: "1.25.3"
+          nginx_opts: "--without-pcre2"
+          openssl: "3.2.0" # if this stops working, update to the latest patch version from https://www.openssl.org/source/
+          valgrind: "valgrind"
+          lua_nginx_module: "v0.10.26"
+          lua_resty_core: "v0.1.28"
         - nginx: "1.23.0"
           nginx_opts: "--without-pcre2"
-          openssl: "3.1.1"
+          openssl: "3.1.4" # if this stops working, update to the latest patch version from https://www.openssl.org/source/
           valgrind: "valgrind"
           lua_nginx_module: "v0.10.25"
           lua_resty_core: "v0.1.27"
         - nginx: "1.21.4"
-          openssl: "1.1.1p"
+          openssl: "1.1.1w" # if this stops working, update to the latest patch version from https://www.openssl.org/source/
           valgrind: "valgrind"
           lua_nginx_module: "v0.10.21"
           lua_resty_core: "v0.1.23"
         - nginx: "1.19.3"
-          openssl: "1.1.1n"
+          openssl: "1.1.1w" # if this stops working, update to the latest patch version from https://www.openssl.org/source/
           valgrind: "valgrind"
           lua_nginx_module: "v0.10.19"
           lua_resty_core: "v0.1.21"
         - nginx: "1.19.9"
-          openssl: "1.1.1n"
+          openssl: "1.1.1w" # if this stops working, update to the latest patch version from https://www.openssl.org/source/
           valgrind: "valgrind"
           lua_nginx_module: "v0.10.20"
           lua_resty_core: "v0.1.22"
