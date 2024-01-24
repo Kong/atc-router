@@ -111,7 +111,7 @@ impl Validate for Expression {
                             Err("Regex operators only supports string operands".to_string())
                         }
                     },
-                    BinaryOperator::Prefix | BinaryOperator::Postfix => {
+                    BinaryOperator::Prefix | BinaryOperator::NotPrefix | BinaryOperator::Postfix | BinaryOperator::NotPostfix => {
                         match p.rhs {
                             Value::String(_) => {
                                 Ok(())

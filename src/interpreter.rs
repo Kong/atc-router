@@ -123,6 +123,24 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
+                BinaryOperator::NotPrefix => {
+                    let rhs = match &self.rhs {
+                        Value::String(s) => s,
+                        _ => unreachable!(),
+                    };
+                    let lhs = match lhs_value {
+                        Value::String(s) => s,
+                        _ => unreachable!(),
+                    };
+
+                    if !lhs.starts_with(rhs) {
+                        if any {
+                            return true;
+                        }
+
+                        matched = true;
+                    }
+                }
                 BinaryOperator::Postfix => {
                     let rhs = match &self.rhs {
                         Value::String(s) => s,
@@ -136,6 +154,24 @@ impl Execute for Predicate {
                     if lhs.ends_with(rhs) {
                         m.matches
                             .insert(self.lhs.var_name.clone(), self.rhs.clone());
+                        if any {
+                            return true;
+                        }
+
+                        matched = true;
+                    }
+                }
+                BinaryOperator::NotPostfix => {
+                    let rhs = match &self.rhs {
+                        Value::String(s) => s,
+                        _ => unreachable!(),
+                    };
+                    let lhs = match lhs_value {
+                        Value::String(s) => s,
+                        _ => unreachable!(),
+                    };
+
+                    if !lhs.ends_with(rhs) {
                         if any {
                             return true;
                         }
@@ -297,10 +333,34 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![],
+            transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("foo".to_string()),
         op: BinaryOperator::Prefix,
+    };
+
+    assert_eq!(p.execute(&mut ctx, &mut mat), false);
+
+    // check if all values match not starts_with foo -- should be false
+    let p = Predicate {
+        lhs: ast::Lhs {
+            var_name: "my_key".to_string(),
+            transformations: vec![],
+        },
+        rhs: Value::String("foo".to_string()),
+        op: BinaryOperator::NotPrefix,
+    };
+
+    assert_eq!(p.execute(&mut ctx, &mut mat), false);
+
+    // check if all values match not ends_with foo -- should be false
+    let p = Predicate {
+        lhs: ast::Lhs {
+            var_name: "my_key".to_string(),
+            transformations: vec![],
+        },
+        rhs: Value::String("foo".to_string()),
+        op: BinaryOperator::NotPostfix,
     };
 
     assert_eq!(p.execute(&mut ctx, &mut mat), false);
@@ -424,4 +484,66 @@ fn test_predicate() {
     };
 
     assert_eq!(p.execute(&mut ctx, &mut mat), false);
+
+    // check if any value does not starts with `foo` -- should be true
+    let lhs_values = vec![
+        Value::String("foofoo".to_string()),
+        Value::String("barfoo".to_string()),
+        Value::String("foocar".to_string()),
+        Value::String("fooban".to_string()),
+    ];
+
+    for v in lhs_values {
+        ctx.add_value("my_key", v);
+    }
+
+    let p = Predicate {
+        lhs: ast::Lhs {
+            var_name: "my_key".to_string(),
+            transformations: vec![ast::LhsTransformations::Any],
+        },
+        rhs: Value::String("foo".to_string()),
+        op: BinaryOperator::NotPrefix,
+    };
+
+    assert_eq!(p.execute(&mut ctx, &mut mat), true);
+
+    let p = Predicate {
+        lhs: ast::Lhs {
+            var_name: "my_key".to_string(),
+            transformations: vec![ast::LhsTransformations::Any],
+        },
+        rhs: Value::String("bar".to_string()),
+        op: BinaryOperator::NotPostfix,
+    };
+
+    assert_eq!(p.execute(&mut ctx, &mut mat), true);
+
+    let mut ctx = Context::new(&schema);
+
+    let p = Predicate {
+        lhs: ast::Lhs {
+            var_name: "my_key".to_string(),
+            transformations: vec![],
+        },
+        rhs: Value::String("foo".to_string()),
+        op: BinaryOperator::NotPrefix,
+    };
+
+    ctx.add_value("my_key", "barfoo".to_string().into());
+
+    // check if all values match not starts_with foo -- should be true with barfoo
+    assert_eq!(p.execute(&mut ctx, &mut mat), true);
+
+    let p = Predicate {
+        lhs: ast::Lhs {
+            var_name: "my_key".to_string(),
+            transformations: vec![],
+        },
+        rhs: Value::String("fooo".to_string()),
+        op: BinaryOperator::NotPostfix,
+    };
+
+    // check if all values match not ends_with foo -- should be true with barfoo
+    assert_eq!(p.execute(&mut ctx, &mut mat), true);
 }

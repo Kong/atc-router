@@ -34,7 +34,9 @@ pub enum BinaryOperator {
     NotEquals,      // !=
     Regex,          // ~
     Prefix,         // ^=
+    NotPrefix,      // !^=
     Postfix,        // =^
+    NotPostfix,     // !=^
     Greater,        // >
     GreaterOrEqual, // >=
     Less,           // <
@@ -215,7 +217,9 @@ mod tests {
                     NotEquals => "!=",
                     Regex => "~",
                     Prefix => "^=",
+                    NotPrefix => "!^=",
                     Postfix => "=^",
+                    NotPostfix => "!=^",
                     Greater => ">",
                     GreaterOrEqual => ">=",
                     Less => "<",
@@ -243,6 +247,10 @@ mod tests {
             (
                 "a ^= \"1\" && b =^ \"2\" || c >= 3",
                 "((a ^= \"1\") && ((b =^ \"2\") || (c >= 3)))",
+            ),
+            (
+                "a !^= \"1\" && b !=^ \"2\" || c >= 3",
+                "((a !^= \"1\") && ((b !=^ \"2\") || (c >= 3)))",
             ),
             (
                 "a == 1 && b != 2 || c >= 3",
