@@ -39,6 +39,9 @@ Each data referred in the DSL has a type, the type can be one of the following:
 * `IpAddr` - a single IP address that can be checked against an `IpCidr`
 * `Int` - an 64-bit signed integer
 
+Please refer to the [documentation](https://docs.konghq.com/gateway/latest/reference/expressions-language/)
+on Kong website for how the language is used in practice.
+
 # APIs
 
 ## resty.router.schema
