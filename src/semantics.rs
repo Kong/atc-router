@@ -25,6 +25,9 @@ impl FieldCounter for Expression {
                     l.add_to_counter(map);
                     r.add_to_counter(map);
                 }
+                LogicalExpression::Not(r) => {
+                    r.add_to_counter(map);
+                }
             },
             Expression::Predicate(p) => {
                 *map.entry(p.lhs.var_name.clone()).or_default() += 1;
@@ -41,6 +44,9 @@ impl FieldCounter for Expression {
                 }
                 LogicalExpression::Or(l, r) => {
                     l.remove_from_counter(map);
+                    r.remove_from_counter(map);
+                }
+                LogicalExpression::Not(r) => {
                     r.remove_from_counter(map);
                 }
             },
@@ -67,6 +73,9 @@ impl Validate for Expression {
                     }
                     LogicalExpression::Or(l, r) => {
                         l.validate(schema)?;
+                        r.validate(schema)?;
+                    }
+                    LogicalExpression::Not(r) => {
                         r.validate(schema)?;
                     }
                 }

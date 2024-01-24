@@ -263,16 +263,19 @@ fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
     }
 }
 
-// parenthesised_expression = { "(" ~ expression ~ ")" }
+// parenthesised_expression = { not_op? ~ "(" ~ expression ~ ")" }
 fn parse_parenthesised_expression(
     pair: Pair<Rule>,
     pratt: &PrattParser<Rule>,
 ) -> ParseResult<Expression> {
-    let pairs = pair.into_inner();
-    let pair = pairs.peek().unwrap();
+    let mut pairs = pair.into_inner();
+    let pair = pairs.next().unwrap();
     let rule = pair.as_rule();
     match rule {
         Rule::expression => parse_expression(pair, pratt),
+        Rule::not_op => Ok(Expression::Logical(Box::new(LogicalExpression::Not(
+            parse_expression(pairs.next().unwrap(), pratt)?,
+        )))),
         _ => unreachable!(),
     }
 }
@@ -309,4 +312,27 @@ fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<
 
 pub fn parse(source: &str) -> ParseResult<Expression> {
     ATCParser::new().parse_matcher(source)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bad_syntax() {
+        assert_eq!(
+            parse("! a == 1").unwrap_err().to_string(),
+            " --> 1:1\n  |\n1 | ! a == 1\n  | ^---\n  |\n  = expected term"
+        );
+        assert_eq!(
+            parse("a == 1 || ! b == 2").unwrap_err().to_string(),
+            " --> 1:11\n  |\n1 | a == 1 || ! b == 2\n  |           ^---\n  |\n  = expected term"
+        );
+        assert_eq!(
+            parse("(a == 1 || b == 2) && ! c == 3")
+                .unwrap_err()
+                .to_string(),
+                " --> 1:23\n  |\n1 | (a == 1 || b == 2) && ! c == 3\n  |                       ^---\n  |\n  = expected term"
+        );
+    }
 }

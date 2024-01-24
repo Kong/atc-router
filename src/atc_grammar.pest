@@ -35,9 +35,11 @@ logical_operator = _{ and_op | or_op }
 and_op = { "&&" }
 or_op = { "||" }
 
+not_op = { "!" }
+
 
 predicate = { lhs ~ binary_operator ~ rhs }
-parenthesised_expression = { "(" ~ expression ~ ")" }
+parenthesised_expression = { not_op? ~ "(" ~ expression ~ ")" }
 term = { predicate | parenthesised_expression }
 expression = { term ~ ( logical_operator ~ term )* }
 matcher = { SOI ~ expression ~ EOI }
