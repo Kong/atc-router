@@ -11,6 +11,7 @@ impl Execute for Expression {
             Expression::Logical(l) => match l.as_ref() {
                 LogicalExpression::And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
                 LogicalExpression::Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
+                LogicalExpression::Not(r) => !r.execute(ctx, m),
             },
             Expression::Predicate(p) => p.execute(ctx, m),
         }

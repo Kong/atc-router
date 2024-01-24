@@ -18,6 +18,7 @@ pub enum Expression {
 pub enum LogicalExpression {
     And(Expression, Expression),
     Or(Expression, Expression),
+    Not(Expression),
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -163,6 +164,9 @@ mod tests {
                     LogicalExpression::Or(left, right) => {
                         format!("({} || {})", left, right)
                     }
+                    LogicalExpression::Not(e) => {
+                        format!("!({})", e)
+                    }
                 }
             )
         }
@@ -255,6 +259,15 @@ mod tests {
             (
                 "a > 1 || ((b < 2) && (c <= 3)) || d not in \"foo\"",
                 "(((a > 1) || ((b < 2) && (c <= 3))) || (d not in \"foo\"))",
+            ),
+            ("!(a == 1)", "!((a == 1))"),
+            (
+                "!(a == 1) && b == 2 && !(c == 3) && d >= 4",
+                "(((!((a == 1)) && (b == 2)) && !((c == 3))) && (d >= 4))",
+            ),
+            (
+                "!(a == 1 || b == 2 && c == 3) && d == 4",
+                "(!((((a == 1) || (b == 2)) && (c == 3))) && (d == 4))",
             ),
         ];
         for (input, expected) in tests {
