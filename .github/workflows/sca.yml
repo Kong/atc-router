@@ -32,6 +32,6 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Rust SCA
-      uses: Kong/public-shared-actions/security-actions/scan-rust@v1
+      uses: Kong/public-shared-actions/security-actions/scan-rust@v2
       with:
         asset_prefix: 'atc-router'
