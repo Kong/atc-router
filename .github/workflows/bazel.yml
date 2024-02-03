@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   tests:
+    timeout-minutes: ${{ fromJSON(vars.GHA_DEFAULT_TIMEOUT) }}
     name: Tests
     strategy:
       matrix:
