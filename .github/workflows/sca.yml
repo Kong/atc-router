@@ -14,6 +14,7 @@ concurrency:
 jobs:
 
   rust-sca:
+    timeout-minutes: ${{ fromJSON(vars.GHA_DEFAULT_TIMEOUT) }}
     name: Rust SCA
     runs-on: ubuntu-latest
 
