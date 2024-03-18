@@ -17,14 +17,14 @@ def atc_router_dependencies(cargo_home_isolated = True):
 
     rust_register_toolchains(
         edition = "2021",
-        extra_target_triples = ["aarch64-unknown-linux-gnu"],
+        extra_target_triples = ["aarch64-unknown-linux-gnu", "s390x-unknown-linux-gnu"],
     )
 
     rust_repository_set(
-        name = "rust_linux_arm64_linux_tuple",
+        name = "rust_linux_cross_linux_tuple",
         edition = "2021",
         exec_triple = "x86_64-unknown-linux-gnu",
-        extra_target_triples = ["aarch64-unknown-linux-gnu"],
+        extra_target_triples = ["aarch64-unknown-linux-gnu", "s390x-unknown-linux-gnu"],
         versions = ["stable"],
     )
 
