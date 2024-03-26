@@ -1,5 +1,5 @@
 load("@rules_rust//rust:defs.bzl", "rust_shared_library")
-load("@crate_index//:defs.bzl", "aliases", "all_crate_deps")
+load("@atc_router_crate_index//:defs.bzl", "aliases", "all_crate_deps")
 
 filegroup(
     name = "all_srcs",
