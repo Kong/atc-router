@@ -31,7 +31,7 @@ def atc_router_dependencies(cargo_home_isolated = True):
     crate_universe_dependencies()
 
     crates_repository(
-        name = "crate_index",
+        name = "atc_router_crate_index",
         cargo_lockfile = "@atc_router//:Cargo.lock",
         # lockfile = "//:Cargo.Bazel.lock",
         manifests = ["@atc_router//:Cargo.toml"],
