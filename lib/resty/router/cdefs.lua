@@ -18,26 +18,29 @@ typedef struct Router Router;
 typedef struct Schema Schema;
 
 typedef enum CValue_Tag {
-  CString,
-  CIpCidr,
-  CIpAddr,
-  CInt,
+  CValue_Str,
+  CValue_IpCidr,
+  CValue_IpAddr,
+  CValue_Int,
 } CValue_Tag;
+
+typedef struct CValue_Str_Body {
+  const uint8_t *_0;
+  uintptr_t _1;
+} CValue_Str_Body;
 
 typedef struct CValue {
   CValue_Tag tag;
   union {
+    CValue_Str_Body str;
     struct {
-      const int8_t *c_string;
+      const uint8_t *ip_cidr;
     };
     struct {
-      const int8_t *c_ip_cidr;
+      const uint8_t *ip_addr;
     };
     struct {
-      const int8_t *c_ip_addr;
-    };
-    struct {
-      int64_t c_int;
+      int64_t int_;
     };
   };
 } CValue;
