@@ -4,10 +4,11 @@ use crate::router::Router;
 use crate::schema::Schema;
 use cidr::IpCidr;
 use std::cmp::min;
+use std::convert::TryFrom;
 use std::ffi;
 use std::net::IpAddr;
 use std::os::raw::c_char;
-use std::slice::from_raw_parts_mut;
+use std::slice::{from_raw_parts, from_raw_parts_mut};
 use uuid::fmt::Hyphenated;
 use uuid::Uuid;
 
@@ -15,12 +16,11 @@ pub const ERR_BUF_MAX_LEN: usize = 4096;
 
 #[derive(Debug)]
 #[repr(C)]
-#[allow(clippy::enum_variant_names)]
 pub enum CValue {
-    CString(*const i8),
-    CIpCidr(*const i8),
-    CIpAddr(*const i8),
-    CInt(i64),
+    Str(*const u8, usize),
+    IpCidr(*const u8),
+    IpAddr(*const u8),
+    Int(i64),
 }
 
 impl TryFrom<&CValue> for Value {
@@ -28,13 +28,12 @@ impl TryFrom<&CValue> for Value {
 
     fn try_from(v: &CValue) -> Result<Self, Self::Error> {
         Ok(match v {
-            CValue::CString(s) => Self::String(unsafe {
-                ffi::CStr::from_ptr(*s as *const c_char)
-                    .to_str()
+            CValue::Str(s, len) => Self::String(unsafe {
+                std::str::from_utf8(from_raw_parts(*s, *len))
                     .map_err(|e| e.to_string())?
                     .to_string()
             }),
-            CValue::CIpCidr(s) => Self::IpCidr(
+            CValue::IpCidr(s) => Self::IpCidr(
                 unsafe {
                     ffi::CStr::from_ptr(*s as *const c_char)
                         .to_str()
@@ -44,7 +43,7 @@ impl TryFrom<&CValue> for Value {
                 .parse::<IpCidr>()
                 .map_err(|e| e.to_string())?,
             ),
-            CValue::CIpAddr(s) => Self::IpAddr(
+            CValue::IpAddr(s) => Self::IpAddr(
                 unsafe {
                     ffi::CStr::from_ptr(*s as *const c_char)
                         .to_str()
@@ -54,7 +53,7 @@ impl TryFrom<&CValue> for Value {
                 .parse::<IpAddr>()
                 .map_err(|e| e.to_string())?,
             ),
-            CValue::CInt(i) => Self::Int(*i),
+            CValue::Int(i) => Self::Int(*i),
         })
     }
 }

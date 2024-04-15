@@ -87,7 +87,7 @@ ok
 
 
 
-=== TEST 3: Long strings don't cause a panic when parsing fails
+=== TEST 3: long strings don't cause a panic when parsing fails
 --- http_config eval: $::HttpConfig
 --- config
     location = /t {
@@ -122,6 +122,52 @@ ok
 GET /t
 --- response_body
 ok
+--- no_error_log
+[error]
+[warn]
+[crit]
+
+
+
+=== TEST 4: able to parse and handle string with NULL bytes inside
+--- http_config eval: $::HttpConfig
+--- config
+    location = /t {
+        content_by_lua_block {
+            local schema = require("resty.router.schema")
+            local router = require("resty.router.router")
+            local context = require("resty.router.context")
+
+            local s = schema.new()
+
+            s:add_field("http.body", "String")
+
+            local r = router.new(s)
+            assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
+                                 "http.body =^ \"world\""))
+
+            local c = context.new(s)
+            c:add_value("http.body", "hello\x00world")
+
+            local matched = r:execute(c)
+            ngx.say(matched)
+
+            local uuid = c:get_result("http.body")
+            ngx.say(uuid)
+
+            c:reset()
+            c:add_value("http.body", "world\x00hello")
+
+            local matched = r:execute(c)
+            ngx.say(matched)
+        }
+    }
+--- request
+GET /t
+--- response_body
+true
+a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
+false
 --- no_error_log
 [error]
 [warn]

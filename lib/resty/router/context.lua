@@ -48,16 +48,17 @@ function _M:add_value(field, value)
     end
 
     if typ == "String" then
-        CACHED_VALUE[0].tag = C.CString
-        CACHED_VALUE[0].c_string = value
+        CACHED_VALUE[0].tag = C.CValue_Str
+        CACHED_VALUE[0].str._0 = value
+        CACHED_VALUE[0].str._1 = #value
 
     elseif typ == "IpAddr" then
-        CACHED_VALUE[0].tag = C.CIpAddr
-        CACHED_VALUE[0].c_ip_addr = value
+        CACHED_VALUE[0].tag = C.CValue_IpAddr
+        CACHED_VALUE[0].ip_addr = value
 
     elseif typ == "Int" then
-        CACHED_VALUE[0].tag = C.CInt
-        CACHED_VALUE[0].c_int = value
+        CACHED_VALUE[0].tag = C.CValue_Int
+        CACHED_VALUE[0].int_ = value
     end
 
     local errbuf = get_string_buf(ERR_BUF_MAX_LEN)
