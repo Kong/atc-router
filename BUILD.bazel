@@ -15,13 +15,19 @@ filegroup(
     ),
 )
 
+filegroup(
+    name = "lualib_srcs",
+    srcs = glob([
+        "lualib/**/*.lua",
+        "lib/**/*.lua",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
 rust_shared_library(
     name = "atc_router",
     srcs = [":all_srcs"],
     aliases = aliases(),
-    rustc_flags = [
-        "--codegen=strip=symbols",
-    ],
     crate_features = [
         "default",
         "ffi",
@@ -29,6 +35,9 @@ rust_shared_library(
     proc_macro_deps = all_crate_deps(
         proc_macro = True,
     ),
+    rustc_flags = [
+        "--codegen=strip=symbols",
+    ],
     visibility = ["//visibility:public"],
     deps = all_crate_deps(
         normal = True,
