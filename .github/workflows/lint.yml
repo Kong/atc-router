@@ -13,6 +13,7 @@ concurrency:
 
 jobs:
   lua-check:
+    timeout-minutes: ${{ fromJSON(vars.GHA_DEFAULT_TIMEOUT) }}
     name: Lua Check
     runs-on: ubuntu-latest
     permissions:
@@ -42,6 +43,7 @@ jobs:
         files: ${{ steps.changed-files.outputs.all_changed_files }}
 
   rust-clippy:
+    timeout-minutes: ${{ fromJSON(vars.GHA_DEFAULT_TIMEOUT) }}
     name: Rust Clippy
     runs-on: ubuntu-latest
 
