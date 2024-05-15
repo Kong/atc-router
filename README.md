@@ -204,8 +204,8 @@ not match, then `nil` is returned for `matched_value`.
 
 If the context did not contain a valid match result, `nil` is returned.
 
-Otherwise, the string UUID, value matching field `matched_field` and
-regex captures from the matched route are returned.
+Otherwise, the string UUID, value matching field `matched_field`,
+regex captures and the count of regex captures from the matched route are returned.
 
 [Back to TOC](#table-of-contents)
 
