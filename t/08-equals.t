@@ -59,9 +59,9 @@ __DATA__
 GET /t
 --- response_body
 true
-a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnil0
 true
-a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil0
 --- no_error_log
 [error]
 [warn]
@@ -107,9 +107,9 @@ a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
 GET /t
 --- response_body
 true
-a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnil0
 true
-a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil0
 --- no_error_log
 [error]
 [warn]
@@ -155,9 +155,9 @@ a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
 GET /t
 --- response_body
 true
-a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnil0
 true
-a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil0
 --- no_error_log
 [error]
 [warn]
