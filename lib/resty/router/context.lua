@@ -128,7 +128,7 @@ function _M:get_result(matched_field)
         end
     end
 
-    return uuid, matched_value, captures
+    return uuid, matched_value, captures, captures_len
 end
 
 

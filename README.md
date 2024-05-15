@@ -192,7 +192,7 @@ If an error occurred, `nil` and a string describing the error will be returned.
 
 ### get\_result
 
-**syntax:** *uuid, matched_value, captures = c:get_result(matched_field)*
+**syntax:** *uuid, matched_value, captures, captures_len = c:get_result(matched_field)*
 
 **context:** *any*
 
