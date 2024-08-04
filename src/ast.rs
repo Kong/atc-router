@@ -72,6 +72,7 @@ impl PartialEq for Value {
 }
 
 impl Value {
+    #[inline]
     pub fn my_type(&self) -> Type {
         match self {
             Value::String(_) => Type::String,
@@ -84,6 +85,7 @@ impl Value {
 }
 
 impl From<String> for Value {
+    #[inline]
     fn from(v: String) -> Self {
         Value::String(v)
     }
@@ -108,10 +110,12 @@ pub struct Lhs {
 }
 
 impl Lhs {
+    #[inline]
     pub fn my_type<'a>(&self, schema: &'a Schema) -> Option<&'a Type> {
         schema.type_of(&self.var_name)
     }
 
+    #[inline]
     pub fn get_transformations(&self) -> (bool, bool) {
         let mut lower = false;
         let mut any = false;

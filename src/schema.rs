@@ -7,6 +7,7 @@ pub struct Schema {
 }
 
 impl Schema {
+    #[inline]
     pub fn type_of(&self, field: &str) -> Option<&Type> {
         self.fields.get(field).or_else(|| {
             self.fields
@@ -14,6 +15,7 @@ impl Schema {
         })
     }
 
+    #[inline]
     pub fn add_field(&mut self, field: &str, typ: Type) {
         self.fields.insert(field.to_string(), typ);
     }
