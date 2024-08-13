@@ -51,7 +51,6 @@ macro_rules! parse_num {
 }
 
 impl ATCParser {
-    #[inline]
     fn new() -> Self {
         Self {
             pratt_parser: PrattParser::new()
@@ -71,7 +70,6 @@ impl ATCParser {
     }
 }
 
-#[inline]
 fn parse_ident(pair: Pair<Rule>) -> ParseResult<String> {
     Ok(pair.as_str().into())
 }
@@ -125,7 +123,6 @@ fn parse_str_literal(pair: Pair<Rule>) -> ParseResult<String> {
 
 // rawstr_literal = ${ "r#\"" ~ rawstr_char* ~ "\"#" }
 // rawstr_char = { !"\"#" ~ ANY }
-#[inline]
 fn parse_rawstr_literal(pair: Pair<Rule>) -> ParseResult<String> {
     let char_pairs = pair.into_inner();
     let mut s = String::new();
@@ -139,7 +136,6 @@ fn parse_rawstr_literal(pair: Pair<Rule>) -> ParseResult<String> {
     Ok(s)
 }
 
-#[inline]
 fn parse_str_esc(pair: Pair<Rule>) -> char {
     match pair.as_str() {
         r#"\""# => '"',
@@ -151,28 +147,22 @@ fn parse_str_esc(pair: Pair<Rule>) -> char {
         _ => unreachable!(),
     }
 }
-#[inline]
 fn parse_str_char(pair: Pair<Rule>) -> char {
     return pair.as_str().chars().next().unwrap();
 }
-#[inline]
 fn parse_ipv4_cidr_literal(pair: Pair<Rule>) -> ParseResult<Ipv4Cidr> {
     pair.as_str().parse().into_parse_result(&pair)
 }
-#[inline]
 fn parse_ipv6_cidr_literal(pair: Pair<Rule>) -> ParseResult<Ipv6Cidr> {
     pair.as_str().parse().into_parse_result(&pair)
 }
-#[inline]
 fn parse_ipv4_literal(pair: Pair<Rule>) -> ParseResult<Ipv4Addr> {
     pair.as_str().parse().into_parse_result(&pair)
 }
-#[inline]
 fn parse_ipv6_literal(pair: Pair<Rule>) -> ParseResult<Ipv6Addr> {
     pair.as_str().parse().into_parse_result(&pair)
 }
 
-#[inline]
 fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
     let is_neg = pair.as_str().starts_with('-');
     let pairs = pair.into_inner();
