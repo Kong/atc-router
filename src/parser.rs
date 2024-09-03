@@ -48,8 +48,8 @@ fn get_pair_location(pair: &Pair<Rule>) -> Location {
     let start_line_col = start.line_col();
     let end_line_col = end.line_col();
     Location {
-        input_location: InputLocation::Pos(start.pos()),
-        line_col_location: LineColLocation::Span(
+        input_location: (start.pos(), end.pos()),
+        line_col_location: (
             (start_line_col.0, start_line_col.1),
             (end_line_col.0, end_line_col.1),
         ),
@@ -320,7 +320,6 @@ fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Locati
 
 // expression = { term ~ ( logical_operator ~ term )* }
 fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<LocationedExpression> {
-    let line_col = get_pair_location(&pair);
     let pairs = pair.into_inner();
     pratt
         .map_primary(|operand| match operand.as_rule() {
@@ -328,11 +327,23 @@ fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<
             _ => unreachable!(),
         })
         .map_infix(|lhs, op, rhs| {
+            let (lhs, rhs) = (lhs?, rhs?);
+            // merge line_col_lhs and line_col_rhs
+            let input_loc = match (lhs.extra.input_location, rhs.extra.input_location) {
+                ((start1, _), (_, end2)) => (start1, end2),
+            };
+            let line_col = match (lhs.extra.line_col_location, rhs.extra.line_col_location) {
+                ((start1, _), (_, end2)) => (start1, end2),
+            };
+
             Ok(LocationedExpression::new(match op.as_rule() {
-                Rule::and_op => Expression::Logical(LogicalExpression::And(Box::new(lhs?), Box::new(rhs?))),
-                Rule::or_op => Expression::Logical(LogicalExpression::Or(Box::new(lhs?), Box::new(rhs?))),
+                Rule::and_op => Expression::Logical(LogicalExpression::And(Box::new(lhs), Box::new(rhs))),
+                Rule::or_op => Expression::Logical(LogicalExpression::Or(Box::new(lhs), Box::new(rhs))),
                 _ => unreachable!(),
-            },line_col))
+            }, Location {
+                input_location: input_loc,
+                line_col_location: line_col,
+            }))
         })
         .parse(pairs)
 }

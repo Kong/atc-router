@@ -18,8 +18,8 @@ pub trait ExpressionNode: Validate + FieldCounter + Execute + Debug /* + Hash */
 }
 
 pub struct ExpressionExtra<Extra> {
-    node: Expression,
-    extra: Extra,
+    pub node: Expression,
+    pub extra: Extra,
 }
 
 impl<Extra> ExpressionExtra<Extra> {
@@ -70,31 +70,16 @@ impl<Extra: Display> Display for ExpressionExtra<Extra> {
 impl<Extra: Debug> ExpressionNode for ExpressionExtra<Extra> {}
 
 pub struct Location{
-    pub input_location: pest::error::InputLocation,
-    pub line_col_location: pest::error::LineColLocation,
+    pub input_location: (usize, usize),
+    pub line_col_location: ((usize, usize), (usize, usize)),
 }
 
 pub type LocationedExpression = ExpressionExtra<Location>;
 
 impl Display for Location {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        match self.input_location {
-            pest::error::InputLocation::Pos(pos) => {
-                write!(f, "{}", pos)
-            }
-            pest::error::InputLocation::Span((start, end)) => {
-                write!(f, "{}-{}", start, end)
-            }
-        }?;
-        match self.line_col_location {
-            pest::error::LineColLocation::Pos((start, end)) => {
-                write!(f, "({},{})", start, end)
-            }
-            pest::error::LineColLocation::Span(start, end) => {
-                write!(f, "({},{})-({},{})", start.0, start.1, end.0, end.1)
-            }
-            
-        }
+        write!(f, "{}-{}", self.input_location.0, self.input_location.1)?;
+        write!(f, "({},{})-({},{})", self.line_col_location.0.0, self.line_col_location.0.1, self.line_col_location.1.0, self.line_col_location.1.1)
     }
 }
 
