@@ -1,4 +1,4 @@
-use crate::ast::Expression;
+use crate::ast::LocationedExpression;
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
 use crate::parser::parse;
@@ -12,7 +12,7 @@ struct MatcherKey(usize, Uuid);
 
 pub struct Router<'a> {
     schema: &'a Schema,
-    matchers: BTreeMap<MatcherKey, Expression>,
+    matchers: BTreeMap<MatcherKey, LocationedExpression>,
     pub fields: HashMap<String, usize>,
 }
 
@@ -35,6 +35,7 @@ impl<'a> Router<'a> {
         let ast = parse(atc).map_err(|e| e.to_string())?;
 
         ast.validate(self.schema)?;
+        
         ast.add_to_counter(&mut self.fields);
 
         assert!(self.matchers.insert(key, ast).is_none());

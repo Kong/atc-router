@@ -1,24 +1,123 @@
-use crate::schema::Schema;
+use crate::{interpreter::Execute, schema::Schema, semantics::{FieldCounter, Validate}};
 use cidr::IpCidr;
 use regex::Regex;
 use std::net::IpAddr;
+use std::collections::HashMap;
+use core::fmt::{Debug, Display};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub trait ExpressionNode: Validate + FieldCounter + Execute + Debug /* + Hash */ {
+    // abstract representation of a node in the AST
+    // we will make it hashable and comparable to support the use of HashMap
+    // for further optimizations
+    // make it abstract also allows us to attach arbitrary extra info to the node without
+    // changing the interface (e.g. postion span, )
+}
+
+pub struct ExpressionExtra<Extra> {
+    node: Expression,
+    extra: Extra,
+}
+
+impl<Extra> ExpressionExtra<Extra> {
+    pub fn new(node: Expression, extra: Extra) -> Self {
+        Self {
+            node,
+            extra,
+        }
+    }
+}
+
+impl<Extra> FieldCounter for ExpressionExtra<Extra> {
+    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
+        self.node.add_to_counter(map);
+    }
+
+    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
+        self.node.remove_from_counter(map);
+    }
+}
+
+impl<Extra> Validate for ExpressionExtra<Extra> {
+    fn validate(&self, schema: &Schema) -> Result<(), String> {
+        self.node.validate(schema)
+    }
+}
+
+impl<Extra> Execute for ExpressionExtra<Extra> {
+    fn execute(&self, ctx: &mut crate::context::Context, m: &mut crate::context::Match) -> bool {
+        self.node.execute(ctx, m)
+    }
+}
+
+impl<Extra: Debug> Debug for ExpressionExtra<Extra> {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        Debug::fmt(&self, f)?;
+        self.extra.fmt(f)
+    }
+}
+
+impl<Extra: Display> Display for ExpressionExtra<Extra> {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        Display::fmt(&self, f)?;
+        self.extra.fmt(f)
+    }
+}
+
+impl<Extra: Debug> ExpressionNode for ExpressionExtra<Extra> {}
+
+pub struct Location{
+    pub input_location: pest::error::InputLocation,
+    pub line_col_location: pest::error::LineColLocation,
+}
+
+pub type LocationedExpression = ExpressionExtra<Location>;
+
+impl Display for Location {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        match self.input_location {
+            pest::error::InputLocation::Pos(pos) => {
+                write!(f, "{}", pos)
+            }
+            pest::error::InputLocation::Span((start, end)) => {
+                write!(f, "{}-{}", start, end)
+            }
+        }?;
+        match self.line_col_location {
+            pest::error::LineColLocation::Pos((start, end)) => {
+                write!(f, "({},{})", start, end)
+            }
+            pest::error::LineColLocation::Span(start, end) => {
+                write!(f, "({},{})-({},{})", start.0, start.1, end.0, end.1)
+            }
+            
+        }
+    }
+}
+
+impl Debug for Location {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        Debug::fmt(&self, f)
+    }
+}
+
 #[derive(Debug)]
 pub enum Expression {
-    Logical(Box<LogicalExpression>),
+    Logical(LogicalExpression),
     Predicate(Predicate),
 }
+
+impl ExpressionNode for Expression {}
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub enum LogicalExpression {
-    And(Expression, Expression),
-    Or(Expression, Expression),
-    Not(Expression),
+    And(Box<dyn ExpressionNode>, Box<dyn ExpressionNode>),
+    Or(Box<dyn ExpressionNode>, Box<dyn ExpressionNode>),
+    Not(Box<dyn ExpressionNode>),
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -149,6 +248,12 @@ mod tests {
                     Expression::Predicate(predicate) => predicate.to_string(),
                 }
             )
+        }
+    }
+
+    impl fmt::Display for dyn ExpressionNode {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{}", self)
         }
     }
 

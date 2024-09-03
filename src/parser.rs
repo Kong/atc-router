@@ -1,17 +1,20 @@
 extern crate pest;
 
+use crate::ast::{Location, LocationedExpression};
 use crate::ast::{
     BinaryOperator, Expression, Lhs, LhsTransformations, LogicalExpression, Predicate, Value,
 };
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
 use pest::error::Error as ParseError;
 use pest::error::ErrorVariant;
+use pest::error::{InputLocation, LineColLocation};
 use pest::iterators::Pair;
 use pest::pratt_parser::Assoc as AssocNew;
 use pest::pratt_parser::{Op, PrattParser};
 use pest::Parser;
 use regex::Regex;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use core::fmt::Debug;
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
 /// cbindgen:ignore
@@ -38,6 +41,21 @@ where
     }
 }
 
+fn get_pair_location(pair: &Pair<Rule>) -> Location {
+    let span = pair.as_span();
+    let start = span.start_pos();
+    let end = span.end_pos();
+    let start_line_col = start.line_col();
+    let end_line_col = end.line_col();
+    Location {
+        input_location: InputLocation::Pos(start.pos()),
+        line_col_location: LineColLocation::Span(
+            (start_line_col.0, start_line_col.1),
+            (end_line_col.0, end_line_col.1),
+        ),
+    }
+}
+
 #[derive(Parser)]
 #[grammar = "atc_grammar.pest"]
 struct ATCParser {
@@ -59,7 +77,7 @@ impl ATCParser {
         }
     }
     // matcher = { SOI ~ expression ~ EOI }
-    fn parse_matcher(&mut self, source: &str) -> ParseResult<Expression> {
+    fn parse_matcher(&mut self, source: &str) -> ParseResult<LocationedExpression> {
         let pairs = ATCParser::parse(Rule::matcher, source)?;
         let expr_pair = pairs.peek().unwrap().into_inner().peek().unwrap();
         let rule = expr_pair.as_rule();
@@ -267,33 +285,42 @@ fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
 fn parse_parenthesised_expression(
     pair: Pair<Rule>,
     pratt: &PrattParser<Rule>,
-) -> ParseResult<Expression> {
+) -> ParseResult<LocationedExpression> {
+    let line_col = get_pair_location(&pair);
     let mut pairs = pair.into_inner();
     let pair = pairs.next().unwrap();
     let rule = pair.as_rule();
     match rule {
         Rule::expression => parse_expression(pair, pratt),
-        Rule::not_op => Ok(Expression::Logical(Box::new(LogicalExpression::Not(
-            parse_expression(pairs.next().unwrap(), pratt)?,
-        )))),
+        Rule::not_op => Ok(LocationedExpression::new(
+            Expression::Logical(LogicalExpression::Not(
+                Box::new(parse_expression(pairs.next().unwrap(), pratt)?),
+            )),
+            line_col,
+        )),
         _ => unreachable!(),
     }
 }
 
 // term = { predicate | parenthesised_expression }
-fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
+fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<LocationedExpression> {
+    let line_col = get_pair_location(&pair);
     let pairs = pair.into_inner();
     let inner_rule = pairs.peek().unwrap();
     let rule = inner_rule.as_rule();
     match rule {
-        Rule::predicate => Ok(Expression::Predicate(parse_predicate(inner_rule)?)),
+        Rule::predicate => Ok(LocationedExpression::new(
+            Expression::Predicate(parse_predicate(inner_rule)?),
+            line_col,
+        )),
         Rule::parenthesised_expression => parse_parenthesised_expression(inner_rule, pratt),
         _ => unreachable!(),
     }
 }
 
 // expression = { term ~ ( logical_operator ~ term )* }
-fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
+fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<LocationedExpression> {
+    let line_col = get_pair_location(&pair);
     let pairs = pair.into_inner();
     pratt
         .map_primary(|operand| match operand.as_rule() {
@@ -301,16 +328,16 @@ fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<
             _ => unreachable!(),
         })
         .map_infix(|lhs, op, rhs| {
-            Ok(match op.as_rule() {
-                Rule::and_op => Expression::Logical(Box::new(LogicalExpression::And(lhs?, rhs?))),
-                Rule::or_op => Expression::Logical(Box::new(LogicalExpression::Or(lhs?, rhs?))),
+            Ok(LocationedExpression::new(match op.as_rule() {
+                Rule::and_op => Expression::Logical(LogicalExpression::And(Box::new(lhs?), Box::new(rhs?))),
+                Rule::or_op => Expression::Logical(LogicalExpression::Or(Box::new(lhs?), Box::new(rhs?))),
                 _ => unreachable!(),
-            })
+            },line_col))
         })
         .parse(pairs)
 }
 
-pub fn parse(source: &str) -> ParseResult<Expression> {
+pub fn parse(source: &str) -> ParseResult<LocationedExpression> {
     ATCParser::new().parse_matcher(source)
 }
 

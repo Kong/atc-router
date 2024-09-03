@@ -16,7 +16,7 @@ pub trait FieldCounter {
 impl FieldCounter for Expression {
     fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
         match self {
-            Expression::Logical(l) => match l.as_ref() {
+            Expression::Logical(l) => match l {
                 LogicalExpression::And(l, r) => {
                     l.add_to_counter(map);
                     r.add_to_counter(map);
@@ -37,7 +37,7 @@ impl FieldCounter for Expression {
 
     fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
         match self {
-            Expression::Logical(l) => match l.as_ref() {
+            Expression::Logical(l) => match l {
                 LogicalExpression::And(l, r) => {
                     l.remove_from_counter(map);
                     r.remove_from_counter(map);
@@ -66,7 +66,7 @@ impl Validate for Expression {
     fn validate(&self, schema: &Schema) -> ValidationResult {
         match self {
             Expression::Logical(l) => {
-                match l.as_ref() {
+                match l {
                     LogicalExpression::And(l, r) => {
                         l.validate(schema)?;
                         r.validate(schema)?;

@@ -8,7 +8,7 @@ pub trait Execute {
 impl Execute for Expression {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
         match self {
-            Expression::Logical(l) => match l.as_ref() {
+            Expression::Logical(l) => match l {
                 LogicalExpression::And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
                 LogicalExpression::Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
                 LogicalExpression::Not(r) => !r.execute(ctx, m),
