@@ -34,7 +34,7 @@ impl<'a> Router<'a> {
 
         let ast = parse(atc).map_err(|e| e.to_string())?;
 
-        ast.validate(self.schema)?;
+        ast.validate(self.schema).map_err(|e| e.to_string())?;
         
         ast.add_to_counter(&mut self.fields);
 

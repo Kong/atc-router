@@ -41,12 +41,6 @@ impl<Extra> FieldCounter for ExpressionExtra<Extra> {
     }
 }
 
-impl<Extra> Validate for ExpressionExtra<Extra> {
-    fn validate(&self, schema: &Schema) -> Result<(), String> {
-        self.node.validate(schema)
-    }
-}
-
 impl<Extra> Execute for ExpressionExtra<Extra> {
     fn execute(&self, ctx: &mut crate::context::Context, m: &mut crate::context::Match) -> bool {
         self.node.execute(ctx, m)
@@ -67,14 +61,15 @@ impl<Extra: Display> Display for ExpressionExtra<Extra> {
     }
 }
 
-impl<Extra: Debug> ExpressionNode for ExpressionExtra<Extra> {}
-
+#[derive(Copy, Clone)]
 pub struct Location{
     pub input_location: (usize, usize),
     pub line_col_location: ((usize, usize), (usize, usize)),
 }
 
 pub type LocationedExpression = ExpressionExtra<Location>;
+
+impl ExpressionNode for LocationedExpression {}
 
 impl Display for Location {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {

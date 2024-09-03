@@ -1,8 +1,29 @@
-use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
+use crate::ast::{BinaryOperator, Expression, LocationedExpression, LogicalExpression, Type, Value, Location};
 use crate::schema::Schema;
 use std::collections::HashMap;
 
-type ValidationResult = Result<(), String>;
+pub struct ValidationError {
+    pub message: String,
+    pub position: Option<Location>,
+}
+
+impl std::fmt::Display for ValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        if let Some(position) = &self.position {
+            write!(f, "{} at {}", self.message, position)
+        } else {
+            write!(f, "{}", self.message)
+        }
+    }
+}
+
+impl ValidationError {
+    fn new(message: String, position: Option<Location>) -> Self {
+        Self { message, position }
+    }
+}
+
+type ValidationResult = Result<(), ValidationError>;
 
 pub trait Validate {
     fn validate(&self, schema: &Schema) -> ValidationResult;
@@ -86,7 +107,7 @@ impl Validate for Expression {
                 // lhs and rhs must be the same type
                 let lhs_type = p.lhs.my_type(schema);
                 if lhs_type.is_none() {
-                    return Err("Unknown LHS field".to_string());
+                    return Err(ValidationError::new("Unknown LHS field".to_string(), None));
                 }
                 let lhs_type = lhs_type.unwrap();
 
@@ -95,8 +116,9 @@ impl Validate for Expression {
                     && p.op != BinaryOperator::NotIn
                     && lhs_type != &p.rhs.my_type()
                 {
-                    return Err(
-                        "Type mismatch between the LHS and RHS values of predicate".to_string()
+                    return Err(ValidationError::new(
+                        "Type mismatch between the LHS and RHS values of predicate".to_string(),
+                        None)
                     );
                 }
 
@@ -104,10 +126,11 @@ impl Validate for Expression {
 
                 // LHS transformations only makes sense with string fields
                 if lower && lhs_type != &Type::String {
-                    return Err(
+                    return Err(ValidationError::new(
                         "lower-case transformation function only supported with String type fields"
                             .to_string(),
-                    );
+                        None,
+                    ));
                 }
 
                 match p.op {
@@ -117,7 +140,7 @@ impl Validate for Expression {
                         if lhs_type == &Type::String {
                             Ok(())
                         } else {
-                            Err("Regex operators only supports string operands".to_string())
+                            Err(ValidationError::new("Regex operators only supports string operands".to_string(), None))
                         }
                     },
                     BinaryOperator::Prefix | BinaryOperator::Postfix => {
@@ -125,7 +148,7 @@ impl Validate for Expression {
                             Value::String(_) => {
                                 Ok(())
                             }
-                            _ => Err("Regex/Prefix/Postfix operators only supports string operands".to_string())
+                            _ => Err(ValidationError::new("Regex/Prefix/Postfix operators only supports string operands".to_string(), None))
                         }
                     },
                     BinaryOperator::Greater | BinaryOperator::GreaterOrEqual | BinaryOperator::Less | BinaryOperator::LessOrEqual => {
@@ -133,7 +156,7 @@ impl Validate for Expression {
                             Value::Int(_) => {
                                 Ok(())
                             }
-                            _ => Err("Greater/GreaterOrEqual/Lesser/LesserOrEqual operators only supports integer operands".to_string())
+                            _ => Err(ValidationError::new("Greater/GreaterOrEqual/Lesser/LesserOrEqual operators only supports integer operands".to_string(), None))
                         }
                     },
                     BinaryOperator::In | BinaryOperator::NotIn => {
@@ -142,7 +165,7 @@ impl Validate for Expression {
                             (Type::IpAddr, Value::IpCidr(_)) => {
                                 Ok(())
                             }
-                            _ => Err("In/NotIn operators only supports IP in CIDR".to_string())
+                            _ => Err(ValidationError::new("In/NotIn operators only supports IP in CIDR".to_string(), None))
                         }
                     },
                     BinaryOperator::Contains => {
@@ -150,12 +173,24 @@ impl Validate for Expression {
                             Value::String(_) => {
                                 Ok(())
                             }
-                            _ => Err("Contains operator only supports string operands".to_string())
+                            _ => Err(ValidationError::new("Contains operator only supports string operands".to_string(), None))
                         }
                     }
                 }
             }
         }
+    }
+}
+
+impl Validate for LocationedExpression {
+    fn validate(&self, schema: &Schema) -> ValidationResult {
+        let mut result = self.node.validate(schema);
+
+        if let Err(ValidationError{message, position }) = &mut result {
+            *position = Some(self.extra);
+        }
+
+        return result;
     }
 }
 
