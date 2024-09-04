@@ -7,7 +7,7 @@ pub trait Execute {
 
 impl Execute for Predicate {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
-        let lhs_values = match ctx.value_of(&self.lhs.var_name) {
+        let lhs_values = match ctx.value_of(self.lhs.index) {
             None => return false,
             Some(v) => v,
         };
@@ -266,13 +266,15 @@ fn test_predicate() {
     let mut mat = Match::new();
     let mut schema = schema::Schema::default();
     schema.add_field("my_key", ast::Type::String);
-    let mut ctx = Context::new(&schema);
+    let mut ctx = Context::new(1);
+    let field_index: usize = 0;
 
     // check when value list is empty
     // check if all values match starts_with foo -- should be false
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![],
         },
         rhs: Value::String("foo".to_string()),
@@ -285,6 +287,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![],
         },
         rhs: Value::String("foo".to_string()),
@@ -300,15 +303,16 @@ fn test_predicate() {
         Value::String("foocar".to_string()),
         Value::String("fooban".to_string()),
     ];
-
+    
     for v in lhs_values {
-        ctx.add_value("my_key", v);
+        ctx.add_value(field_index, v);
     }
 
     // check if all values match starts_with foo -- should be true
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![],
         },
         rhs: Value::String("foo".to_string()),
@@ -321,6 +325,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![],
         },
         rhs: Value::String("foo".to_string()),
@@ -333,6 +338,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("foo".to_string()),
@@ -345,6 +351,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("foo".to_string()),
@@ -357,6 +364,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("nar".to_string()),
@@ -369,6 +377,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("".to_string()),
@@ -381,6 +390,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("".to_string()),
@@ -393,6 +403,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("ob".to_string()),
@@ -405,6 +416,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("ok".to_string()),

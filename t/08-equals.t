@@ -40,15 +40,15 @@ __DATA__
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-8aa5583d150c",
                                  "net.port != 8000"))
 
-            local c = context.new(s)
-            c:add_value("net.port", 8000)
+            local c = context.new(s, #r:get_fields())
+            c:add_value(1, "net.port", 8000)
 
             local matched = r:execute(c)
             ngx.say(matched)
             ngx.say(c:get_result())
 
             c = context.new(s)
-            c:add_value("net.port", 8001)
+            c:add_value(1, "net.port", 8001)
 
             matched = r:execute(c)
             ngx.say(matched)
@@ -88,15 +88,15 @@ a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-8aa5583d150c",
                                  "http.path != \"/foo\""))
 
-            local c = context.new(s)
-            c:add_value("http.path", "/foo")
+            local c = context.new(s, #r:get_fields())
+            c:add_value(1, "http.path", "/foo")
 
             local matched = r:execute(c)
             ngx.say(matched)
             ngx.say(c:get_result())
 
             c = context.new(s)
-            c:add_value("http.path", "/foo1")
+            c:add_value(1, "http.path", "/foo1")
 
             matched = r:execute(c)
             ngx.say(matched)
@@ -136,15 +136,15 @@ a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-8aa5583d150c",
                                  "net.ip != 192.168.1.1"))
 
-            local c = context.new(s)
-            c:add_value("net.ip", "192.168.1.1")
+            local c = context.new(s, #r:get_fields())
+            c:add_value(1, "net.ip", "192.168.1.1")
 
             local matched = r:execute(c)
             ngx.say(matched)
             ngx.say(c:get_result())
 
-            c = context.new(s)
-            c:add_value("net.ip", "192.168.1.2")
+            c = context.new(s, #r:get_fields())
+            c:add_value(1, "net.ip", "192.168.1.2")
 
             matched = r:execute(c)
             ngx.say(matched)

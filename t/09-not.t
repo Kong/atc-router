@@ -38,15 +38,15 @@ __DATA__
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  [[!(http.path ^= "/abc")]]))
 
-            local c = context.new(s)
-            c:add_value("http.path", "/abc/d")
+            local c = context.new(s, #r:get_fields())
+            c:add_value(1, "http.path", "/abc/d")
 
             local matched = r:execute(c)
             ngx.say(matched)
 
             c:reset()
 
-            c:add_value("http.path", "/abb/d")
+            c:add_value(1, "http.path", "/abb/d")
 
             local matched = r:execute(c)
             ngx.say(matched)
@@ -57,13 +57,13 @@ __DATA__
 
             c:reset()
 
-            c:add_value("http.path", "/abb/d/")
+            c:add_value(1, "http.path", "/abb/d/")
             local matched = r:execute(c)
             ngx.say(matched)
 
             c:reset()
 
-            c:add_value("http.path", "/abb/d")
+            c:add_value(1, "http.path", "/abb/d")
             local matched = r:execute(c)
             ngx.say(matched)
         }
