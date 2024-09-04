@@ -1,8 +1,68 @@
-use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Value};
+use crate::ast::{
+    BinaryOperator, Expression, LogicalExpression, Predicate, Route, RouteLogicalOperators,
+    RouteTerm, Value,
+};
 use crate::context::{Context, Match};
-
+use stack_array::*;
 pub trait Execute {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
+}
+
+pub trait Convert {
+    fn convert(&self, route: &mut Route) -> bool;
+}
+
+impl Convert for Expression {
+    fn convert(&self, route: &mut Route) -> bool {
+        match self {
+            Expression::Logical(l) => match l.as_ref() {
+                LogicalExpression::And(l, r) => {
+                    l.convert(route);
+                    r.convert(route);
+                    route
+                        .stack
+                        .push(RouteTerm::LogicalOperator(RouteLogicalOperators::And));
+
+                    true
+                }
+                LogicalExpression::Or(l, r) => {
+                    l.convert(route);
+                    r.convert(route);
+                    route
+                        .stack
+                        .push(RouteTerm::LogicalOperator(RouteLogicalOperators::Or));
+
+                    true
+                }
+                LogicalExpression::Not(r) => {
+                    r.convert(route);
+                    route
+                        .stack
+                        .push(RouteTerm::LogicalOperator(RouteLogicalOperators::Not));
+
+                    true
+                }
+            },
+            Expression::Predicate(p) => {
+                let mut predicate = Predicate {
+                    lhs: crate::ast::Lhs {
+                        var_name: p.lhs.var_name.clone(),
+                        transformations: Vec::new(),
+                    },
+                    rhs: p.rhs.clone(),
+                    op: p.op.clone(),
+                };
+                for i in 0..p.lhs.transformations.len() {
+                    predicate
+                        .lhs
+                        .transformations
+                        .push(p.lhs.transformations[i].clone());
+                }
+                route.stack.push(RouteTerm::Predicate(predicate));
+                true
+            }
+        }
+    }
 }
 
 impl Execute for Expression {
@@ -15,6 +75,68 @@ impl Execute for Expression {
             },
             Expression::Predicate(p) => p.execute(ctx, m),
         }
+    }
+}
+
+#[derive(Debug)]
+pub enum OperandItem<'a> {
+    Val(bool),
+    Predicate(&'a Predicate),
+}
+fn evaluate_operand_item(item: OperandItem, ctx: &mut Context, m: &mut Match) -> bool {
+    match item {
+        OperandItem::Val(b) => b,
+        OperandItem::Predicate(p) => p.execute(ctx, m),
+    }
+}
+
+impl Execute for Route {
+    fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
+        let mut arr_predicate: ArrayBuf<OperandItem, 2> = ArrayBuf::new();
+
+        for item in &self.stack {
+            match item {
+                RouteTerm::LogicalOperator(op) => {
+                    //println!("{:?}", op);
+                    match op {
+                        RouteLogicalOperators::And => {
+                            let left = evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
+                            if left == false {
+                                // short circuit
+                                arr_predicate.pop();
+                                arr_predicate.push(OperandItem::Val(false));
+                            } else {
+                                let right =
+                                    evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
+                                arr_predicate.push(OperandItem::Val(right));
+                            }
+                        }
+                        RouteLogicalOperators::Or => {
+                            let left = evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
+                            if left == true {
+                                // short circuit
+                                arr_predicate.pop();
+                                arr_predicate.push(OperandItem::Val(true));
+                            } else {
+                                let right =
+                                    evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
+                                arr_predicate.push(OperandItem::Val(right));
+                            }
+                        }
+                        RouteLogicalOperators::Not => {
+                            let operand =
+                                evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
+                            arr_predicate.push(OperandItem::Val(!operand));
+                        }
+                    }
+                }
+                RouteTerm::Predicate(p) => {
+                    //println!("{:?}", p);
+                    arr_predicate.push(OperandItem::Predicate(p));
+                }
+            }
+        }
+        return evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
     }
 }
 
