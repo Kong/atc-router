@@ -97,7 +97,7 @@ impl Execute for Route {
         for item in &self.stack {
             match item {
                 RouteTerm::LogicalOperator(op) => {
-                    //println!("{:?}", op);
+
                     match op {
                         RouteLogicalOperators::And => {
                             let left = evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
@@ -131,7 +131,7 @@ impl Execute for Route {
                     }
                 }
                 RouteTerm::Predicate(p) => {
-                    //println!("{:?}", p);
+
                     arr_predicate.push(OperandItem::Predicate(p));
                 }
             }
