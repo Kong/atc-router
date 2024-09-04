@@ -39,7 +39,7 @@ __DATA__
                 "\xfc\x80\x80\x80\x80\xaf",
             }
 
-            local c = context.new(s, #r:get_fields())
+            local c = context.new(s, 1)
             for _, v in ipairs(BAD_UTF8) do
                 local ok, err = c:add_value(1, "http.path", v)
                 ngx.say(err)
@@ -71,7 +71,7 @@ invalid utf-8 sequence of 1 bytes from index 0
 
             s:add_field("http.path", "String")
 
-            local c = context.new(s, #r:get_fields())
+            local c = context.new(s, 1)
             assert(c:add_value(1, "http.path", "\x00"))
             ngx.say("ok")
         }
