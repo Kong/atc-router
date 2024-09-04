@@ -8,14 +8,19 @@ use core::fmt::{Debug, Display};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(test)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub trait ExpressionNode: Validate + FieldCounter + Execute + Debug /* + Hash */ {
+pub trait ExpressionNode: Validate + FieldCounter + Execute + Display + Debug /* + Hash */ {
     // abstract representation of a node in the AST
     // we will make it hashable and comparable to support the use of HashMap
     // for further optimizations
     // make it abstract also allows us to attach arbitrary extra info to the node without
     // changing the interface (e.g. postion span, )
 }
+
+#[cfg(not(test))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub trait ExpressionNode: Validate + FieldCounter + Execute + Debug {}
 
 pub struct ExpressionExtra<Extra> {
     pub node: Expression,
@@ -49,19 +54,12 @@ impl<Extra> Execute for ExpressionExtra<Extra> {
 
 impl<Extra: Debug> Debug for ExpressionExtra<Extra> {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        Debug::fmt(&self, f)?;
+        Debug::fmt(&self.node, f)?;
         self.extra.fmt(f)
     }
 }
 
-impl<Extra: Display> Display for ExpressionExtra<Extra> {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        Display::fmt(&self, f)?;
-        self.extra.fmt(f)
-    }
-}
-
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Location{
     pub input_location: (usize, usize),
     pub line_col_location: ((usize, usize), (usize, usize)),
@@ -75,12 +73,6 @@ impl Display for Location {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f, "{}-{}", self.input_location.0, self.input_location.1)?;
         write!(f, "({},{})-({},{})", self.line_col_location.0.0, self.line_col_location.0.1, self.line_col_location.1.0, self.line_col_location.1.1)
-    }
-}
-
-impl Debug for Location {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        Debug::fmt(&self, f)
     }
 }
 
@@ -218,6 +210,12 @@ mod tests {
     use crate::parser::parse;
     use std::fmt;
 
+    impl<Extra: Display> Display for ExpressionExtra<Extra> {
+        fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+            Display::fmt(&self.node, f)
+        }
+    }
+
     impl fmt::Display for Expression {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(
@@ -228,12 +226,6 @@ mod tests {
                     Expression::Predicate(predicate) => predicate.to_string(),
                 }
             )
-        }
-    }
-
-    impl fmt::Display for dyn ExpressionNode {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "{}", self)
         }
     }
 

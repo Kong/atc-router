@@ -2,6 +2,7 @@ use crate::ast::{BinaryOperator, Expression, LocationedExpression, LogicalExpres
 use crate::schema::Schema;
 use std::collections::HashMap;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct ValidationError {
     pub message: String,
     pub position: Option<Location>,
@@ -186,7 +187,7 @@ impl Validate for LocationedExpression {
     fn validate(&self, schema: &Schema) -> ValidationResult {
         let mut result = self.node.validate(schema);
 
-        if let Err(ValidationError{message, position }) = &mut result {
+        if let Err(ValidationError{message:_, position }) = &mut result {
             *position = Some(self.extra);
         }
 
@@ -214,7 +215,7 @@ mod tests {
     fn unknown_field() {
         let expression = parse(r#"unkn == "abc""#).unwrap();
         assert_eq!(
-            expression.validate(&SCHEMA).unwrap_err(),
+            expression.validate(&SCHEMA).unwrap_err().to_string(),
             "Unknown LHS field"
         );
     }
