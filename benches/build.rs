@@ -1,8 +1,8 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use atc_router::router::Router;
-use atc_router::schema::Schema;
 use atc_router::ast::{Type, Value};
 use atc_router::context::Context;
+use atc_router::router::Router;
+use atc_router::schema::Schema;
+use criterion::{criterion_group, criterion_main, Criterion};
 use uuid::Uuid;
 
 // To run this benchmark, execute the following command:
@@ -10,7 +10,7 @@ use uuid::Uuid;
 // cargo bench --bench build
 // ```
 
-const N : usize = 1000;
+const N: usize = 1000;
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut schema = Schema::default();
