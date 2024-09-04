@@ -47,7 +47,7 @@ __DATA__
             ngx.say(matched)
             ngx.say(c:get_result())
 
-            c = context.new(s)
+            c = context.new(s, #r:get_fields())
             c:add_value(1, "net.port", 8001)
 
             matched = r:execute(c)
@@ -95,7 +95,7 @@ a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
             ngx.say(matched)
             ngx.say(c:get_result())
 
-            c = context.new(s)
+            c = context.new(s, #r:get_fields())
             c:add_value(1, "http.path", "/foo1")
 
             matched = r:execute(c)
