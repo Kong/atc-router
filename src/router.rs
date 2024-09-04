@@ -8,7 +8,6 @@ use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
-use std::time::Instant;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 struct MatcherKey(usize, Uuid);
@@ -63,13 +62,7 @@ impl<'a> Router<'a> {
     pub fn execute(&self, context: &mut Context) -> bool {
         for (MatcherKey(_, id), m) in self.routes.iter().rev() {
             let mut mat = Match::new();
-            let now = Instant::now();
             let found = m.execute(context, &mut mat);
-            let elapsed_time = now.elapsed();
-            println!(
-                "Running router.execute() took {} nanos. {}",
-                elapsed_time.as_nanos(), found
-            );
             if found {
                 mat.uuid = *id;
                 context.result = Some(mat);
