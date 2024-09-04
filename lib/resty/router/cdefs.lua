@@ -70,12 +70,12 @@ uintptr_t router_get_fields(const struct Router *router,
                             const uint8_t **fields,
                             uintptr_t *fields_len);
 
-struct Context *context_new(const struct Schema *schema);
+struct Context *context_new(uintptr_t fields_len);
 
 void context_free(struct Context *context);
 
 bool context_add_value(struct Context *context,
-                       const int8_t *field,
+                       uintptr_t field_idx,
                        const struct CValue *value,
                        uint8_t *errbuf,
                        uintptr_t *errbuf_len);

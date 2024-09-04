@@ -39,7 +39,7 @@ __DATA__
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= r#\"/foo\"# && tcp.port == 80"))
 
-            local c = context.new(s)
+            local c = context.new(s, #r:get_fields())
             c:add_value("http.path", "/foo/bar")
             c:add_value("tcp.port", 80)
 
@@ -82,7 +82,7 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= r#\"/foo\"\'\"# && tcp.port == 80"))
 
-            local c = context.new(s)
+            local c = context.new(s, #r:get_fields())
             c:add_value("http.path", "/foo\"\'/bar")
             c:add_value("tcp.port", 80)
 
@@ -126,7 +126,7 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ~ r#\"^/\\d+/test$\"# && tcp.port == 80"))
 
-            local c = context.new(s)
+            local c = context.new(s, #r:get_fields())
             c:add_value("http.path", "/123/test")
             c:add_value("tcp.port", 80)
 
@@ -169,9 +169,9 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ~ r#\"^/\\D+/test$\"# && tcp.port == 80"))
 
-            local c = context.new(s)
-            c:add_value("http.path", "/123/test")
-            c:add_value("tcp.port", 80)
+            local c = context.new(s, #r:get_fields())
+            c:add_value(1, "http.path", "/123/test")
+            c:add_value(2, "tcp.port", 80)
 
             local matched = r:execute(c)
             ngx.say(matched)

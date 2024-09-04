@@ -1,5 +1,4 @@
 use crate::ast::Value;
-use crate::schema::Schema;
 use fnv::FnvHashMap;
 use uuid::Uuid;
 
@@ -25,38 +24,73 @@ impl Default for Match {
     }
 }
 
-pub struct Context<'a> {
-    schema: &'a Schema,
-    values: FnvHashMap<String, Vec<Value>>,
+pub struct Context {
+    values: Vec<Option<Vec<Value>>>,
     pub result: Option<Match>,
 }
 
-impl<'a> Context<'a> {
-    pub fn new(schema: &'a Schema) -> Self {
+impl Context {
+        pub fn new(fields_cnt: usize) -> Self {
         Context {
-            schema,
-            values: FnvHashMap::with_hasher(Default::default()),
+            values: vec![None; fields_cnt],
             result: None,
         }
     }
 
-    pub fn add_value(&mut self, field: &str, value: Value) {
-        if &value.my_type() != self.schema.type_of(field).unwrap() {
-            panic!("value provided does not match schema");
+    pub fn add_value(&mut self, index: usize, value: Value) {
+        if index >= self.values.len() {
+            panic!("value provided does not match schema: index {}, max fields count {}", index, self.values.len());
         }
 
-        self.values
-            .entry(field.to_string())
-            .or_default()
-            .push(value);
+        if let Some(v) = &mut self.values[index] {
+            v.push(value);
+        } else {
+            self.values[index] =  Some(vec![value]);
+        }
     }
 
-    pub fn value_of(&self, field: &str) -> Option<&[Value]> {
-        self.values.get(field).map(|v| v.as_slice())
+    pub fn value_of(&self, index: usize) -> Option<&[Value]> {
+        if !self.values.is_empty() && self.values[index].is_some() { Some(self.values[index].as_ref().unwrap().as_slice()) } else {None}
     }
 
     pub fn reset(&mut self) {
+        let len = self.values.len();
+        // reserve the capacity of values for reuse, avoid re-alloc
         self.values.clear();
+        self.values.resize_with(len, Default::default);
         self.result = None;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::context::Context;
+    use crate::ast::Value;
+    #[test]
+    fn test_context() {
+        let fields_cnt = 3;
+        let mut ctx = Context::new(fields_cnt);
+        assert!(ctx.values.len() == fields_cnt);
+        assert_eq!(ctx.values, vec![None; fields_cnt]);
+        // access value with out of bound index
+        assert_eq!(ctx.value_of(0), None);
+        
+        // add value in bound
+        ctx.add_value(1, Value::String("foo".to_string()));
+        assert_eq!(ctx.value_of(0), None);
+        assert_eq!(ctx.value_of(1).unwrap().len(), 1);
+        assert_eq!(ctx.value_of(1).unwrap(), vec![Value::String("foo".to_string())].as_slice());
+
+        // reset context keeps values capacity with all None 
+        ctx.reset();
+        assert!(ctx.values.len() == fields_cnt);
+        assert_eq!(ctx.values, vec![None; fields_cnt]);
+
+        // reuse this context
+        ctx.add_value(0, Value::String("bar".to_string()));
+        ctx.add_value(0, Value::String("foo".to_string()));
+        assert!(ctx.values.len() == fields_cnt);
+        assert_eq!(ctx.value_of(0).unwrap().len(), 2);
+        assert_eq!(ctx.value_of(0).unwrap(), vec![Value::String("bar".to_string()), Value::String("foo".to_string())].as_slice());
     }
 }

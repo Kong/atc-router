@@ -26,20 +26,25 @@ local clib = cdefs.clib
 local context_free = cdefs.context_free
 
 
-function _M.new(schema)
-    local context = clib.context_new(schema.schema)
+function _M.new(schema, size)
+    local context = clib.context_new(size)
     local c = setmetatable({
         context = ffi_gc(context, context_free),
         schema = schema,
+        max_fields = size,
     }, _MT)
 
     return c
 end
 
 
-function _M:add_value(field, value)
+function _M:add_value(index, field, value)
     if not value then
         return true
+    end
+
+    if index > self.max_fields then
+        return false, "context value index out of bound"
     end
 
     local typ, err = self.schema:get_field_type(field)
@@ -65,7 +70,7 @@ function _M:add_value(field, value)
     local errbuf_len = get_size_ptr()
     errbuf_len[0] = ERR_BUF_MAX_LEN
 
-    if clib.context_add_value(self.context, field, CACHED_VALUE, errbuf, errbuf_len) == false then
+    if clib.context_add_value(self.context, index-1, CACHED_VALUE, errbuf, errbuf_len) == false then
         return nil, ffi_string(errbuf, errbuf_len[0])
     end
 

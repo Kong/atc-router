@@ -39,9 +39,9 @@ __DATA__
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
 
-            local c = context.new(s)
-            c:add_value("http.path", "/foo/bar")
-            c:add_value("tcp.port", 80)
+            local c = context.new(s, #r:get_fields())
+            c:add_value(1, "http.path", "/foo/bar")
+            c:add_value(2, "tcp.port", 80)
 
             local matched = r:execute(c)
             ngx.say(matched)
@@ -84,9 +84,9 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150d",
                                  "http.path ^= \"/\""))
 
-            local c = context.new(s)
-            c:add_value("http.path", "/foo/bar")
-            c:add_value("tcp.port", 80)
+            local c = context.new(s, #r:get_fields())
+            c:add_value(1, "http.path", "/foo/bar")
+            c:add_value(2, "tcp.port", 80)
 
             local matched = r:execute(c)
             ngx.say(matched)
@@ -126,9 +126,9 @@ uuid = a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c prefix = /foo
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
 
-            local c = context.new(s)
-            c:add_value("http.path", "/foo/bar")
-            c:add_value("tcp.port", 80)
+            local c = context.new(s, #r:get_fields())
+            c:add_value(1, "http.path", "/foo/bar")
+            c:add_value(2, "tcp.port", 80)
 
             local matched = r:execute(c)
             ngx.say(matched)
@@ -138,10 +138,11 @@ uuid = a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c prefix = /foo
             ngx.say(prefix)
 
             assert(r:remove_matcher("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c"))
-
-            c = context.new(s)
-            c:add_value("http.path", "/foo/bar")
-            c:add_value("tcp.port", 80)
+            assert(#r:get_fields() == 0)
+            
+            c = context.new(s, #r:get_fields())
+            c:add_value(1, "http.path", "/foo/bar")
+            c:add_value(2, "tcp.port", 80)
 
             matched = r:execute(c)
             ngx.say(matched)
@@ -214,9 +215,9 @@ nil --> 1:11
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
 
-            local c = context.new(s)
-            c:add_value("http.path", "/foo/bar")
-            c:add_value("tcp.port", 80)
+            local c = context.new(s, #r:get_fields())
+            c:add_value(1, "http.path", "/foo/bar")
+            c:add_value(2, "tcp.port", 80)
 
             local matched = r:execute(c)
             ngx.say(matched)

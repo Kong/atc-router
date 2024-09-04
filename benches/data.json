@@ -1,0 +1,55 @@
+{
+    "rules": [
+        "net.protocol == \"http\"",
+        "tls.sni == \"server1\"",
+        "http.method == \"GET\"",
+        "http.host == \"example.com\"",
+        "http.path == \"/foo\"",
+        "http.path.segments.1 == \"/bar\"",
+        "http.path.segments.0_1 == \"/foo/bar\"",
+        "http.path.segments.len == 2",
+        "http.headers.foo_bar == \"whatever\"",
+        "net.dst.port == 8443",
+        "net.src.ip == 192.168.1.1",
+        "net.src.ip in 192.168.1.0/24"
+    ],
+    "match_keys": [
+        "net.protocol",
+        "tls.sni",
+        "http.method",
+        "http.host",
+        "http.path",
+        "http.path.segments.1",
+        "http.path.segments.0_1",
+        "http.path.segments.len",
+        "http.headers.foo_bar",
+        "net.dst.port",
+        "net.src.ip"
+    ],
+    "match_values": [
+        "http",
+        "server1",
+        "GET",
+        "example.com",
+        "/foo",
+        "/bar\"",
+        "/foo/bar\"",
+        2,
+        "whatever",
+        8443,
+        ["192.168.1.1"]
+    ],
+    "not_match_values": [
+        "https",
+        "server2",
+        "POST",
+        "example_foo.com",
+        "/fooo",
+        "/barr\"",
+        "/fooo/bar\"",
+        3,
+        "whatever_wrong",
+        18443,
+        ["192.168.2.1"]
+    ]
+}
