@@ -62,8 +62,7 @@ impl<'a> Router<'a> {
     pub fn execute(&self, context: &mut Context) -> bool {
         for (MatcherKey(_, id), m) in self.routes.iter().rev() {
             let mut mat = Match::new();
-            let found = m.execute(context, &mut mat);
-            if found {
+            if m.execute(context, &mut mat) {
                 mat.uuid = *id;
                 context.result = Some(mat);
 
