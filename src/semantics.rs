@@ -1,4 +1,4 @@
-use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Route, RouteTerm, Type, Value};
 use crate::schema::Schema;
 use std::collections::HashMap;
 
@@ -156,6 +156,142 @@ impl Validate for Expression {
                 }
             }
         }
+    }
+}
+
+impl FieldCounter for Route {
+    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
+        for item in &self.stack {
+            match item {
+                RouteTerm::LogicalOperator(_op) => {
+                    // need to do nothing here
+                }
+                RouteTerm::Predicate(p) => {
+                    *map.entry(p.lhs.var_name.clone()).or_default() += 1;
+                }
+            }
+        }
+    }
+
+    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
+        for item in &self.stack {
+            match item {
+                RouteTerm::LogicalOperator(_op) => {
+                    // need to do nothing here
+                }
+                RouteTerm::Predicate(p) => {
+                    let val = map.get_mut(&p.lhs.var_name).unwrap();
+                    *val -= 1;
+
+                    if *val == 0 {
+                        assert!(map.remove(&p.lhs.var_name).is_some());
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl Validate for Route {
+    fn validate(&self, schema: &Schema) -> ValidationResult {
+        for item in &self.stack {
+            match item {
+                RouteTerm::LogicalOperator(_op) => {
+                    // need to do nothing here
+                }
+                RouteTerm::Predicate(p) => {
+                    // lhs and rhs must be the same type
+                    let lhs_type = p.lhs.my_type(schema);
+                    if lhs_type.is_none() {
+                        return Err("Unknown LHS field".to_string());
+                    }
+                    let lhs_type = lhs_type.unwrap();
+
+                    if p.op != BinaryOperator::Regex // Regex RHS is always Regex, and LHS is always String
+                        && p.op != BinaryOperator::In // In/NotIn supports IPAddr in IpCidr
+                        && p.op != BinaryOperator::NotIn
+                        && lhs_type != &p.rhs.my_type()
+                    {
+                        return Err(
+                            "Type mismatch between the LHS and RHS values of predicate".to_string()
+                        );
+                    }
+
+                    let (lower, _any) = p.lhs.get_transformations();
+
+                    // LHS transformations only makes sense with string fields
+                    if lower && lhs_type != &Type::String {
+                        return Err(
+                            "lower-case transformation function only supported with String type fields"
+                                .to_string(),
+                        );
+                    }
+
+                    match p.op {
+                        BinaryOperator::Equals | BinaryOperator::NotEquals => {
+                            // It's Ok.
+                        }
+                        BinaryOperator::Regex => {
+                            // unchecked path above
+                            if lhs_type == &Type::String {
+                                // It's Ok.
+                            } else {
+                                return Err(
+                                    "Regex operators only supports string operands".to_string()
+                                );
+                            }
+                        }
+                        BinaryOperator::Prefix | BinaryOperator::Postfix => {
+                            match p.rhs {
+                                Value::String(_) => {
+                                    // It's Ok.
+                                }
+                                _ => return Err(
+                                    "Regex/Prefix/Postfix operators only supports string operands"
+                                        .to_string(),
+                                ),
+                            }
+                        }
+                        BinaryOperator::Greater
+                        | BinaryOperator::GreaterOrEqual
+                        | BinaryOperator::Less
+                        | BinaryOperator::LessOrEqual => {
+                            match p.rhs {
+                                Value::Int(_) => {
+                                    // It's Ok.
+                                }
+                                _ => return Err("Greater/GreaterOrEqual/Lesser/LesserOrEqual operators only supports integer operands".to_string())
+                            }
+                        }
+                        BinaryOperator::In | BinaryOperator::NotIn => {
+                            // unchecked path above
+                            match (lhs_type, &p.rhs) {
+                                (Type::IpAddr, Value::IpCidr(_)) => {
+                                    // It's Ok.
+                                }
+                                _ => {
+                                    return Err(
+                                        "In/NotIn operators only supports IP in CIDR".to_string()
+                                    )
+                                }
+                            }
+                        }
+                        BinaryOperator::Contains => {
+                            match p.rhs {
+                                Value::String(_) => {
+                                    // It's Ok.
+                                }
+                                _ => {
+                                    return Err("Contains operator only supports string operands"
+                                        .to_string())
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }
 
