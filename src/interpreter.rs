@@ -36,20 +36,15 @@ impl Convert for Expression {
                 }
             },
             Expression::Predicate(p) => {
-                let mut predicate = Predicate {
+                let predicate = Predicate {
                     lhs: crate::ast::Lhs {
                         var_name: p.lhs.var_name.clone(),
-                        transformations: Vec::new(),
+                        transformations: p.lhs.transformations.clone(),
                     },
                     rhs: p.rhs.clone(),
                     op: p.op,
                 };
-                for i in 0..p.lhs.transformations.len() {
-                    predicate
-                        .lhs
-                        .transformations
-                        .push(p.lhs.transformations[i].clone());
-                }
+
                 route.stack.push(RouteTerm::Predicate(predicate));
             }
         }
