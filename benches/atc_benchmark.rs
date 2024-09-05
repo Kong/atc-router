@@ -1,26 +1,32 @@
-use std::{hint::black_box, str::FromStr};
+use atc_router::{
+    ast::Type,
+    ast::Value,
+    context::Context,
+    router::Router,
+    schema::{self, Schema},
+};
 use criterion::{criterion_group, criterion_main, Criterion};
-use atc_router::{ast::Type, ast::Value, context::Context, router::Router, schema::{self, Schema}};
-use uuid::Uuid;
-use std::net::{IpAddr, Ipv4Addr};
-use serde_json;
-use std::fs;
 use serde::{Deserialize, Serialize};
+use serde_json;
 use std::env;
-
+use std::fs;
+use std::net::{IpAddr, Ipv4Addr};
+use std::{hint::black_box, str::FromStr};
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
 struct TestData {
     rules: Vec<serde_json::Value>,
     match_keys: Vec<serde_json::Value>,
     match_values: Vec<serde_json::Value>,
-    not_match_values: Vec<serde_json::Value>
+    not_match_values: Vec<serde_json::Value>,
 }
 
 // prepare match rules, context keys, context values from data.json file
 fn prepare_data() -> TestData {
     let cwd = env::current_dir().unwrap();
-    let file_str = fs::read_to_string(cwd.join("benches/data.json")).expect("unable to open data.json");
+    let file_str =
+        fs::read_to_string(cwd.join("benches/data.json")).expect("unable to open data.json");
     serde_json::from_str(&file_str).unwrap()
 }
 
@@ -52,19 +58,28 @@ fn setup_matchers(r: &mut Router, data: &TestData) {
 
 // mock contexts with field values passed in from json data
 fn setup_context(ctx: &mut Context, data: &TestData, test_match: bool) {
-    let values = if test_match {&data.match_values} else {&data.not_match_values};
+    let values = if test_match {
+        &data.match_values
+    } else {
+        &data.not_match_values
+    };
     for (i, v) in values.iter().enumerate() {
         match v {
             serde_json::Value::String(s) => {
                 ctx.add_value(i, Value::String(s.to_string()));
-            },
+            }
             serde_json::Value::Number(n) => {
                 ctx.add_value(i, Value::Int(n.as_i64().unwrap()));
-            },
+            }
             serde_json::Value::Array(l) => {
-                ctx.add_value(i, Value::IpAddr(IpAddr::V4(Ipv4Addr::from_str(l[0].as_str().unwrap()).unwrap())));
-            },
-            _ => panic!("incorrect data type")
+                ctx.add_value(
+                    i,
+                    Value::IpAddr(IpAddr::V4(
+                        Ipv4Addr::from_str(l[0].as_str().unwrap()).unwrap(),
+                    )),
+                );
+            }
+            _ => panic!("incorrect data type"),
         }
     }
 }
@@ -81,11 +96,15 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let mut ctx = Context::new(r.fields.len());
     setup_context(&mut ctx, &data, true);
-    c.bench_function("route match all", |b| b.iter(|| router_match(black_box(&r), black_box(&mut ctx))));
+    c.bench_function("route match all", |b| {
+        b.iter(|| router_match(black_box(&r), black_box(&mut ctx)))
+    });
 
     let mut ctx = Context::new(r.fields.len());
     setup_context(&mut ctx, &data, false);
-    c.bench_function("route mismatch all", |b| b.iter(|| router_match(black_box(&r), black_box(&mut ctx))));
+    c.bench_function("route mismatch all", |b| {
+        b.iter(|| router_match(black_box(&r), black_box(&mut ctx)))
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

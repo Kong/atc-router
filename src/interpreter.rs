@@ -303,7 +303,7 @@ fn test_predicate() {
         Value::String("foocar".to_string()),
         Value::String("fooban".to_string()),
     ];
-    
+
     for v in lhs_values {
         ctx.add_value(field_index, v);
     }
