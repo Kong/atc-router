@@ -36,43 +36,51 @@ pub enum LirLogicalOperators {
 }
 
 pub trait Translate {
-    fn translate(&self, lir: &mut Lir);
+    type Output;
+    fn translate(&self) -> Self::Output;
 }
 
 impl Translate for Expression {
-    fn translate(&self, lir: &mut Lir) {
-        match self {
-            Expression::Logical(logic_exp) => match logic_exp.as_ref() {
-                LogicalExpression::And(l, r) => {
-                    l.translate(lir);
-                    r.translate(lir);
-                    lir.codes
-                        .push(LirCode::LogicalOperator(LirLogicalOperators::And));
-                }
-                LogicalExpression::Or(l, r) => {
-                    l.translate(lir);
-                    r.translate(lir);
-                    lir.codes
-                        .push(LirCode::LogicalOperator(LirLogicalOperators::Or));
-                }
-                LogicalExpression::Not(r) => {
-                    r.translate(lir);
-                    lir.codes
-                        .push(LirCode::LogicalOperator(LirLogicalOperators::Not));
-                }
-            },
-            Expression::Predicate(p) => {
-                let predicate = Predicate {
-                    lhs: crate::ast::Lhs {
-                        var_name: p.lhs.var_name.clone(),
-                        transformations: p.lhs.transformations.clone(),
-                    },
-                    rhs: p.rhs.clone(),
-                    op: p.op,
-                };
+    type Output = Lir;
+    fn translate(&self) -> Self::Output {
+        let mut lir = Lir::new();
+        translate_helper(&self, &mut lir);
+        lir
+    }
+}
 
-                lir.codes.push(LirCode::Predicate(predicate));
+fn translate_helper(exp: &Expression, lir: &mut Lir) {
+    match exp {
+        Expression::Logical(logic_exp) => match logic_exp.as_ref() {
+            LogicalExpression::And(l, r) => {
+                translate_helper(l, lir);
+                translate_helper(r, lir);
+                lir.codes
+                    .push(LirCode::LogicalOperator(LirLogicalOperators::And));
             }
+            LogicalExpression::Or(l, r) => {
+                translate_helper(l, lir);
+                translate_helper(r, lir);
+                lir.codes
+                    .push(LirCode::LogicalOperator(LirLogicalOperators::Or));
+            }
+            LogicalExpression::Not(r) => {
+                translate_helper(r, lir);
+                lir.codes
+                    .push(LirCode::LogicalOperator(LirLogicalOperators::Not));
+            }
+        },
+        Expression::Predicate(p) => {
+            let predicate = Predicate {
+                lhs: crate::ast::Lhs {
+                    var_name: p.lhs.var_name.clone(),
+                    transformations: p.lhs.transformations.clone(),
+                },
+                rhs: p.rhs.clone(),
+                op: p.op,
+            };
+
+            lir.codes.push(LirCode::Predicate(predicate));
         }
     }
 }
