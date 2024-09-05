@@ -63,7 +63,7 @@ impl<'a> Router<'a> {
     pub fn reindexing_matchers(&mut self) {
         for (_, m) in self.matchers.iter_mut() {
             m.fix_lhs_index(&self.fields_map);
-        } 
+        }
     }
 
     pub fn execute(&self, context: &mut Context) -> bool {
@@ -83,18 +83,28 @@ impl<'a> Router<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, net::{IpAddr, Ipv4Addr}};
+    use std::{
+        collections::HashMap,
+        net::{IpAddr, Ipv4Addr},
+    };
 
     use uuid::Uuid;
 
-    use crate::{ast::{Expression, LogicalExpression, Type, Value}, context::Context, router::Router, schema::Schema};
+    use crate::{
+        ast::{Expression, LogicalExpression, Type, Value},
+        context::Context,
+        router::Router,
+        schema::Schema,
+    };
 
     type FieldsType = Vec<(String, usize)>;
     type ContextValues<'a> = HashMap<&'a str, Value>;
 
     fn setup_matcher(r: &mut Router, priority: usize, expression: &str) -> (Uuid, usize) {
         let id = Uuid::new_v4();
-        r.add_matcher(priority, id, expression).ok().expect("failed to addd matcher");
+        r.add_matcher(priority, id, expression)
+            .ok()
+            .expect("failed to addd matcher");
         (id, priority)
     }
 
@@ -115,12 +125,11 @@ mod tests {
                 LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
                     is_index_match(l, rt) && is_index_match(r, rt)
                 }
-                LogicalExpression::Not(r) => {
-                    is_index_match(r, rt)
-                }
-            }
+                LogicalExpression::Not(r) => is_index_match(r, rt),
+            },
             Expression::Predicate(p) => {
-                rt.fields[p.lhs.index].0 == p.lhs.var_name && *rt.fields_map.get(&p.lhs.var_name).unwrap() == p.lhs.index
+                rt.fields[p.lhs.index].0 == p.lhs.var_name
+                    && *rt.fields_map.get(&p.lhs.var_name).unwrap() == p.lhs.index
             }
         }
     }
@@ -130,10 +139,10 @@ mod tests {
             if !is_index_match(e, r) {
                 return false;
             }
-        }       
+        }
         true
     }
-    
+
     #[test]
     fn test_router_execution() {
         // init schema
@@ -146,10 +155,11 @@ mod tests {
         let mut r = Router::new(&s);
         assert!(r.fields.len() == 0);
         assert!(validate_index(&r));
-        
+
         // add matchers
         let (id_0, pri_0) = setup_matcher(&mut r, 99, r#"http.host == "example.com""#);
-        let (id_1, pri_1) = setup_matcher(&mut r, 98, r#"net.dst.port == 8443 || net.dst.port == 443"#);
+        let (id_1, pri_1) =
+            setup_matcher(&mut r, 98, r#"net.dst.port == 8443 || net.dst.port == 443"#);
         let (id_2, pri_2) = setup_matcher(&mut r, 97, r#"net.src.ip == 192.168.1.1"#);
         assert!(r.fields.len() == 3);
         assert!(validate_index(&r));
@@ -157,10 +167,13 @@ mod tests {
         // mock context values
         let mut ctx_values = HashMap::from([
             ("http.host", Value::String("example.com".to_string())),
-            ("net.src.ip", Value::IpAddr(IpAddr::V4(Ipv4Addr::new(192,168,1,2))))
+            (
+                "net.src.ip",
+                Value::IpAddr(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 2))),
+            ),
         ]);
         let mut ctx = init_context(&r.fields, &ctx_values);
-        
+
         // match the first matcher
         let res = r.execute(&mut ctx);
         assert!(res);
@@ -173,7 +186,8 @@ mod tests {
         assert!(!r.execute(&mut ctx));
 
         // context value change, match again
-        *ctx_values.get_mut("net.src.ip").unwrap() = Value::IpAddr(IpAddr::V4(Ipv4Addr::new(192,168,1,1)));
+        *ctx_values.get_mut("net.src.ip").unwrap() =
+            Value::IpAddr(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)));
         ctx = init_context(&r.fields, &ctx_values);
         assert!(r.execute(&mut ctx));
 

@@ -9,21 +9,33 @@ pub trait Validate {
 }
 
 pub trait FieldCounter {
-    fn add_to_counter(&mut self, fields: &mut Vec<(String, usize)>, map: &mut HashMap<String, usize>);
-    fn remove_from_counter(&mut self, fields: &mut Vec<(String, usize)>, map: &mut HashMap<String, usize>);
+    fn add_to_counter(
+        &mut self,
+        fields: &mut Vec<(String, usize)>,
+        map: &mut HashMap<String, usize>,
+    );
+    fn remove_from_counter(
+        &mut self,
+        fields: &mut Vec<(String, usize)>,
+        map: &mut HashMap<String, usize>,
+    );
     fn fix_lhs_index(&mut self, map: &HashMap<String, usize>);
 }
 
 impl FieldCounter for Expression {
-    fn add_to_counter(&mut self, fields: &mut Vec<(String, usize)>, map: &mut HashMap<String, usize>) {
-            match self {
+    fn add_to_counter(
+        &mut self,
+        fields: &mut Vec<(String, usize)>,
+        map: &mut HashMap<String, usize>,
+    ) {
+        match self {
             Expression::Logical(l) => match l.as_mut() {
                 LogicalExpression::And(l, r) => {
                     l.add_to_counter(fields, map);
                     r.add_to_counter(fields, map);
                 }
                 LogicalExpression::Or(l, r) => {
-                    l.add_to_counter(fields,map);
+                    l.add_to_counter(fields, map);
                     r.add_to_counter(fields, map);
                 }
                 LogicalExpression::Not(r) => {
@@ -39,14 +51,18 @@ impl FieldCounter for Expression {
                     p.lhs.index = *index;
                 } else {
                     fields.push((p.lhs.var_name.clone(), 1));
-                    map.insert(p.lhs.var_name.clone(), fields.len()-1);
-                    p.lhs.index = fields.len()-1;
+                    map.insert(p.lhs.var_name.clone(), fields.len() - 1);
+                    p.lhs.index = fields.len() - 1;
                 }
             }
         }
     }
 
-    fn remove_from_counter(&mut self, fields: &mut Vec<(String, usize)>, map: &mut HashMap<String, usize>) {
+    fn remove_from_counter(
+        &mut self,
+        fields: &mut Vec<(String, usize)>,
+        map: &mut HashMap<String, usize>,
+    ) {
         match self {
             Expression::Logical(l) => match l.as_mut() {
                 LogicalExpression::And(l, r) => {

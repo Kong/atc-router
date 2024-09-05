@@ -30,7 +30,7 @@ pub struct Context {
 }
 
 impl Context {
-        pub fn new(fields_cnt: usize) -> Self {
+    pub fn new(fields_cnt: usize) -> Self {
         Context {
             values: vec![None; fields_cnt],
             result: None,
@@ -39,18 +39,26 @@ impl Context {
 
     pub fn add_value(&mut self, index: usize, value: Value) {
         if index >= self.values.len() {
-            panic!("value provided does not match schema: index {}, max fields count {}", index, self.values.len());
+            panic!(
+                "value provided does not match schema: index {}, max fields count {}",
+                index,
+                self.values.len()
+            );
         }
 
         if let Some(v) = &mut self.values[index] {
             v.push(value);
         } else {
-            self.values[index] =  Some(vec![value]);
+            self.values[index] = Some(vec![value]);
         }
     }
 
     pub fn value_of(&self, index: usize) -> Option<&[Value]> {
-        if !self.values.is_empty() && self.values[index].is_some() { Some(self.values[index].as_ref().unwrap().as_slice()) } else {None}
+        if !self.values.is_empty() && self.values[index].is_some() {
+            Some(self.values[index].as_ref().unwrap().as_slice())
+        } else {
+            None
+        }
     }
 
     pub fn reset(&mut self) {
@@ -64,8 +72,8 @@ impl Context {
 
 #[cfg(test)]
 mod tests {
-    use crate::context::Context;
     use crate::ast::Value;
+    use crate::context::Context;
     #[test]
     fn test_context() {
         let fields_cnt = 3;
@@ -74,14 +82,17 @@ mod tests {
         assert_eq!(ctx.values, vec![None; fields_cnt]);
         // access value with out of bound index
         assert_eq!(ctx.value_of(0), None);
-        
+
         // add value in bound
         ctx.add_value(1, Value::String("foo".to_string()));
         assert_eq!(ctx.value_of(0), None);
         assert_eq!(ctx.value_of(1).unwrap().len(), 1);
-        assert_eq!(ctx.value_of(1).unwrap(), vec![Value::String("foo".to_string())].as_slice());
+        assert_eq!(
+            ctx.value_of(1).unwrap(),
+            vec![Value::String("foo".to_string())].as_slice()
+        );
 
-        // reset context keeps values capacity with all None 
+        // reset context keeps values capacity with all None
         ctx.reset();
         assert!(ctx.values.len() == fields_cnt);
         assert_eq!(ctx.values, vec![None; fields_cnt]);
@@ -91,6 +102,13 @@ mod tests {
         ctx.add_value(0, Value::String("foo".to_string()));
         assert!(ctx.values.len() == fields_cnt);
         assert_eq!(ctx.value_of(0).unwrap().len(), 2);
-        assert_eq!(ctx.value_of(0).unwrap(), vec![Value::String("bar".to_string()), Value::String("foo".to_string())].as_slice());
+        assert_eq!(
+            ctx.value_of(0).unwrap(),
+            vec![
+                Value::String("bar".to_string()),
+                Value::String("foo".to_string())
+            ]
+            .as_slice()
+        );
     }
 }
