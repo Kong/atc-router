@@ -1,6 +1,6 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Value};
 use crate::context::{Context, Match};
-use crate::line::{Route, RouteLogicalOperators, RouteTerm};
+use crate::linear::{Route, RouteLogicalOperators, RouteTerm};
 
 pub trait Execute {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
@@ -150,6 +150,9 @@ impl Execute for Route {
         }
         //stack pop
         top -= 1;
+        if top != 0 {
+            panic!("There may be someting wrong for the AST conversoin!")
+        }
         evaluate_operand_item(operand_stack[top], ctx, m) //stack pop
     }
 }
