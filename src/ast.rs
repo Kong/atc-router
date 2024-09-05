@@ -13,7 +13,6 @@ pub struct Route {
 }
 
 impl Route {
-    #[must_use]
     pub fn new() -> Self {
         Self { stack: Vec::new() }
     }
@@ -57,7 +56,7 @@ pub enum LhsTransformations {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {
     Equals,         // ==
     NotEquals,      // !=

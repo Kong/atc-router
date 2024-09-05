@@ -3,7 +3,7 @@ use crate::ast::{
     RouteTerm, Value,
 };
 use crate::context::{Context, Match};
-use stack_array::*;
+
 pub trait Execute {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
 }
@@ -50,7 +50,7 @@ impl Convert for Expression {
                         transformations: Vec::new(),
                     },
                     rhs: p.rhs.clone(),
-                    op: p.op.clone(),
+                    op: p.op,
                 };
                 for i in 0..p.lhs.transformations.len() {
                     predicate
@@ -78,7 +78,7 @@ impl Execute for Expression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum OperandItem<'a> {
     Val(bool),
     Predicate(&'a Predicate),
@@ -92,51 +92,79 @@ fn evaluate_operand_item(item: OperandItem, ctx: &mut Context, m: &mut Match) ->
 
 impl Execute for Route {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
-        let mut arr_predicate: ArrayBuf<OperandItem, 2> = ArrayBuf::new();
+        //operand stack
+        let mut top: usize = 0;
+        let mut operand_stack: [OperandItem; 2] = [OperandItem::Val(false); 2];
 
         for item in &self.stack {
             match item {
                 RouteTerm::LogicalOperator(op) => {
-
                     match op {
                         RouteLogicalOperators::And => {
-                            let left = evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
-                            if left == false {
+                            //stack pop
+                            top -= 1;
+                            let left = evaluate_operand_item(operand_stack[top], ctx, m);
+                            if !left {
                                 // short circuit
-                                arr_predicate.pop();
-                                arr_predicate.push(OperandItem::Val(false));
+                                // stack pop
+                                top -= 1;
+
+                                //stack push
+                                operand_stack[top] = OperandItem::Val(false);
+                                top += 1;
                             } else {
-                                let right =
-                                    evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
-                                arr_predicate.push(OperandItem::Val(right));
+                                //stack pop
+                                top -= 1;
+                                let right = evaluate_operand_item(operand_stack[top], ctx, m);
+
+                                //stack push
+                                operand_stack[top] = OperandItem::Val(right);
+                                top += 1;
                             }
                         }
                         RouteLogicalOperators::Or => {
-                            let left = evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
-                            if left == true {
-                                // short circuit
-                                arr_predicate.pop();
-                                arr_predicate.push(OperandItem::Val(true));
+                            //stack pop
+                            top -= 1;
+                            let left = evaluate_operand_item(operand_stack[top], ctx, m);
+                            if left {
+                                //short circuit
+                                // stack pop
+                                top -= 1;
+
+                                //stack push
+                                operand_stack[top] = OperandItem::Val(true);
+                                top += 1;
                             } else {
-                                let right =
-                                    evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
-                                arr_predicate.push(OperandItem::Val(right));
+                                //stack pop
+                                top -= 1;
+                                let right = evaluate_operand_item(operand_stack[top], ctx, m);
+
+                                //stack push
+                                operand_stack[top] = OperandItem::Val(right);
+                                top += 1;
                             }
                         }
                         RouteLogicalOperators::Not => {
-                            let operand =
-                                evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
-                            arr_predicate.push(OperandItem::Val(!operand));
+                            //stack pop
+                            top -= 1;
+                            let operand = evaluate_operand_item(operand_stack[top], ctx, m);
+
+                            //stack push
+                            operand_stack[top] = OperandItem::Val(!operand);
+                            top += 1;
                         }
                     }
                 }
                 RouteTerm::Predicate(p) => {
-
-                    arr_predicate.push(OperandItem::Predicate(p));
+                    // push stack
+                    operand_stack[top] = OperandItem::Predicate(p);
+                    top += 1;
                 }
             }
         }
-        return evaluate_operand_item(arr_predicate.pop().unwrap(), ctx, m);
+        //stack pop
+        top -= 1;
+        evaluate_operand_item(operand_stack[top], ctx, m) //stack pop
     }
 }
 

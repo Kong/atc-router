@@ -36,7 +36,6 @@ dependencies = [
  "regex",
  "serde",
  "serde_regex",
- "stack-array",
  "uuid",
 ]
 
@@ -566,12 +565,6 @@ dependencies = [
  "cpufeatures",
  "digest",
 ]
-
-[[package]]
-name = "stack-array"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "332be12b550e41ddc136fd0bd2ef1272e2a49e1ee2a843770f0ccbd86f6fd3b7"
 
 [[package]]
 name = "syn"
