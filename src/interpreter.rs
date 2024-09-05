@@ -151,7 +151,7 @@ impl Execute for Route {
         //stack pop
         top -= 1;
         if top != 0 {
-            panic!("There may be someting wrong for the AST conversoin!")
+            panic!("There may be something wrong for the AST conversoin!")
         }
         evaluate_operand_item(operand_stack[top], ctx, m) //stack pop
     }
