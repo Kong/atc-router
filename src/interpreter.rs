@@ -87,46 +87,42 @@ impl Execute for Route {
                 RouteTerm::LogicalOperator(op) => {
                     match op {
                         RouteLogicalOperators::And => {
-                            //stack pop
-                            top -= 1;
-                            let right = evaluate_operand_item(operand_stack[top], ctx, m);
-                            if !right {
+                            let left = evaluate_operand_item(operand_stack[top - 2], ctx, m);
+                            if !left {
                                 // short circuit
                                 // stack pop
-                                top -= 1;
+                                top -= 2;
 
                                 //stack push
                                 operand_stack[top] = OperandItem::Val(false);
                                 top += 1;
                             } else {
-                                //stack pop
-                                top -= 1;
-                                let left = evaluate_operand_item(operand_stack[top], ctx, m);
+                                let right = evaluate_operand_item(operand_stack[top - 1], ctx, m);
 
+                                //stack pop
+                                top -= 2;
                                 //stack push
-                                operand_stack[top] = OperandItem::Val(left);
+                                operand_stack[top] = OperandItem::Val(right);
                                 top += 1;
                             }
                         }
                         RouteLogicalOperators::Or => {
-                            //stack pop
-                            top -= 1;
-                            let right = evaluate_operand_item(operand_stack[top], ctx, m);
-                            if right {
-                                //short circuit
+                            let left = evaluate_operand_item(operand_stack[top - 2], ctx, m);
+                            if left {
+                                // short circuit
                                 // stack pop
-                                top -= 1;
+                                top -= 2;
 
                                 //stack push
                                 operand_stack[top] = OperandItem::Val(true);
                                 top += 1;
                             } else {
-                                //stack pop
-                                top -= 1;
-                                let left = evaluate_operand_item(operand_stack[top], ctx, m);
+                                let right = evaluate_operand_item(operand_stack[top - 1], ctx, m);
 
+                                //stack pop
+                                top -= 2;
                                 //stack push
-                                operand_stack[top] = OperandItem::Val(left);
+                                operand_stack[top] = OperandItem::Val(right);
                                 top += 1;
                             }
                         }
