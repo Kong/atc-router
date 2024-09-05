@@ -42,52 +42,28 @@ impl Execute for Lir {
                 LirCode::LogicalOperator(op) => {
                     match op {
                         LirLogicalOperators::And => {
-                            let left = evaluate_operand_item(operand_stack[top - 2], ctx, m);
-                            if !left {
-                                // short circuit
-                                // stack pop
-                                top -= 2;
-
-                                //stack push
-                                operand_stack[top] = OperandItem::Val(false);
-                                top += 1;
-                            } else {
-                                let right = evaluate_operand_item(operand_stack[top - 1], ctx, m);
-
-                                //stack pop
-                                top -= 2;
-                                //stack push
-                                operand_stack[top] = OperandItem::Val(right);
-                                top += 1;
-                            }
+                            operand_stack[0] = OperandItem::Val(
+                                evaluate_operand_item(operand_stack[top - 2], ctx, m)
+                                    && evaluate_operand_item(operand_stack[top - 1], ctx, m),
+                            );
+                            top = 1;
                         }
                         LirLogicalOperators::Or => {
-                            let left = evaluate_operand_item(operand_stack[top - 2], ctx, m);
-                            if left {
-                                // short circuit
-                                // stack pop
-                                top -= 2;
-
-                                //stack push
-                                operand_stack[top] = OperandItem::Val(true);
-                                top += 1;
-                            } else {
-                                let right = evaluate_operand_item(operand_stack[top - 1], ctx, m);
-
-                                //stack pop
-                                top -= 2;
-                                //stack push
-                                operand_stack[top] = OperandItem::Val(right);
-                                top += 1;
-                            }
+                            operand_stack[0] = OperandItem::Val(
+                                evaluate_operand_item(operand_stack[top - 2], ctx, m)
+                                    || evaluate_operand_item(operand_stack[top - 1], ctx, m),
+                            );
+                            top = 1;
                         }
                         LirLogicalOperators::Not => {
                             //stack pop
                             top -= 1;
-                            let operand = evaluate_operand_item(operand_stack[top], ctx, m);
-
                             //stack push
-                            operand_stack[top] = OperandItem::Val(!operand);
+                            operand_stack[top] = OperandItem::Val(!evaluate_operand_item(
+                                operand_stack[top],
+                                ctx,
+                                m,
+                            ));
                             top += 1;
                         }
                     }
@@ -102,7 +78,7 @@ impl Execute for Lir {
         //stack pop
         top -= 1;
         if top != 0 {
-            panic!("There may be something wrong for the AST conversion!")
+            panic!("There may be something wrong for the AST translation!")
         }
         evaluate_operand_item(operand_stack[top], ctx, m) //stack pop
     }
