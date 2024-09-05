@@ -43,15 +43,15 @@ impl Execute for Lir {
                     match op {
                         LirLogicalOperators::And => {
                             operand_stack[0] = OperandItem::Val(
-                                evaluate_operand_item(operand_stack[top - 2], ctx, m)
-                                    && evaluate_operand_item(operand_stack[top - 1], ctx, m),
+                                evaluate_operand_item(operand_stack[0], ctx, m)
+                                    && evaluate_operand_item(operand_stack[1], ctx, m),
                             );
                             top = 1;
                         }
                         LirLogicalOperators::Or => {
                             operand_stack[0] = OperandItem::Val(
-                                evaluate_operand_item(operand_stack[top - 2], ctx, m)
-                                    || evaluate_operand_item(operand_stack[top - 1], ctx, m),
+                                evaluate_operand_item(operand_stack[0], ctx, m)
+                                    || evaluate_operand_item(operand_stack[1], ctx, m),
                             );
                             top = 1;
                         }
