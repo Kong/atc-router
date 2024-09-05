@@ -38,5 +38,17 @@ install: build install-lualib
 install-debug: $(DEBUG_RELEASE_FOLDER)/libatc_router.% install-lualib
 	$(INSTALL) -m 775 $(DEBUG_RELEASE_FOLDER)/libatc_router.$(SHLIB_EXT) $(DESTDIR)$(LUA_LIB_DIR)/libatc_router.$(SHLIB_EXT)
 
+test: $(DEBUG_RELEASE_FOLDER)/libatc_router.%
+	PATH="$(OPENRESTY_PREFIX)/nginx/sbin:$$PATH" \
+	LUA_PATH="$(realpath lib)/?.lua;$(realpath lib)/?/init.lua;$$LUA_PATH" \
+	LUA_CPATH="$(realpath $(DEBUG_RELEASE_FOLDER))/?.so;$$LUA_CPATH" \
+	prove -r t/
+
+valgrind: $(DEBUG_RELEASE_FOLDER)/libatc_router.%
+	(PATH="$(OPENRESTY_PREFIX)/nginx/sbin:$$PATH" \
+	LUA_PATH="$(realpath lib)/?.lua;$(realpath lib)/?/init.lua;$$LUA_PATH" \
+	LUA_CPATH="$(realpath $(DEBUG_RELEASE_FOLDER))/?.so;$$LUA_CPATH" \
+	prove -r t/) 2>&1 | tee /dev/stderr | grep -q "match-leak-kinds: definite" && exit 1 || exit 0
+
 clean:
 	rm -rf target

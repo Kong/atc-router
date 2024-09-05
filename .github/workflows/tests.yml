@@ -6,163 +6,81 @@ on:
     branches:
       - main
 
+# cancel previous runs if new commits are pushed to the PR, but run for each commit on master
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   tests:
     name: Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     strategy:
       matrix:
-        include:
-        - nginx: "1.25.3"
-          nginx_opts: "--without-pcre2"
-          openssl: "3.2.0" # if this stops working, update to the latest patch version from https://www.openssl.org/source/
-          valgrind: "valgrind"
-          lua_nginx_module: "v0.10.26"
-          lua_resty_core: "v0.1.28"
-        - nginx: "1.23.0"
-          nginx_opts: "--without-pcre2"
-          openssl: "3.1.4" # if this stops working, update to the latest patch version from https://www.openssl.org/source/
-          valgrind: "valgrind"
-          lua_nginx_module: "v0.10.25"
-          lua_resty_core: "v0.1.27"
-        - nginx: "1.21.4"
-          openssl: "1.1.1w" # if this stops working, update to the latest patch version from https://www.openssl.org/source/
-          valgrind: "valgrind"
-          lua_nginx_module: "v0.10.21"
-          lua_resty_core: "v0.1.23"
-        - nginx: "1.19.3"
-          openssl: "1.1.1w" # if this stops working, update to the latest patch version from https://www.openssl.org/source/
-          valgrind: "valgrind"
-          lua_nginx_module: "v0.10.19"
-          lua_resty_core: "v0.1.21"
-        - nginx: "1.19.9"
-          openssl: "1.1.1w" # if this stops working, update to the latest patch version from https://www.openssl.org/source/
-          valgrind: "valgrind"
-          lua_nginx_module: "v0.10.20"
-          lua_resty_core: "v0.1.22"
-
+        openresty:
+          - '1.25.3.2'
+          - '1.25.3.1'
+          - '1.21.4.4'
+          - '1.21.4.3'
+          - '1.21.4.2'
+          - '1.21.4.1'
     env:
       JOBS: 1
-      SH: bash
-      NGX_BUILD_JOBS: 3
+
+      OPENRESTY: ${{ matrix.openresty }}
+      CODE_PATH: ${{ github.workspace }}
       BASE_PATH: /home/runner/work/cache
-      LUAJIT_PREFIX: /home/runner/work/cache/luajit21
-      LUAJIT_LIB: /home/runner/work/cache/luajit21/lib
-      LUAJIT_INC: /home/runner/work/cache/luajit21/include/luajit-2.1
-      LUA_INCLUDE_DIR: /home/runner/work/cache/luajit21/include/luajit-2.1
-      OPENSSL_PREFIX: /home/runner/work/cache/ssl
-      # lib64 since openssl 3.0
-      OPENSSL_LIB: /home/runner/work/cache/ssl/lib
-      OPENSSL_INC: /home/runner/work/cache/ssl/include
-      TEST_NGINX_SLEEP: 0.005
-      TEST_NGINX_RANDOMIZE: 1
-      LUACHECK_VER: 0.21.1
-      CC: gcc
-      NGX_BUILD_CC: gcc
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions-rs/toolchain@v1
+    - name: Checkout source code
+      uses: actions/checkout@v4
       with:
-        toolchain: stable
+        submodules: recursive
+        token: ${{ secrets.GHA_KONG_BOT_READ_TOKEN }}
 
-    - name: Run lint
-      run: cargo clippy --verbose
+    - name: Make sure Cargo can clone private repositories
+      run: |
+        git config --global url."https://${{ secrets.GHA_KONG_BOT_READ_TOKEN }}@github.com".insteadOf https://github.com
 
-    - name: Run unit tests
-      run: cargo test --verbose
-
-    - name: Build
-      run: cargo build --verbose
-
-    - name: Setup Nginx binary cache
-      uses: actions/cache@v4
+    - name: Setup cache
+      uses: actions/cache@v2
+      id: cache-deps
       with:
         path: |
-          /home/runner/work/cache
-        key: ${{ runner.os }}-${{ hashFiles('**/tests.yml') }}-${{ hashFiles('**/*.rs') }}-nginx-${{ matrix.nginx }}-openssl-${{ matrix.openssl }}
+          ${{ env.BASE_PATH }}
+        key: ${{ runner.os }}-${{ hashFiles('Makefile') }}-${{ hashFiles('**/tests.yml') }}-openresty-${{ matrix.openresty }}
 
-    - name: Setup tools
+    - name: Install packages
       run: |
         sudo apt update
-        sudo apt install -qq -y cpanminus axel ca-certificates valgrind haveged
-        mkdir -p $OPENSSL_PREFIX $LUAJIT_PREFIX
-        # perl cache
-        pushd /home/runner/work/cache
+        sudo apt-get install -qq -y wget cpanminus net-tools libpcre3-dev build-essential valgrind
         if [ ! -e perl ]; then sudo cpanm --notest Test::Nginx > build.log 2>&1 || (cat build.log && exit 1); cp -r /usr/local/share/perl/ .; else sudo cp -r perl /usr/local/share; fi
-        # build tools at parent directory of cache
-        cd ..
-        git clone https://github.com/openresty/openresty.git ./openresty
-        git clone https://github.com/openresty/nginx-devel-utils.git
-        git clone https://github.com/simpl/ngx_devel_kit.git ./ndk-nginx-module
-        git clone https://github.com/openresty/lua-nginx-module.git ./lua-nginx-module -b ${{ matrix.lua_nginx_module }}
-        git clone https://github.com/openresty/no-pool-nginx.git ./no-pool-nginx
-        git clone https://github.com/fffonion/lua-resty-openssl ../lua-resty-openssl
-        # lua libraries at parent directory of current repository
-        popd
-        mkdir ../lib
-        git clone https://github.com/openresty/lua-resty-core.git ../lua-resty-core -b ${{ matrix.lua_resty_core }}
-        git clone https://github.com/openresty/lua-resty-lrucache.git ../lua-resty-lrucache
-        cp -r ../lua-resty-lrucache/lib/* ../lib/
-        find ../lib
 
-    - name: Build OpenSSL
+    - name: Download OpenResty
+      if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        if [ "X$OPENSSL_HASH" != "X" ]; then wget https://github.com/openssl/openssl/archive/$OPENSSL_HASH.tar.gz -O - | tar zxf ; pushd openssl-$OPENSSL_HASH/; fi
-        if [ "X$OPENSSL_HASH" = "X" ] ; then wget https://www.openssl.org/source/openssl-${{ matrix.openssl }}.tar.gz -O - | tar zxf -; pushd openssl-${{ matrix.openssl }}/; fi
-        if [ ! -e $OPENSSL_PREFIX/include ]; then ./config shared -d --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1); fi
-        if [ ! -e $OPENSSL_PREFIX/include ]; then make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1); fi
-        if [ ! -e $OPENSSL_PREFIX/include ]; then sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1); fi
+        wget https://openresty.org/download/openresty-${OPENRESTY}.tar.gz
+        mkdir -p ${BASE_PATH}
+        tar xfz openresty-${OPENRESTY}.tar.gz -C ${BASE_PATH}
 
-    - name: Build LuaJIT
-      env:
-        LUAJIT_CC_OPTS: ${{ matrix.luajit_cc_opts }}
+    - name: Setup tools
+      if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
-        if [ "X${{ matrix.valgrind }}" != "X" ]; then LUAJIT_CC_OPTS="$LUAJIT_CC_OPTS -DLUAJIT_NUMMODE=2 -DLUAJIT_${{ matrix.valgrind }} -DLUAJIT_USE_SYSMALLOC -O0"; fi
-        export
-        cd $LUAJIT_PREFIX
-        if [ ! -e luajit2 ]; then git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git; fi
-        cd luajit2
-        make -j$JOBS CCDEBUG=-g Q= PREFIX=$LUAJIT_PREFIX CC=$CC XCFLAGS="-DLUA_USE_APICHECK -DLUA_USE_ASSERT -DLUAJIT_ENABLE_LUA52COMPAT ${{ matrix.luajit_cc_opts }}" > build.log 2>&1 || (cat build.log && exit 1)
-        make install PREFIX=$LUAJIT_PREFIX > build.log 2>&1 || (cat build.log && exit 1)
-
-    - name: Build lua-cjson
-      run: |
-        if [ ! -e lua-cjson ]; then git clone https://github.com/openresty/lua-cjson.git ./lua-cjson; fi
-        pushd ./lua-cjson && make && sudo PATH=$PATH make install && popd
-
-    - name: Build Nginx
-      env:
-        NGINX_CC_OPTS: ${{ matrix.nginx_cc_opts }}
-      run: |
-        if [ "X${{ matrix.valgrind }}" != "X" ]; then NGINX_CC_OPTS="$NGINX_CC_OPTS -O0"; fi
-        export PATH=$BASE_PATH/work/nginx/sbin:$BASE_PATH/../nginx-devel-utils:$PATH
-        export LD_LIBRARY_PATH=$LUAJIT_LIB:$LD_LIBRARY_PATH
-        export NGX_LUA_LOC=$BASE_PATH/../lua-nginx-module
-        export NGX_STREAM_LUA_LOC=$BASE_PATH/../stream-lua-nginx-module
-        export
-        cd $BASE_PATH
-        if [ ! -e work ]; then ngx-build ${{ matrix.nginx }} --add-module=../ndk-nginx-module --add-module=../lua-nginx-module --add-module=../lua-resty-lmdb/lua-resty-lmdb --with-http_ssl_module --with-stream --with-stream_ssl_module --with-stream_ssl_preread_module --with-cc-opt="-I$OPENSSL_INC $NGINX_CC_OPTS" --with-ld-opt="-L$OPENSSL_LIB -Wl,-rpath,$OPENSSL_LIB" --with-debug ${{ matrix.nginx_opts }} > build.log 2>&1 || (cat build.log && exit 1); fi
-        nginx -V
-        ldd `which nginx`|grep -E 'luajit|ssl|pcre'
+        cd ${BASE_PATH}/openresty-${OPENRESTY}
+        ./configure --prefix=${BASE_PATH}/openresty --with-debug
+        sudo make -j$(nproc) && make install -j$(nproc)
 
     - name: Run Test
       run: |
-        export LD_LIBRARY_PATH=$LUAJIT_LIB:$LD_LIBRARY_PATH
-        export PATH=$BASE_PATH/work/nginx/sbin:$PATH
-        TEST_NGINX_TIMEOUT=20 prove -j$JOBS -r t/
+        export PATH=${BASE_PATH}/openresty/bin:$PATH
+        openresty -V
+        make test OPENRESTY_PREFIX=${BASE_PATH}/openresty
 
     - name: Run Valgrind
-      if: matrix.valgrind != ''
       run: |
-        export LD_LIBRARY_PATH=$LUAJIT_LIB:$LD_LIBRARY_PATH
-        export TEST_NGINX_VALGRIND='--num-callers=100 -q --tool=memcheck --leak-check=full --show-possibly-lost=no --gen-suppressions=all --suppressions=valgrind.suppress --track-origins=yes' TEST_NGINX_TIMEOUT=60 TEST_NGINX_SLEEP=1
-        export PATH=$BASE_PATH/work/nginx/sbin:$PATH
-        stdbuf -o 0 -e 0 prove -j$JOBS -r t/ 2>&1 | grep -v "Connection refused" | grep -v "Retry connecting after" | tee output.log
-        if grep -q 'insert_a_suppression_name_here' output.log; then echo "Valgrind found problems"; exit 1; fi
-
+        export PATH=${BASE_PATH}/openresty/bin:$PATH
+        export TEST_NGINX_VALGRIND='--num-callers=100 -q --tool=memcheck --leak-check=full --show-possibly-lost=no --gen-suppressions=all --suppressions=valgrind.suppress --track-origins=yes' TEST_NGINX_TIMEOUT=120 TEST_NGINX_SLEEP=1
+        export TEST_NGINX_USE_VALGRIND=1
+        openresty -V
+        make valgrind OPENRESTY_PREFIX=${BASE_PATH}/openresty
