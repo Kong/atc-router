@@ -20,7 +20,7 @@ for more detailed explainations of the concepts and APIs.
 pub mod ast;
 pub mod context;
 pub mod interpreter;
-pub mod line;
+pub mod linear;
 pub mod parser;
 pub mod router;
 pub mod schema;
