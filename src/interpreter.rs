@@ -42,6 +42,7 @@ impl Execute for Lir {
                 LirCode::LogicalOperator(op) => {
                     match op {
                         LirLogicalOperators::And => {
+                            assert!(top == 2);
                             operand_stack[0] = OperandItem::Val(
                                 evaluate_operand_item(operand_stack[0], ctx, m)
                                     && evaluate_operand_item(operand_stack[1], ctx, m),
@@ -49,6 +50,7 @@ impl Execute for Lir {
                             top = 1;
                         }
                         LirLogicalOperators::Or => {
+                            assert!(top == 2);
                             operand_stack[0] = OperandItem::Val(
                                 evaluate_operand_item(operand_stack[0], ctx, m)
                                     || evaluate_operand_item(operand_stack[1], ctx, m),
@@ -77,9 +79,7 @@ impl Execute for Lir {
         }
         //stack pop
         top -= 1;
-        if top != 0 {
-            panic!("There may be something wrong for the AST translation!")
-        }
+        assert!(top == 0);
         evaluate_operand_item(operand_stack[top], ctx, m) //stack pop
     }
 }
