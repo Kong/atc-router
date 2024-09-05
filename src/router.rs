@@ -1,8 +1,8 @@
 use crate::ast::Expression;
 use crate::context::{Context, Match};
-use crate::linear::Translate;
 use crate::interpreter::Execute;
 use crate::linear::Lir;
+use crate::linear::Translate;
 use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};

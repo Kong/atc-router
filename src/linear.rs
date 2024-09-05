@@ -29,33 +29,29 @@ pub enum LirLogicalOperators {
     Not,
 }
 
-
 pub trait Translate {
-    fn translate(&self, route: &mut Lir);
+    fn translate(&self, lir: &mut Lir);
 }
 
 impl Translate for Expression {
-    fn translate(&self, route: &mut Lir) {
+    fn translate(&self, lir: &mut Lir) {
         match self {
             Expression::Logical(logic_exp) => match logic_exp.as_ref() {
                 LogicalExpression::And(l, r) => {
-                    l.translate(route);
-                    r.translate(route);
-                    route
-                        .codes
+                    l.translate(lir);
+                    r.translate(lir);
+                    lir.codes
                         .push(LirCode::LogicalOperator(LirLogicalOperators::And));
                 }
                 LogicalExpression::Or(l, r) => {
-                    l.translate(route);
-                    r.translate(route);
-                    route
-                        .codes
+                    l.translate(lir);
+                    r.translate(lir);
+                    lir.codes
                         .push(LirCode::LogicalOperator(LirLogicalOperators::Or));
                 }
                 LogicalExpression::Not(r) => {
-                    r.translate(route);
-                    route
-                        .codes
+                    r.translate(lir);
+                    lir.codes
                         .push(LirCode::LogicalOperator(LirLogicalOperators::Not));
                 }
             },
@@ -69,7 +65,7 @@ impl Translate for Expression {
                     op: p.op,
                 };
 
-                route.codes.push(LirCode::Predicate(predicate));
+                lir.codes.push(LirCode::Predicate(predicate));
             }
         }
     }
