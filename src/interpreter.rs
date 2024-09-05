@@ -1,54 +1,9 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Value};
 use crate::context::{Context, Match};
-use crate::linear::{Route, RouteLogicalOperators, RouteTerm};
+use crate::linear::{Lir, LirLogicalOperators, LirCode};
 
 pub trait Execute {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
-}
-
-pub trait Convert {
-    fn convert(&self, route: &mut Route);
-}
-
-impl Convert for Expression {
-    fn convert(&self, route: &mut Route) {
-        match self {
-            Expression::Logical(logic_exp) => match logic_exp.as_ref() {
-                LogicalExpression::And(l, r) => {
-                    l.convert(route);
-                    r.convert(route);
-                    route
-                        .stack
-                        .push(RouteTerm::LogicalOperator(RouteLogicalOperators::And));
-                }
-                LogicalExpression::Or(l, r) => {
-                    l.convert(route);
-                    r.convert(route);
-                    route
-                        .stack
-                        .push(RouteTerm::LogicalOperator(RouteLogicalOperators::Or));
-                }
-                LogicalExpression::Not(r) => {
-                    r.convert(route);
-                    route
-                        .stack
-                        .push(RouteTerm::LogicalOperator(RouteLogicalOperators::Not));
-                }
-            },
-            Expression::Predicate(p) => {
-                let predicate = Predicate {
-                    lhs: crate::ast::Lhs {
-                        var_name: p.lhs.var_name.clone(),
-                        transformations: p.lhs.transformations.clone(),
-                    },
-                    rhs: p.rhs.clone(),
-                    op: p.op,
-                };
-
-                route.stack.push(RouteTerm::Predicate(predicate));
-            }
-        }
-    }
 }
 
 impl Execute for Expression {
@@ -76,17 +31,17 @@ fn evaluate_operand_item(item: OperandItem, ctx: &mut Context, m: &mut Match) ->
     }
 }
 
-impl Execute for Route {
+impl Execute for Lir {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
         //operand stack
         let mut top: usize = 0;
         let mut operand_stack: [OperandItem; 2] = [OperandItem::Val(false); 2];
 
-        for item in &self.stack {
-            match item {
-                RouteTerm::LogicalOperator(op) => {
+        for code in &self.codes {
+            match code {
+                LirCode::LogicalOperator(op) => {
                     match op {
-                        RouteLogicalOperators::And => {
+                        LirLogicalOperators::And => {
                             let left = evaluate_operand_item(operand_stack[top - 2], ctx, m);
                             if !left {
                                 // short circuit
@@ -106,7 +61,7 @@ impl Execute for Route {
                                 top += 1;
                             }
                         }
-                        RouteLogicalOperators::Or => {
+                        LirLogicalOperators::Or => {
                             let left = evaluate_operand_item(operand_stack[top - 2], ctx, m);
                             if left {
                                 // short circuit
@@ -126,7 +81,7 @@ impl Execute for Route {
                                 top += 1;
                             }
                         }
-                        RouteLogicalOperators::Not => {
+                        LirLogicalOperators::Not => {
                             //stack pop
                             top -= 1;
                             let operand = evaluate_operand_item(operand_stack[top], ctx, m);
@@ -137,7 +92,7 @@ impl Execute for Route {
                         }
                     }
                 }
-                RouteTerm::Predicate(p) => {
+                LirCode::Predicate(p) => {
                     // push stack
                     operand_stack[top] = OperandItem::Predicate(p);
                     top += 1;
