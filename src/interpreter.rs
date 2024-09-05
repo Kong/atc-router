@@ -89,8 +89,8 @@ impl Execute for Route {
                         RouteLogicalOperators::And => {
                             //stack pop
                             top -= 1;
-                            let left = evaluate_operand_item(operand_stack[top], ctx, m);
-                            if !left {
+                            let right = evaluate_operand_item(operand_stack[top], ctx, m);
+                            if !right {
                                 // short circuit
                                 // stack pop
                                 top -= 1;
@@ -101,18 +101,18 @@ impl Execute for Route {
                             } else {
                                 //stack pop
                                 top -= 1;
-                                let right = evaluate_operand_item(operand_stack[top], ctx, m);
+                                let left = evaluate_operand_item(operand_stack[top], ctx, m);
 
                                 //stack push
-                                operand_stack[top] = OperandItem::Val(right);
+                                operand_stack[top] = OperandItem::Val(left);
                                 top += 1;
                             }
                         }
                         RouteLogicalOperators::Or => {
                             //stack pop
                             top -= 1;
-                            let left = evaluate_operand_item(operand_stack[top], ctx, m);
-                            if left {
+                            let right = evaluate_operand_item(operand_stack[top], ctx, m);
+                            if right {
                                 //short circuit
                                 // stack pop
                                 top -= 1;
@@ -123,10 +123,10 @@ impl Execute for Route {
                             } else {
                                 //stack pop
                                 top -= 1;
-                                let right = evaluate_operand_item(operand_stack[top], ctx, m);
+                                let left = evaluate_operand_item(operand_stack[top], ctx, m);
 
                                 //stack push
-                                operand_stack[top] = OperandItem::Val(right);
+                                operand_stack[top] = OperandItem::Val(left);
                                 top += 1;
                             }
                         }
