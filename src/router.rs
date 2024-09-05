@@ -40,7 +40,9 @@ impl<'a> Router<'a> {
             return Err("UUID already exists".to_string());
         }
 
-        let route = self.convert_route(parse(atc).map_err(|e| e.to_string())?);
+        let ast = parse(atc).map_err(|e| e.to_string())?;
+        ast.validate(self.schema)?;
+        let route = self.convert_route(ast);
         route.validate(self.schema)?;
         route.add_to_counter(&mut self.fields);
         assert!(self.routes.insert(key, route).is_none());
