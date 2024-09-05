@@ -1,6 +1,6 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Value};
 use crate::context::{Context, Match};
-use crate::linear::{Lir, LirCode, LirLogicalOperators};
+use crate::lir::{Lir, LirCode, LirLogicalOperators};
 
 pub trait Execute {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
