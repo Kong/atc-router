@@ -1,8 +1,6 @@
-use crate::ast::{
-    BinaryOperator, Expression, LogicalExpression, Predicate, Route, RouteLogicalOperators,
-    RouteTerm, Value,
-};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Value};
 use crate::context::{Context, Match};
+use crate::line::{Route, RouteLogicalOperators, RouteTerm};
 
 pub trait Execute {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
@@ -13,7 +11,7 @@ pub trait Convert {
 }
 
 impl Convert for Expression {
-    fn convert(&self, route: &mut Route)  {
+    fn convert(&self, route: &mut Route) {
         match self {
             Expression::Logical(logic_exp) => match logic_exp.as_ref() {
                 LogicalExpression::And(l, r) => {
