@@ -9,21 +9,19 @@ pub trait Execute {
 }
 
 pub trait Convert {
-    fn convert(&self, route: &mut Route) -> bool;
+    fn convert(&self, route: &mut Route);
 }
 
 impl Convert for Expression {
-    fn convert(&self, route: &mut Route) -> bool {
+    fn convert(&self, route: &mut Route)  {
         match self {
-            Expression::Logical(l) => match l.as_ref() {
+            Expression::Logical(logic_exp) => match logic_exp.as_ref() {
                 LogicalExpression::And(l, r) => {
                     l.convert(route);
                     r.convert(route);
                     route
                         .stack
                         .push(RouteTerm::LogicalOperator(RouteLogicalOperators::And));
-
-                    true
                 }
                 LogicalExpression::Or(l, r) => {
                     l.convert(route);
@@ -31,16 +29,12 @@ impl Convert for Expression {
                     route
                         .stack
                         .push(RouteTerm::LogicalOperator(RouteLogicalOperators::Or));
-
-                    true
                 }
                 LogicalExpression::Not(r) => {
                     r.convert(route);
                     route
                         .stack
                         .push(RouteTerm::LogicalOperator(RouteLogicalOperators::Not));
-
-                    true
                 }
             },
             Expression::Predicate(p) => {
@@ -59,7 +53,6 @@ impl Convert for Expression {
                         .push(p.lhs.transformations[i].clone());
                 }
                 route.stack.push(RouteTerm::Predicate(predicate));
-                true
             }
         }
     }
