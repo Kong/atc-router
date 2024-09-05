@@ -44,7 +44,7 @@ impl Translate for Expression {
     type Output = Lir;
     fn translate(&self) -> Self::Output {
         let mut lir = Lir::new();
-        translate_helper(&self, &mut lir);
+        translate_helper(self, &mut lir);
         lir
     }
 }
