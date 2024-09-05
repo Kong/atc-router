@@ -30,7 +30,7 @@ jobs:
     - name: Get changed files
       id: changed-files
       uses: tj-actions/changed-files@635f118699dd888d737c15018cd30aff2e0274f8 # 44.0.1
-      with: 
+      with:
         files: |
           **.lua
 
@@ -40,6 +40,18 @@ jobs:
       with:
         additional_args: '--no-default-config --config .luacheckrc'
         files: ${{ steps.changed-files.outputs.all_changed_files }}
+
+  rust-fmt:
+    name: Rust Fmt
+    runs-on: ubuntu-latest
+    if: (github.actor != 'dependabot[bot]')
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    - name: Run Rust Fmt
+      run: cargo fmt --all -- --check # only check, don't format
 
   rust-clippy:
     name: Rust Clippy
@@ -64,7 +76,7 @@ jobs:
     - name: Get changed files
       id: changed-files
       uses: tj-actions/changed-files@635f118699dd888d737c15018cd30aff2e0274f8 # 44.0.1
-      with: 
+      with:
         files: |
           **.rs
 
