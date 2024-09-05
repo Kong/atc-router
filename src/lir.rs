@@ -14,6 +14,12 @@ impl Lir {
     }
 }
 
+impl Default for Lir {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub enum LirCode {
