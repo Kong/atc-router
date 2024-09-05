@@ -43,7 +43,6 @@ impl<'a> Router<'a> {
         let ast = parse(atc).map_err(|e| e.to_string())?;
         ast.validate(self.schema)?;
         let lir = self.translate_lir(ast);
-        lir.validate(self.schema)?;
         lir.add_to_counter(&mut self.fields);
         assert!(self.lirs.insert(key, lir).is_none());
 
