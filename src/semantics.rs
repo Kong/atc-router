@@ -1,4 +1,5 @@
-use crate::ast::{BinaryOperator, Expression, LogicalExpression, Route, RouteTerm, Type, Value};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
+use crate::line::{Route, RouteTerm};
 use crate::schema::Schema;
 use std::collections::HashMap;
 
