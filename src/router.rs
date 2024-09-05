@@ -27,9 +27,7 @@ impl<'a> Router<'a> {
     }
 
     pub fn translate_lir(&mut self, ast: Expression) -> Lir {
-        let mut lir = Lir::new();
-        ast.translate(&mut lir);
-        lir
+        ast.translate()
     }
 
     pub fn add_matcher(&mut self, priority: usize, uuid: Uuid, atc: &str) -> Result<(), String> {
