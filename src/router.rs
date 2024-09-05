@@ -1,4 +1,3 @@
-use crate::ast::Expression;
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
 use crate::lir::{Lir, Translate};
@@ -13,7 +12,7 @@ struct MatcherKey(usize, Uuid);
 
 pub struct Router<'a> {
     schema: &'a Schema,
-    lirs: BTreeMap<MatcherKey, Lir>,
+    matchers: BTreeMap<MatcherKey, Lir>,
     pub fields: HashMap<String, usize>,
 }
 
@@ -21,27 +20,23 @@ impl<'a> Router<'a> {
     pub fn new(schema: &'a Schema) -> Self {
         Self {
             schema,
-            lirs: BTreeMap::new(),
+            matchers: BTreeMap::new(),
             fields: HashMap::new(),
         }
-    }
-
-    pub fn translate_lir(&mut self, ast: Expression) -> Lir {
-        ast.translate()
     }
 
     pub fn add_matcher(&mut self, priority: usize, uuid: Uuid, atc: &str) -> Result<(), String> {
         let key = MatcherKey(priority, uuid);
 
-        if self.lirs.contains_key(&key) {
+        if self.matchers.contains_key(&key) {
             return Err("UUID already exists".to_string());
         }
 
         let ast = parse(atc).map_err(|e| e.to_string())?;
         ast.validate(self.schema)?;
-        let lir = self.translate_lir(ast);
+        let lir = ast.translate();
         lir.add_to_counter(&mut self.fields);
-        assert!(self.lirs.insert(key, lir).is_none());
+        assert!(self.matchers.insert(key, lir).is_none());
 
         Ok(())
     }
@@ -49,7 +44,7 @@ impl<'a> Router<'a> {
     pub fn remove_matcher(&mut self, priority: usize, uuid: Uuid) -> bool {
         let key = MatcherKey(priority, uuid);
 
-        if let Some(lir) = self.lirs.remove(&key) {
+        if let Some(lir) = self.matchers.remove(&key) {
             lir.remove_from_counter(&mut self.fields);
             return true;
         }
@@ -58,7 +53,7 @@ impl<'a> Router<'a> {
     }
 
     pub fn execute(&self, context: &mut Context) -> bool {
-        for (MatcherKey(_, id), m) in self.lirs.iter().rev() {
+        for (MatcherKey(_, id), m) in self.matchers.iter().rev() {
             let mut mat = Match::new();
             if m.execute(context, &mut mat) {
                 mat.uuid = *id;
