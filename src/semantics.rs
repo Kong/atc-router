@@ -1,5 +1,5 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
-use crate::linear::{Route, RouteTerm};
+use crate::linear::{Lir, LirCode};
 use crate::schema::Schema;
 use std::collections::HashMap;
 
@@ -160,14 +160,14 @@ impl Validate for Expression {
     }
 }
 
-impl FieldCounter for Route {
+impl FieldCounter for Lir {
     fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
-        for item in &self.stack {
+        for item in &self.codes {
             match item {
-                RouteTerm::LogicalOperator(_op) => {
+                LirCode::LogicalOperator(_op) => {
                     // need to do nothing here
                 }
-                RouteTerm::Predicate(p) => {
+                LirCode::Predicate(p) => {
                     *map.entry(p.lhs.var_name.clone()).or_default() += 1;
                 }
             }
@@ -175,12 +175,12 @@ impl FieldCounter for Route {
     }
 
     fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
-        for item in &self.stack {
+        for item in &self.codes {
             match item {
-                RouteTerm::LogicalOperator(_op) => {
+                LirCode::LogicalOperator(_op) => {
                     // need to do nothing here
                 }
-                RouteTerm::Predicate(p) => {
+                LirCode::Predicate(p) => {
                     let val = map.get_mut(&p.lhs.var_name).unwrap();
                     *val -= 1;
 
@@ -193,14 +193,14 @@ impl FieldCounter for Route {
     }
 }
 
-impl Validate for Route {
+impl Validate for Lir {
     fn validate(&self, schema: &Schema) -> ValidationResult {
-        for item in &self.stack {
+        for item in &self.codes {
             match item {
-                RouteTerm::LogicalOperator(_op) => {
+                LirCode::LogicalOperator(_op) => {
                     // need to do nothing here
                 }
-                RouteTerm::Predicate(p) => {
+                LirCode::Predicate(p) => {
                     // lhs and rhs must be the same type
                     let lhs_type = p.lhs.my_type(schema);
                     if lhs_type.is_none() {
