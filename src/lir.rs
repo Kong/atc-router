@@ -91,6 +91,7 @@ mod tests {
     use super::*;
     use crate::parser::parse;
     use crate::schema::Schema;
+    use crate::semantics::Validate;
 
     fn format(lir: &Lir) -> String {
         let mut predicate_vec: Vec<String> = Vec::new();
@@ -131,6 +132,7 @@ mod tests {
         schema.add_field("a", crate::ast::Type::Int);
         let test_input: &str = r#"!(!(a == 1 && a == 2) || a == 3 && !(a == 4))"#;
         let ast = parse(test_input).map_err(|e| e.to_string()).unwrap();
+        ast.validate(&schema).unwrap();
         let lir = ast.translate();
         let test_result = format(&lir);
         assert_eq!(test_input, test_result, "Responses should be equal");
