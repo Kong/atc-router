@@ -6,12 +6,12 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Lir {
-    pub codes: Vec<LirCode>,
+    pub program: Vec<LirInstruction>,
 }
 
 impl Lir {
     pub fn new() -> Self {
-        Self { codes: Vec::new() }
+        Self { program: Vec::new() }
     }
 }
 
@@ -23,7 +23,7 @@ impl Default for Lir {
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
-pub enum LirCode {
+pub enum LirInstruction {
     LogicalOperator(LirLogicalOperators),
     Predicate(Predicate),
 }
@@ -56,19 +56,19 @@ fn translate_helper(exp: &Expression, lir: &mut Lir) {
             LogicalExpression::And(l, r) => {
                 translate_helper(l, lir);
                 translate_helper(r, lir);
-                lir.codes
-                    .push(LirCode::LogicalOperator(LirLogicalOperators::And));
+                lir.program
+                    .push(LirInstruction::LogicalOperator(LirLogicalOperators::And));
             }
             LogicalExpression::Or(l, r) => {
                 translate_helper(l, lir);
                 translate_helper(r, lir);
-                lir.codes
-                    .push(LirCode::LogicalOperator(LirLogicalOperators::Or));
+                lir.program
+                    .push(LirInstruction::LogicalOperator(LirLogicalOperators::Or));
             }
             LogicalExpression::Not(r) => {
                 translate_helper(r, lir);
-                lir.codes
-                    .push(LirCode::LogicalOperator(LirLogicalOperators::Not));
+                lir.program
+                    .push(LirInstruction::LogicalOperator(LirLogicalOperators::Not));
             }
         },
         Expression::Predicate(p) => {
@@ -81,7 +81,7 @@ fn translate_helper(exp: &Expression, lir: &mut Lir) {
                 op: p.op,
             };
 
-            lir.codes.push(LirCode::Predicate(predicate));
+            lir.program.push(LirInstruction::Predicate(predicate));
         }
     }
 }
@@ -95,9 +95,9 @@ mod tests {
 
     fn format(lir: &Lir) -> String {
         let mut predicate_vec: Vec<String> = Vec::new();
-        for code in &lir.codes {
-            match code {
-                LirCode::LogicalOperator(op) => match op {
+        for instruction in &lir.program {
+            match instruction {
+                LirInstruction::LogicalOperator(op) => match op {
                     LirLogicalOperators::And => {
                         let right = predicate_vec.pop().unwrap();
                         let left = predicate_vec.pop().unwrap();
@@ -113,7 +113,7 @@ mod tests {
                         predicate_vec.push(format!("!({})", operand));
                     }
                 },
-                LirCode::Predicate(p) => {
+                LirInstruction::Predicate(p) => {
                     predicate_vec.push(format!(
                         "{} {} {}",
                         p.lhs.var_name.to_string(),
