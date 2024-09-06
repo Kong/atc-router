@@ -1,4 +1,5 @@
 use crate::ast::{Expression, LogicalExpression, Predicate};
+
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -82,5 +83,59 @@ fn translate_helper(exp: &Expression, lir: &mut Lir) {
 
             lir.codes.push(LirCode::Predicate(predicate));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::parse;
+    use crate::schema::Schema;
+
+    fn format(lir: &Lir) -> String {
+        let mut predicate_vec: Vec<String> = Vec::new();
+        for code in &lir.codes {
+            match code {
+                LirCode::LogicalOperator(op) => match op {
+                    LirLogicalOperators::And => {
+                        let right = predicate_vec.pop().unwrap();
+                        let left = predicate_vec.pop().unwrap();
+                        predicate_vec.push(format!("{} && {}", left, right));
+                    }
+                    LirLogicalOperators::Or => {
+                        let right = predicate_vec.pop().unwrap();
+                        let left = predicate_vec.pop().unwrap();
+                        predicate_vec.push(format!("{} || {}", left, right));
+                    }
+                    LirLogicalOperators::Not => {
+                        let operand = predicate_vec.pop().unwrap();
+                        predicate_vec.push(format!("!({})", operand));
+                    }
+                },
+                LirCode::Predicate(p) => {
+                    predicate_vec.push(format!(
+                        "{} {} {}",
+                        p.lhs.var_name.to_string(),
+                        p.op.to_string(),
+                        &p.rhs.to_string()
+                    ));
+                }
+            }
+        }
+        predicate_vec.pop().unwrap()
+    }
+
+    #[test]
+    fn verify_translate() {
+        let mut schema = Schema::default();
+        schema.add_field("a", crate::ast::Type::Int);
+        let test_input: &str = r#"!(!(a == 1 && a == 2) || a == 3 && !(a == 4))"#;
+        let ast = parse(test_input).map_err(|e| e.to_string()).unwrap();
+        let lir = ast.translate();
+        let test_result = format(&lir);
+        assert_eq!(test_input, test_result, "Responses should be equal");
+        //use "cargo test -- --nocapture" to show following output
+        println!(" input: {}", test_input);
+        println!("output: {}", test_result);
     }
 }
