@@ -1,6 +1,6 @@
 use crate::ast::{BinaryOperator, Predicate, Value};
 use crate::context::{Context, Match};
-use crate::lir::{Lir, LirCode, LirLogicalOperators};
+use crate::lir::{Lir, LirInstruction, LirLogicalOperators};
 
 pub trait Execute {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
@@ -24,9 +24,9 @@ impl Execute for Lir {
         let mut top: usize = 0;
         let mut operand_stack: [OperandItem; 2] = [OperandItem::Val(false); 2];
 
-        for code in &self.codes {
-            match code {
-                LirCode::LogicalOperator(op) => {
+        for instruction in &self.program {
+            match instruction {
+                LirInstruction::LogicalOperator(op) => {
                     match op {
                         LirLogicalOperators::And => {
                             assert!(top == 2);
@@ -57,7 +57,7 @@ impl Execute for Lir {
                         }
                     }
                 }
-                LirCode::Predicate(p) => {
+                LirInstruction::Predicate(p) => {
                     // push stack
                     operand_stack[top] = OperandItem::Predicate(p);
                     top += 1;
