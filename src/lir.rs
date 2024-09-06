@@ -11,7 +11,9 @@ pub struct Lir {
 
 impl Lir {
     pub fn new() -> Self {
-        Self { program: Vec::new() }
+        Self {
+            program: Vec::new(),
+        }
     }
 }
 
