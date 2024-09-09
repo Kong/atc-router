@@ -1,5 +1,5 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
-use crate::lir::{Lir, LirInstruction};
+use crate::lir::{LirInstruction, LirProgram};
 use crate::schema::Schema;
 use std::collections::HashMap;
 
@@ -111,9 +111,9 @@ impl Validate for Expression {
     }
 }
 
-impl FieldCounter for Lir {
+impl FieldCounter for LirProgram {
     fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
-        for instruction in &self.program {
+        for instruction in &self.instructions {
             match instruction {
                 LirInstruction::LogicalOperator(_op) => {
                     // need to do nothing here
@@ -126,7 +126,7 @@ impl FieldCounter for Lir {
     }
 
     fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
-        for instruction in &self.program {
+        for instruction in &self.instructions {
             match instruction {
                 LirInstruction::LogicalOperator(_op) => {
                     // need to do nothing here

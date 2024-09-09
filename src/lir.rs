@@ -1,36 +1,30 @@
 use crate::ast::{Expression, LogicalExpression, Predicate};
 
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
-pub struct Lir {
-    pub program: Vec<LirInstruction>,
+pub struct LirProgram {
+    pub instructions: Vec<LirInstruction>,
 }
 
-impl Lir {
+impl LirProgram {
     pub fn new() -> Self {
         Self {
-            program: Vec::new(),
+            instructions: Vec::new(),
         }
     }
 }
 
-impl Default for Lir {
+impl Default for LirProgram {
     fn default() -> Self {
         Self::new()
     }
 }
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub enum LirInstruction {
     LogicalOperator(LirLogicalOperators),
     Predicate(Predicate),
 }
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub enum LirLogicalOperators {
     And,
@@ -44,32 +38,32 @@ pub trait Translate {
 }
 
 impl Translate for Expression {
-    type Output = Lir;
+    type Output = LirProgram;
     fn translate(&self) -> Self::Output {
-        let mut lir = Lir::new();
+        let mut lir = LirProgram::new();
         translate_helper(self, &mut lir);
         lir
     }
 }
 
-fn translate_helper(exp: &Expression, lir: &mut Lir) {
+fn translate_helper(exp: &Expression, lir: &mut LirProgram) {
     match exp {
         Expression::Logical(logic_exp) => match logic_exp.as_ref() {
             LogicalExpression::And(l, r) => {
                 translate_helper(l, lir);
                 translate_helper(r, lir);
-                lir.program
+                lir.instructions
                     .push(LirInstruction::LogicalOperator(LirLogicalOperators::And));
             }
             LogicalExpression::Or(l, r) => {
                 translate_helper(l, lir);
                 translate_helper(r, lir);
-                lir.program
+                lir.instructions
                     .push(LirInstruction::LogicalOperator(LirLogicalOperators::Or));
             }
             LogicalExpression::Not(r) => {
                 translate_helper(r, lir);
-                lir.program
+                lir.instructions
                     .push(LirInstruction::LogicalOperator(LirLogicalOperators::Not));
             }
         },
@@ -83,7 +77,7 @@ fn translate_helper(exp: &Expression, lir: &mut Lir) {
                 op: p.op,
             };
 
-            lir.program.push(LirInstruction::Predicate(predicate));
+            lir.instructions.push(LirInstruction::Predicate(predicate));
         }
     }
 }
@@ -95,9 +89,9 @@ mod tests {
     use crate::schema::Schema;
     use crate::semantics::Validate;
 
-    fn format(lir: &Lir) -> String {
+    fn format(lir: &LirProgram) -> String {
         let mut predicate_vec: Vec<String> = Vec::new();
-        for instruction in &lir.program {
+        for instruction in &lir.instructions {
             match instruction {
                 LirInstruction::LogicalOperator(op) => match op {
                     LirLogicalOperators::And => {
