@@ -39,9 +39,9 @@ __DATA__
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path contains \"keyword\" && tcp.port == 80"))
 
-            local c = context.new(s, #r:get_fields())
-            c:add_value(1, "http.path", "/foo/keyword/bar")
-            c:add_value(2, "tcp.port", 80)
+            local c = context.new(r)
+            c:add_value("http.path", "/foo/keyword/bar")
+            c:add_value("tcp.port", 80)
 
             local matched = r:execute(c)
             ngx.say(matched)
@@ -83,9 +83,9 @@ nil
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path contains \"keyword\" && tcp.port == 80"))
 
-            local c = context.new(s, #r:get_fields())
-            c:add_value(1, "http.path", "/foo/bar")
-            c:add_value(2, "tcp.port", 80)
+            local c = context.new(r)
+            c:add_value("http.path", "/foo/bar")
+            c:add_value("tcp.port", 80)
 
             local matched = r:execute(c)
             ngx.say(matched)

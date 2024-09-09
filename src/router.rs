@@ -10,11 +10,16 @@ use uuid::Uuid;
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 struct MatcherKey(usize, Uuid);
 
+pub struct Fields {
+    pub list: Vec<Option<(String, usize)>>, // fileds list of tuple(name, count)
+    pub slots: Vec<usize>,                  // slots in list to be reused
+    pub map: HashMap<String, usize>,        // 'name' to 'list index' maping
+}
+
 pub struct Router<'a> {
     schema: &'a Schema,
     matchers: BTreeMap<MatcherKey, Expression>,
-    pub fields: Vec<(String, usize)>, // fileds array of tuple(name, count)
-    pub fields_map: HashMap<String, usize>, // field name -> index map
+    pub fields: Fields,
 }
 
 impl<'a> Router<'a> {
@@ -22,8 +27,11 @@ impl<'a> Router<'a> {
         Self {
             schema,
             matchers: BTreeMap::new(),
-            fields: Vec::new(),
-            fields_map: HashMap::new(),
+            fields: Fields {
+                list: Vec::new(),
+                slots: Vec::new(),
+                map: HashMap::new(),
+            },
         }
     }
 
@@ -37,7 +45,7 @@ impl<'a> Router<'a> {
         let mut ast = parse(atc).map_err(|e| e.to_string())?;
 
         ast.validate(self.schema)?;
-        ast.add_to_counter(&mut self.fields, &mut self.fields_map);
+        ast.add_to_counter(&mut self.fields);
 
         assert!(self.matchers.insert(key, ast).is_none());
 
@@ -48,22 +56,11 @@ impl<'a> Router<'a> {
         let key = MatcherKey(priority, uuid);
 
         if let Some(mut ast) = self.matchers.remove(&key) {
-            let fields_cnt = self.fields.len();
-            ast.remove_from_counter(&mut self.fields, &mut self.fields_map);
-            // if fields array changed, we need to reindex lhs in matchers
-            if self.fields.len() != fields_cnt {
-                self.reindexing_matchers();
-            }
+            ast.remove_from_counter(&mut self.fields);
             return true;
         }
 
         false
-    }
-
-    pub fn reindexing_matchers(&mut self) {
-        for (_, m) in self.matchers.iter_mut() {
-            m.fix_lhs_index(&self.fields_map);
-        }
     }
 
     pub fn execute(&self, context: &mut Context) -> bool {
@@ -84,6 +81,7 @@ impl<'a> Router<'a> {
 #[cfg(test)]
 mod tests {
     use std::{
+        cmp::max,
         collections::HashMap,
         net::{IpAddr, Ipv4Addr},
     };
@@ -97,7 +95,6 @@ mod tests {
         schema::Schema,
     };
 
-    type FieldsType = Vec<(String, usize)>;
     type ContextValues<'a> = HashMap<&'a str, Value>;
 
     fn setup_matcher(r: &mut Router, priority: usize, expression: &str) -> (Uuid, usize) {
@@ -108,12 +105,15 @@ mod tests {
         (id, priority)
     }
 
-    fn init_context(fields: &FieldsType, ctx_values: &ContextValues) -> Context {
-        let mut ctx = Context::new(fields.len());
-        for (i, v) in fields.iter().enumerate() {
-            let key = &v.0;
+    fn init_context<'a>(r: &'a Router, ctx_values: &'a ContextValues<'a>) -> Context<'a> {
+        let mut ctx = Context::new(r);
+        for (i, v) in r.fields.list.iter().enumerate() {
+            if v.is_none() {
+                continue;
+            }
+            let key = &v.as_ref().unwrap().0;
             if ctx_values.contains_key(key.as_str()) {
-                ctx.add_value(i, ctx_values.get(key.as_str()).unwrap().clone());
+                ctx.add_value_by_index(i, ctx_values.get(key.as_str()).unwrap().clone());
             }
         }
         ctx
@@ -128,8 +128,8 @@ mod tests {
                 LogicalExpression::Not(r) => is_index_match(r, rt),
             },
             Expression::Predicate(p) => {
-                rt.fields[p.lhs.index].0 == p.lhs.var_name
-                    && *rt.fields_map.get(&p.lhs.var_name).unwrap() == p.lhs.index
+                rt.fields.list[p.lhs.index].as_ref().unwrap().0 == p.lhs.var_name
+                    && *rt.fields.map.get(&p.lhs.var_name).unwrap() == p.lhs.index
             }
         }
     }
@@ -153,7 +153,7 @@ mod tests {
 
         // init router
         let mut r = Router::new(&s);
-        assert!(r.fields.len() == 0);
+        assert!(r.fields.list.len() == 0);
         assert!(validate_index(&r));
 
         // add matchers
@@ -161,7 +161,8 @@ mod tests {
         let (id_1, pri_1) =
             setup_matcher(&mut r, 98, r#"net.dst.port == 8443 || net.dst.port == 443"#);
         let (id_2, pri_2) = setup_matcher(&mut r, 97, r#"net.src.ip == 192.168.1.1"#);
-        assert!(r.fields.len() == 3);
+        assert!(r.fields.list.len() == 3);
+        assert!(r.fields.slots.len() == 0);
         assert!(validate_index(&r));
 
         // mock context values
@@ -172,7 +173,7 @@ mod tests {
                 Value::IpAddr(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 2))),
             ),
         ]);
-        let mut ctx = init_context(&r.fields, &ctx_values);
+        let mut ctx = init_context(&r, &ctx_values);
 
         // match the first matcher
         let res = r.execute(&mut ctx);
@@ -180,30 +181,97 @@ mod tests {
 
         // delete matcher, no field match now
         r.remove_matcher(pri_0, id_0);
-        assert!(r.fields.len() == 2);
+        assert!(r.fields.list.len() == 3);
+        assert!(r.fields.slots.len() == 1);
         assert!(validate_index(&r));
-        ctx = init_context(&r.fields, &ctx_values);
+        ctx = init_context(&r, &ctx_values);
         assert!(!r.execute(&mut ctx));
 
         // context value change, match again
         *ctx_values.get_mut("net.src.ip").unwrap() =
             Value::IpAddr(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)));
-        ctx = init_context(&r.fields, &ctx_values);
+        ctx = init_context(&r, &ctx_values);
         assert!(r.execute(&mut ctx));
 
         // delete all matchers
         r.remove_matcher(pri_1, id_1);
         r.remove_matcher(pri_2, id_2);
-        assert!(r.fields.len() == 0);
+        assert!(r.fields.list.len() == 3);
+        assert!(r.fields.slots.len() == 3);
         assert!(validate_index(&r));
-        ctx = init_context(&r.fields, &ctx_values);
+        ctx = init_context(&r, &ctx_values);
         assert!(!r.execute(&mut ctx));
 
         // add a new matcher
         let (_, _) = setup_matcher(&mut r, 96, r#"net.src.ip == 192.168.1.1"#);
-        assert!(r.fields.len() == 1);
+        assert!(r.fields.list.len() == 3);
+        assert!(r.fields.slots.len() == 2);
         assert!(validate_index(&r));
-        ctx = init_context(&r.fields, &ctx_values);
+        ctx = init_context(&r, &ctx_values);
         assert!(r.execute(&mut ctx));
+    }
+
+    #[test]
+    fn test_fields_list() {
+        let mut s = Schema::default();
+        s.add_field("http.path.segments.*", Type::String);
+        let mut r = Router::new(&s);
+        let i_max = 1000;
+        let mut ids = vec![];
+        for i in 0..i_max {
+            let id: Uuid = Uuid::new_v4();
+            let exp = format!(r#"http.path.segments.{} == "/bar""#, i.to_string());
+            let pri = i;
+            assert!(r.add_matcher(pri, id, exp.as_str()).is_ok());
+            assert!(r.fields.list.len() == i + 1);
+            assert!(r.fields.slots.len() == 0);
+            assert!(r.fields.map.len() == i + 1);
+            ids.push((pri, id));
+        }
+
+        // delete 100 fields
+        let mut valid_cnt = i_max;
+        for (idx, id) in &ids[100..200] {
+            let pri = idx;
+            assert!(r.remove_matcher(*pri, *id));
+            valid_cnt -= 1;
+            assert!(r.fields.list.len() == i_max);
+            assert!(r.fields.slots.len() == i_max - valid_cnt);
+            assert!(r.fields.map.len() == valid_cnt);
+        }
+
+        // deleted fields leave None in fields list
+        for i in 100..200 {
+            assert!(r.fields.list[i] == None);
+        }
+
+        // adds 200 fields back
+        let fields_len = r.fields.list.len();
+        let mut slot_cnt = r.fields.slots.len();
+        for i in 0..200 {
+            let id: Uuid = Uuid::new_v4();
+            let exp = format!(
+                r#"http.path.segments.{} == "/bar""#,
+                (i_max + i).to_string()
+            );
+            let pri = i;
+            if slot_cnt > 0 {
+                slot_cnt -= 1;
+            }
+            assert!(r.add_matcher(pri, id, exp.as_str()).is_ok());
+            assert!(r.fields.list.len() == max(fields_len, r.fields.map.len()));
+            assert!(r.fields.slots.len() == slot_cnt);
+            assert!(r.fields.map.len() == r.fields.list.len() - slot_cnt);
+        }
+
+        // 100 slot deleted before should be reused
+        for i in 100..200 {
+            assert!(r.fields.list[i].is_some());
+        }
+
+        // 100 slot newly added should be valid
+        for i in i_max..i_max + 100 {
+            assert!(r.fields.list[i].is_some());
+        }
     }
 }

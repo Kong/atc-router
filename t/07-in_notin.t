@@ -76,14 +76,14 @@ nilIn/NotIn operators only supports IP in CIDR
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "l3.ip in 192.168.12.0/24"))
 
-            local c = context.new(s, #r:get_fields())
-            c:add_value(1, "l3.ip", "192.168.12.1")
+            local c = context.new(r)
+            c:add_value("l3.ip", "192.168.12.1")
 
             local matched = r:execute(c)
             ngx.say(matched)
 
-            c = context.new(s, #r:get_fields())
-            c:add_value(1, "l3.ip", "192.168.1.1")
+            c = context.new(r)
+            c:add_value("l3.ip", "192.168.1.1")
 
             local matched = r:execute(c)
             ngx.say(matched)

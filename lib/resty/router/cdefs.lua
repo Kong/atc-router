@@ -68,17 +68,24 @@ bool router_execute(const struct Router *router, struct Context *context);
 
 uintptr_t router_get_fields(const struct Router *router,
                             const uint8_t **fields,
-                            uintptr_t *fields_len);
+                            uintptr_t *fields_len,
+                            uintptr_t *indexes);
 
-struct Context *context_new(uintptr_t fields_len);
+struct Context *context_new(const struct Router *router);
 
 void context_free(struct Context *context);
 
 bool context_add_value(struct Context *context,
-                       uintptr_t field_idx,
+                       const int8_t *field,
                        const struct CValue *value,
                        uint8_t *errbuf,
                        uintptr_t *errbuf_len);
+
+bool context_add_value_by_index(struct Context *context,
+                                uintptr_t index,
+                                const struct CValue *value,
+                                uint8_t *errbuf,
+                                uintptr_t *errbuf_len);
 
 void context_reset(struct Context *context);
 

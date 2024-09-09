@@ -261,12 +261,20 @@ impl Execute for Predicate {
 #[test]
 fn test_predicate() {
     use crate::ast;
+    use crate::router::Router;
     use crate::schema;
+    use uuid::Uuid;
 
     let mut mat = Match::new();
     let mut schema = schema::Schema::default();
     schema.add_field("my_key", ast::Type::String);
-    let mut ctx = Context::new(1);
+    let mut r = Router::new(&schema);
+    // expression here is not practical, just used to setup context
+    assert!(r
+        .add_matcher(1, Uuid::new_v4(), r#"my_key=="whatever""#)
+        .is_ok());
+
+    let mut ctx = Context::new(&r);
     let field_index: usize = 0;
 
     // check when value list is empty
@@ -305,7 +313,7 @@ fn test_predicate() {
     ];
 
     for v in lhs_values {
-        ctx.add_value(field_index, v);
+        ctx.add_value_by_index(field_index, v);
     }
 
     // check if all values match starts_with foo -- should be true
