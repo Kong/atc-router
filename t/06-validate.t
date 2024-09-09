@@ -37,8 +37,7 @@ __DATA__
 
             ngx.say(type(r))
             ngx.say(err)
-            ngx.say(#r)
-            ngx.say(r[1])
+            ngx.say(r[http.headers.foo])
         }
     }
 --- request
@@ -46,8 +45,7 @@ GET /t
 --- response_body
 table
 nil
-1
-http.headers.foo
+0
 --- no_error_log
 [error]
 [warn]
