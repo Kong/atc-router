@@ -22,54 +22,33 @@ fn evaluate_operand_item(item: OperandItem, ctx: &mut Context, m: &mut Match) ->
 
 impl Execute for LirProgram {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
-        //operand stack
-        let mut top: usize = 0;
-        let mut operand_stack: [OperandItem; 2] = [OperandItem::Val(false); 2];
-
+        let mut operand_stack: Vec<OperandItem> = Vec::new();
         for instruction in &self.instructions {
             match instruction {
-                LirInstruction::LogicalOperator(op) => {
-                    match op {
-                        LirLogicalOperators::And => {
-                            debug_assert!(top == 2);
-                            operand_stack[0] = OperandItem::Val(
-                                evaluate_operand_item(operand_stack[0], ctx, m)
-                                    && evaluate_operand_item(operand_stack[1], ctx, m),
-                            );
-                            top = 1;
-                        }
-                        LirLogicalOperators::Or => {
-                            debug_assert!(top == 2);
-                            operand_stack[0] = OperandItem::Val(
-                                evaluate_operand_item(operand_stack[0], ctx, m)
-                                    || evaluate_operand_item(operand_stack[1], ctx, m),
-                            );
-                            top = 1;
-                        }
-                        LirLogicalOperators::Not => {
-                            //stack pop
-                            top -= 1;
-                            //stack push
-                            operand_stack[top] = OperandItem::Val(!evaluate_operand_item(
-                                operand_stack[top],
-                                ctx,
-                                m,
-                            ));
-                            top += 1;
-                        }
+                LirInstruction::LogicalOperator(op) => match op {
+                    LirLogicalOperators::And => {
+                        let result = evaluate_operand_item(operand_stack.pop().unwrap(), ctx, m)
+                            && evaluate_operand_item(operand_stack.pop().unwrap(), ctx, m);
+                        operand_stack.push(OperandItem::Val(result));
                     }
-                }
+                    LirLogicalOperators::Or => {
+                        let result = evaluate_operand_item(operand_stack.pop().unwrap(), ctx, m)
+                            || evaluate_operand_item(operand_stack.pop().unwrap(), ctx, m);
+                        operand_stack.push(OperandItem::Val(result));
+                    }
+                    LirLogicalOperators::Not => {
+                        let result = evaluate_operand_item(operand_stack.pop().unwrap(), ctx, m);
+                        operand_stack.push(OperandItem::Val(!result));
+                    }
+                },
                 LirInstruction::Predicate(p) => {
-                    // push stack
-                    operand_stack[top] = OperandItem::Predicate(p);
-                    top += 1;
+                    operand_stack.push(OperandItem::Predicate(p));
                 }
             }
         }
-        //stack pop
-        top -= 1;
-        debug_assert!(top == 0);
-        evaluate_operand_item(operand_stack[top], ctx, m) //stack pop
+        let res = operand_stack.pop().unwrap();
+        assert!(operand_stack.is_empty());
+        evaluate_operand_item(res, ctx, m)
     }
 }
 
