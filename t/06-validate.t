@@ -49,7 +49,7 @@ GET /t
 --- response_body
 table
 nil
-"http.headers.foo"
+http.headers.foo
 0
 --- no_error_log
 [error]
