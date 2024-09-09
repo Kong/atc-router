@@ -76,6 +76,10 @@ impl<'a> Router<'a> {
 
         false
     }
+
+    pub fn schema(&self) -> &Schema {
+        &self.schema
+    }
 }
 
 #[cfg(test)]

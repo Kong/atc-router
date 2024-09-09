@@ -40,14 +40,8 @@ impl<'a> Context<'a> {
     }
 
     pub fn add_value(&mut self, field: &str, value: Value) {
-        if let Some(index) = self.router.fields.map.get(field) {
-            if let Some(v) = &mut self.values[*index] {
-                v.push(value);
-            } else {
-                self.values[*index] = Some(vec![value]);
-            }
-        } else {
-            panic!("value provided does not match field: {}", field,);
+        if &value.my_type() != self.router.schema().type_of(field).unwrap() {
+            panic!("value provided does not match schema");
         }
     }
 
