@@ -75,7 +75,6 @@ end
 
 function _M:get_fields()
     local out = {}
-    local out_n = 0
     local router = self.router
 
     local total = tonumber(clib.router_get_fields(router, nil, nil, nil))
