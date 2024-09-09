@@ -47,7 +47,6 @@ impl Execute for LirProgram {
             }
         }
         let res = operand_stack.pop().unwrap();
-        assert!(operand_stack.is_empty());
         evaluate_operand_item(res, ctx, m)
     }
 }
