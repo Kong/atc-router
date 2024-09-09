@@ -33,6 +33,7 @@ __DATA__
             local s = schema.new()
 
             s:add_field("http.path", "String")
+            s:add_field("tcp.port", "Int")
             local r = router.new(s)
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
