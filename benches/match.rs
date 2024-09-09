@@ -7,10 +7,14 @@ use uuid::Uuid;
 
 // To run this benchmark, execute the following command:
 // ```shell
-// cargo bench --bench test
+// cargo bench --bench match
 // ```
 
 const N: usize = 100000;
+
+fn make_uuid(a: usize) -> String {
+    format!("8cb2a7d0-c775-4ed9-989f-{:012}", a)
+}
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut schema = Schema::default();
@@ -20,7 +24,9 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     for i in 0..N {
         let expr = format!("((a > 0 || a < {}) && a != 0) && a == 1", N + 1);
-        router.add_matcher(N - i, Uuid::new_v4(), &expr).unwrap();
+        let variant = make_uuid(i);
+        let uuid = Uuid::try_from(variant.as_str()).unwrap();
+        router.add_matcher(N - i, uuid, &expr).unwrap();
     }
 
     let mut context = Context::new(&schema);
@@ -28,10 +34,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("Doesn't Match", |b| {
         b.iter(|| {
-            for _ in 0..10 {
-                let is_match = router.execute(&mut context);
-                assert!(!is_match);
-            }
+            let is_match = router.execute(&mut context);
+            assert!(!is_match);
         });
     });
 }

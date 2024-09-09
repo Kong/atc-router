@@ -1,6 +1,6 @@
 use crate::ast::{BinaryOperator, Predicate, Value};
 use crate::context::{Context, Match};
-use crate::lir::{Lir, LirInstruction, LirLogicalOperators};
+use crate::lir::{LirInstruction, LirLogicalOperators, LirProgram};
 
 pub trait Execute {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
@@ -11,6 +11,8 @@ pub enum OperandItem<'a> {
     Val(bool),
     Predicate(&'a Predicate),
 }
+
+#[inline]
 fn evaluate_operand_item(item: OperandItem, ctx: &mut Context, m: &mut Match) -> bool {
     match item {
         OperandItem::Val(b) => b,
@@ -18,18 +20,18 @@ fn evaluate_operand_item(item: OperandItem, ctx: &mut Context, m: &mut Match) ->
     }
 }
 
-impl Execute for Lir {
+impl Execute for LirProgram {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
         //operand stack
         let mut top: usize = 0;
         let mut operand_stack: [OperandItem; 2] = [OperandItem::Val(false); 2];
 
-        for instruction in &self.program {
+        for instruction in &self.instructions {
             match instruction {
                 LirInstruction::LogicalOperator(op) => {
                     match op {
                         LirLogicalOperators::And => {
-                            assert!(top == 2);
+                            debug_assert!(top == 2);
                             operand_stack[0] = OperandItem::Val(
                                 evaluate_operand_item(operand_stack[0], ctx, m)
                                     && evaluate_operand_item(operand_stack[1], ctx, m),
@@ -37,7 +39,7 @@ impl Execute for Lir {
                             top = 1;
                         }
                         LirLogicalOperators::Or => {
-                            assert!(top == 2);
+                            debug_assert!(top == 2);
                             operand_stack[0] = OperandItem::Val(
                                 evaluate_operand_item(operand_stack[0], ctx, m)
                                     || evaluate_operand_item(operand_stack[1], ctx, m),
@@ -66,7 +68,7 @@ impl Execute for Lir {
         }
         //stack pop
         top -= 1;
-        assert!(top == 0);
+        debug_assert!(top == 0);
         evaluate_operand_item(operand_stack[top], ctx, m) //stack pop
     }
 }

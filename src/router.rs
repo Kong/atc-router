@@ -1,6 +1,6 @@
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
-use crate::lir::{Lir, Translate};
+use crate::lir::{LirProgram, Translate};
 use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
@@ -12,7 +12,7 @@ struct MatcherKey(usize, Uuid);
 
 pub struct Router<'a> {
     schema: &'a Schema,
-    matchers: BTreeMap<MatcherKey, Lir>,
+    matchers: BTreeMap<MatcherKey, LirProgram>,
     pub fields: HashMap<String, usize>,
 }
 

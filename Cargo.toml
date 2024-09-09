@@ -24,7 +24,6 @@ fnv = "1"
 
 [dev-dependencies]
 criterion = "0.*"
-uuid = { version = "1.8", features = ["v4"] }
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
