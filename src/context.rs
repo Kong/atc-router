@@ -43,6 +43,13 @@ impl<'a> Context<'a> {
         if &value.my_type() != self.router.schema().type_of(field).unwrap() {
             panic!("value provided does not match schema");
         }
+        if let Some(index) = self.router.fields.map.get(field) {
+            if let Some(v) = &mut self.values[*index] {
+                v.push(value);
+            } else {
+                self.values[*index] = Some(vec![value]);
+            }
+        }
     }
 
     pub fn add_value_by_index(&mut self, index: usize, value: Value) {
