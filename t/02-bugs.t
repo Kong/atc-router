@@ -75,6 +75,7 @@ invalid utf-8 sequence of 1 bytes from index 0
             local s = schema.new()
 
             s:add_field("http.path", "String")
+            s:add_field("tcp.port", "Int")
             local r = router.new(s)
 
             local c = context.new(r)
