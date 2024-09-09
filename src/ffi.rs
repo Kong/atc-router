@@ -136,26 +136,31 @@ pub unsafe extern "C" fn router_get_fields(
     router: &Router,
     fields: *mut *const u8,
     fields_len: *mut usize,
+    indexes: *mut usize,
 ) -> usize {
     if !fields.is_null() {
         assert!(!fields_len.is_null());
-        assert!(*fields_len >= router.fields.len());
+        assert!(*fields_len >= router.fields.map.len());
 
         let fields = from_raw_parts_mut(fields, *fields_len);
+        let indexes = from_raw_parts_mut(indexes, *fields_len);
         let fields_len = from_raw_parts_mut(fields_len, *fields_len);
 
-        for (i, (name, _)) in router.fields.iter().enumerate() {
-            fields[i] = name.as_bytes().as_ptr();
-            fields_len[i] = name.len()
+        let mut i = 0;
+        for (field, pos) in router.fields.map.iter() {
+            fields[i] = field.as_bytes().as_ptr();
+            fields_len[i] = field.len();
+            indexes[i] = *pos;
+            i += 1;
         }
     }
 
-    router.fields.len()
+    router.fields.map.len()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn context_new(fields_len: usize) -> *mut Context {
-    Box::into_raw(Box::new(Context::new(fields_len)))
+pub unsafe extern "C" fn context_new<'a>(router: &'a Router<'a>) -> *mut Context<'a> {
+    Box::into_raw(Box::new(Context::new(router)))
 }
 
 #[no_mangle]
@@ -164,7 +169,32 @@ pub unsafe extern "C" fn context_free(context: *mut Context) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn context_add_value(
+pub extern "C" fn context_add_value(
+    context: &mut Context,
+    field: *const i8,
+    value: &CValue,
+    errbuf: *mut u8,
+    errbuf_len: *mut usize,
+) -> bool {
+    let field = unsafe { ffi::CStr::from_ptr(field).to_str().unwrap() };
+    let errbuf = unsafe { from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN) };
+
+    let value: Result<Value, _> = value.try_into();
+    if let Err(e) = value {
+        errbuf[..e.len()].copy_from_slice(e.as_bytes());
+        unsafe {
+            *errbuf_len = e.len();
+        }
+        return false;
+    }
+
+    context.add_value(field, value.unwrap());
+
+    true
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn context_add_value_by_index(
     context: &mut Context,
     index: usize,
     value: &CValue,
@@ -181,8 +211,7 @@ pub unsafe extern "C" fn context_add_value(
         return false;
     }
 
-    context.add_value(index, value.unwrap());
-
+    context.add_value_by_index(index, value.unwrap());
     true
 }
 

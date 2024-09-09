@@ -66,13 +66,13 @@ fn setup_context(ctx: &mut Context, data: &TestData, test_match: bool) {
     for (i, v) in values.iter().enumerate() {
         match v {
             serde_json::Value::String(s) => {
-                ctx.add_value(i, Value::String(s.to_string()));
+                ctx.add_value_by_index(i, Value::String(s.to_string()));
             }
             serde_json::Value::Number(n) => {
-                ctx.add_value(i, Value::Int(n.as_i64().unwrap()));
+                ctx.add_value_by_index(i, Value::Int(n.as_i64().unwrap()));
             }
             serde_json::Value::Array(l) => {
-                ctx.add_value(
+                ctx.add_value_by_index(
                     i,
                     Value::IpAddr(IpAddr::V4(
                         Ipv4Addr::from_str(l[0].as_str().unwrap()).unwrap(),
@@ -84,8 +84,24 @@ fn setup_context(ctx: &mut Context, data: &TestData, test_match: bool) {
     }
 }
 
-fn router_match(router: &Router, ctx: &mut Context) -> bool {
-    router.execute(ctx)
+fn router_match(router: &Router, ctx: &mut Context, expected: bool) {
+    assert_eq!(router.execute(ctx), expected);
+}
+
+fn matchers_batch_handling(s: &Schema) {
+    let mut r = Router::new(&s);
+    let pri_max = 10000;
+    let mut ids = vec![];
+    for pri in 0..pri_max {
+        let id: Uuid = Uuid::new_v4();
+        let exp = format!(r#"http.path.segments.{} == "/bar""#, pri.to_string());
+        assert!(r.add_matcher(pri, id, exp.as_str()).is_ok());
+        ids.push((pri, id));
+    }
+
+    for (pri, id) in ids {
+        assert!(r.remove_matcher(pri, id));
+    }
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -94,16 +110,20 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut r = Router::new(&s);
     setup_matchers(&mut r, &data);
 
-    let mut ctx = Context::new(r.fields.len());
+    let mut ctx = Context::new(&r);
     setup_context(&mut ctx, &data, true);
     c.bench_function("route match all", |b| {
-        b.iter(|| router_match(black_box(&r), black_box(&mut ctx)))
+        b.iter(|| router_match(black_box(&r), black_box(&mut ctx), black_box(true)))
     });
 
-    let mut ctx = Context::new(r.fields.len());
+    let mut ctx = Context::new(&r);
     setup_context(&mut ctx, &data, false);
     c.bench_function("route mismatch all", |b| {
-        b.iter(|| router_match(black_box(&r), black_box(&mut ctx)))
+        b.iter(|| router_match(black_box(&r), black_box(&mut ctx), black_box(false)))
+    });
+
+    c.bench_function("route matchers batch create and delete", |b| {
+        b.iter(|| matchers_batch_handling(black_box(&s)))
     });
 }
 

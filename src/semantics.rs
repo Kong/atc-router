@@ -1,6 +1,6 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
+use crate::router::Fields;
 use crate::schema::Schema;
-use std::collections::HashMap;
 
 type ValidationResult = Result<(), String>;
 
@@ -9,113 +9,75 @@ pub trait Validate {
 }
 
 pub trait FieldCounter {
-    fn add_to_counter(
-        &mut self,
-        fields: &mut Vec<(String, usize)>,
-        map: &mut HashMap<String, usize>,
-    );
-    fn remove_from_counter(
-        &mut self,
-        fields: &mut Vec<(String, usize)>,
-        map: &mut HashMap<String, usize>,
-    );
-    fn fix_lhs_index(&mut self, map: &HashMap<String, usize>);
+    fn add_to_counter(&mut self, fields: &mut Fields);
+    fn remove_from_counter(&mut self, fields: &mut Fields);
 }
 
 impl FieldCounter for Expression {
-    fn add_to_counter(
-        &mut self,
-        fields: &mut Vec<(String, usize)>,
-        map: &mut HashMap<String, usize>,
-    ) {
+    fn add_to_counter(&mut self, fields: &mut Fields) {
         match self {
             Expression::Logical(l) => match l.as_mut() {
                 LogicalExpression::And(l, r) => {
-                    l.add_to_counter(fields, map);
-                    r.add_to_counter(fields, map);
+                    l.add_to_counter(fields);
+                    r.add_to_counter(fields);
                 }
                 LogicalExpression::Or(l, r) => {
-                    l.add_to_counter(fields, map);
-                    r.add_to_counter(fields, map);
+                    l.add_to_counter(fields);
+                    r.add_to_counter(fields);
                 }
                 LogicalExpression::Not(r) => {
-                    r.add_to_counter(fields, map);
+                    r.add_to_counter(fields);
                 }
             },
             Expression::Predicate(p) => {
                 // 1. fields: increment counter for field
                 // 2. lhs: assign field index to the LHS
                 // 3. map: maintain the fields map: {field_name : field_index}
-                if let Some(index) = map.get(&p.lhs.var_name) {
-                    fields[*index].1 += 1;
+                if let Some(index) = fields.map.get(&p.lhs.var_name) {
+                    fields.list[*index].as_mut().unwrap().1 += 1;
                     p.lhs.index = *index;
                 } else {
-                    fields.push((p.lhs.var_name.clone(), 1));
-                    map.insert(p.lhs.var_name.clone(), fields.len() - 1);
-                    p.lhs.index = fields.len() - 1;
-                }
-            }
-        }
-    }
-
-    fn remove_from_counter(
-        &mut self,
-        fields: &mut Vec<(String, usize)>,
-        map: &mut HashMap<String, usize>,
-    ) {
-        match self {
-            Expression::Logical(l) => match l.as_mut() {
-                LogicalExpression::And(l, r) => {
-                    l.remove_from_counter(fields, map);
-                    r.remove_from_counter(fields, map);
-                }
-                LogicalExpression::Or(l, r) => {
-                    l.remove_from_counter(fields, map);
-                    r.remove_from_counter(fields, map);
-                }
-                LogicalExpression::Not(r) => {
-                    r.remove_from_counter(fields, map);
-                }
-            },
-            Expression::Predicate(p) => {
-                // field must be in hashmap and fields array
-                let index: usize = *map.get(&p.lhs.var_name).unwrap();
-                // 1. decrement counter of field
-                // 2. for field removing, swap another field to fill the slot.
-                // 3. re-assign index in fields_map for swapped field in array.
-                fields[index].1 -= 1;
-                if fields[index].1 == 0 {
-                    fields.swap_remove(index);
-                    assert!(map.remove(&p.lhs.var_name).is_some());
-                    // for field who been swapped to fill the empty slot in fields array,
-                    // we need to fix its index in fields_map
-                    if index < fields.len() {
-                        *map.get_mut(&fields[index].0).unwrap() = index;
+                    // reuse slots in queue if possible
+                    let new_idx: usize;
+                    if fields.slots.is_empty() {
+                        fields.list.push(Some((p.lhs.var_name.clone(), 1)));
+                        new_idx = fields.list.len() - 1;
+                    } else {
+                        new_idx = fields.slots.pop().unwrap();
+                        fields.list[new_idx] = Some((p.lhs.var_name.clone(), 1));
                     }
+                    fields.map.insert(p.lhs.var_name.clone(), new_idx);
+                    p.lhs.index = new_idx;
                 }
             }
         }
     }
 
-    // this may run only after remove_from_counter, since existing field in field array
-    // may change its postion after that. run this to fix lhs's field index.
-    fn fix_lhs_index(&mut self, map: &HashMap<String, usize>) {
+    fn remove_from_counter(&mut self, fields: &mut Fields) {
         match self {
             Expression::Logical(l) => match l.as_mut() {
                 LogicalExpression::And(l, r) => {
-                    l.fix_lhs_index(map);
-                    r.fix_lhs_index(map);
+                    l.remove_from_counter(fields);
+                    r.remove_from_counter(fields);
                 }
                 LogicalExpression::Or(l, r) => {
-                    l.fix_lhs_index(map);
-                    r.fix_lhs_index(map);
+                    l.remove_from_counter(fields);
+                    r.remove_from_counter(fields);
                 }
                 LogicalExpression::Not(r) => {
-                    r.fix_lhs_index(map);
+                    r.remove_from_counter(fields);
                 }
             },
             Expression::Predicate(p) => {
-                p.lhs.index = *map.get(&p.lhs.var_name).unwrap();
+                let index: usize = p.lhs.index;
+                // decrement counter of field
+                fields.list[index].as_mut().unwrap().1 -= 1;
+                // for field removing, reserve the slot for resue and remove it in map
+                if fields.list[index].as_mut().unwrap().1 == 0 {
+                    fields.list[index] = None;
+                    fields.slots.push(index);
+                    assert!(fields.map.remove(&p.lhs.var_name).is_some());
+                }
             }
         }
     }

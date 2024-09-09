@@ -38,10 +38,10 @@ __DATA__
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.headers.foo == \"bar\""))
 
-            local c = context.new(s, #r:get_fields())
-            c:add_value(1, "http.headers.foo", "bar")
-            c:add_value(1, "http.headers.foo", "bar")
-            c:add_value(1, "http.headers.foo", "bar")
+            local c = context.new(r)
+            c:add_value("http.headers.foo", "bar")
+            c:add_value("http.headers.foo", "bar")
+            c:add_value("http.headers.foo", "bar")
 
             local matched = r:execute(c)
             ngx.say(matched)
@@ -82,10 +82,10 @@ bar
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.headers.foo == \"bar\""))
 
-            local c = context.new(s, #r:get_fields())
-            c:add_value(1, "http.headers.foo", "bar")
-            c:add_value(1, "http.headers.foo", "bar")
-            c:add_value(1, "http.headers.foo", "barX")
+            local c = context.new(r)
+            c:add_value("http.headers.foo", "bar")
+            c:add_value("http.headers.foo", "bar")
+            c:add_value("http.headers.foo", "barX")
 
             local matched = r:execute(c)
             ngx.say(matched)
@@ -124,7 +124,7 @@ nil
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.headers.foo == \"bar\""))
 
-            local c = context.new(s, #r:get_fields())
+            local c = context.new(r)
 
             local matched = r:execute(c)
             ngx.say(matched)

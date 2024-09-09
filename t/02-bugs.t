@@ -28,10 +28,14 @@ __DATA__
         content_by_lua_block {
             local schema = require("resty.router.schema")
             local context = require("resty.router.context")
+            local router = require("resty.router.router")
 
             local s = schema.new()
 
             s:add_field("http.path", "String")
+            local r = router.new()
+            assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
+                                 "http.path ^= \"/foo\" && tcp.port == 80"))
 
             local BAD_UTF8 = {
                 "\x80",
@@ -39,9 +43,9 @@ __DATA__
                 "\xfc\x80\x80\x80\x80\xaf",
             }
 
-            local c = context.new(s, 1)
+            local c = context.new(r)
             for _, v in ipairs(BAD_UTF8) do
-                local ok, err = c:add_value(1, "http.path", v)
+                local ok, err = c:add_value("http.path", v)
                 ngx.say(err)
             end
         }
@@ -66,13 +70,15 @@ invalid utf-8 sequence of 1 bytes from index 0
         content_by_lua_block {
             local schema = require("resty.router.schema")
             local context = require("resty.router.context")
+            local router = require("resty.router.router")
 
             local s = schema.new()
 
             s:add_field("http.path", "String")
+            local r = router.new()
 
-            local c = context.new(s, 1)
-            assert(c:add_value(1, "http.path", "\x00"))
+            local c = context.new(r)
+            assert(c:add_value("http.path", "\x00"))
             ngx.say("ok")
         }
     }
@@ -146,8 +152,8 @@ ok
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.body =^ \"world\""))
 
-            local c = context.new(s, #r:get_fields())
-            c:add_value(1, "http.body", "hello\x00world")
+            local c = context.new(r)
+            c:add_value("http.body", "hello\x00world")
 
             local matched = r:execute(c)
             ngx.say(matched)
@@ -156,7 +162,7 @@ ok
             ngx.say(uuid)
 
             c:reset()
-            c:add_value(1, "http.body", "world\x00hello")
+            c:add_value("http.body", "world\x00hello")
 
             local matched = r:execute(c)
             ngx.say(matched)
