@@ -57,13 +57,13 @@ __DATA__
 
             c:reset()
 
-            c:add_value(1, "http.path", "/abb/d/")
+            c:add_value("http.path", "/abb/d/")
             local matched = r:execute(c)
             ngx.say(matched)
 
             c:reset()
 
-            c:add_value(1, "http.path", "/abb/d")
+            c:add_value("http.path", "/abb/d")
             local matched = r:execute(c)
             ngx.say(matched)
         }
