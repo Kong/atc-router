@@ -40,7 +40,7 @@ __DATA__
 
             for k, v in pairs(r) do
                 ngx.say(k)
-                ngx.say(v)
+                ngx.say(tonumber(v))
             end
         }
     }
