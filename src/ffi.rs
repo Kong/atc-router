@@ -412,15 +412,15 @@ pub unsafe extern "C" fn context_free(context: *mut Context) {
 /// * `errbuf_len` must be vlaid to read and write for `size_of::<usize>()` bytes,
 ///   and it must be properly aligned.
 #[no_mangle]
-pub extern "C" fn context_add_value(
+pub unsafe extern "C" fn context_add_value(
     context: &mut Context,
     field: *const i8,
     value: &CValue,
     errbuf: *mut u8,
     errbuf_len: *mut usize,
 ) -> bool {
-    let field = unsafe { ffi::CStr::from_ptr(field).to_str().unwrap() };
-    let errbuf = unsafe { from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN) };
+    let field = ffi::CStr::from_ptr(field).to_str().unwrap();
+    let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
 
     let value: Result<Value, _> = value.try_into();
     if let Err(e) = value {

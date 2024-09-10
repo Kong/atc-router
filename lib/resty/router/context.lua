@@ -37,12 +37,12 @@ function _M.new(router)
 end
 
 
-function _M:add_value_impl(field, value, index)
+local function add_value_impl(ctx, field, value, index)
     if not value then
         return true
     end
 
-    local typ, err = self.schema:get_field_type(field)
+    local typ, err = ctx.schema:get_field_type(field)
     if not typ then
         return nil, err
     end
@@ -66,9 +66,9 @@ function _M:add_value_impl(field, value, index)
     errbuf_len[0] = ERR_BUF_MAX_LEN 
     local res
     if index ~= nil then
-       res = clib.context_add_value_by_index(self.context, index, CACHED_VALUE, errbuf, errbuf_len)
+       res = clib.context_add_value_by_index(ctx.context, index, CACHED_VALUE, errbuf, errbuf_len)
     else
-       res = clib.context_add_value(self.context, field, CACHED_VALUE, errbuf, errbuf_len)
+       res = clib.context_add_value(ctx.context, field, CACHED_VALUE, errbuf, errbuf_len)
     end
     if res == false then
         return nil, ffi_string(errbuf, errbuf_len[0])
@@ -79,12 +79,12 @@ end
 
 
 function _M:add_value(field, value)
-    return _M.add_value_impl(self, field, value)
+    return add_value_impl(self, field, value)
 end
 
 
 function _M:add_value_by_index(field, value, index)
-    return _M.add_value_impl(self, field, value, index)
+    return add_value_impl(self, field, value, index)
 end
 
 
