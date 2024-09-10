@@ -68,16 +68,7 @@ fn translate_helper(exp: &Expression, lir: &mut LirProgram) {
             }
         },
         Expression::Predicate(p) => {
-            let predicate = Predicate {
-                lhs: crate::ast::Lhs {
-                    var_name: p.lhs.var_name.clone(),
-                    transformations: p.lhs.transformations.clone(),
-                },
-                rhs: p.rhs.clone(),
-                op: p.op,
-            };
-
-            lir.instructions.push(LirInstruction::Predicate(predicate));
+            lir.instructions.push(LirInstruction::Predicate(p.clone()));
         }
     }
 }
