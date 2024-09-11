@@ -1,8 +1,9 @@
 use crate::ast::{Expression, LogicalExpression, Predicate};
+use crate::router::Router;
 
 #[derive(Debug)]
 pub struct LirProgram {
-    pub instructions: Vec<LirInstruction>,
+    pub(crate) instructions: Vec<LirInstruction>,
 }
 
 impl LirProgram {
@@ -23,6 +24,23 @@ impl Default for LirProgram {
 pub enum LirInstruction {
     LogicalOperator(LirLogicalOperators),
     Predicate(Predicate),
+}
+
+impl LirInstruction {
+    pub fn as_predicate(&self) -> Option<&Predicate> {
+        match &self {
+            LirInstruction::LogicalOperator(_ops) => None, // never be here, otherwise something wrong
+            LirInstruction::Predicate(p) => Some(p),
+        }
+    }
+}
+
+#[inline]
+pub(crate) fn is_operator(instruction: &LirInstruction) -> bool {
+    match instruction {
+        LirInstruction::LogicalOperator(_op) => true,
+        LirInstruction::Predicate(_p) => false,
+    }
 }
 
 #[derive(Debug)]
@@ -50,21 +68,21 @@ fn translate_helper(exp: &Expression, lir: &mut LirProgram) {
     match exp {
         Expression::Logical(logic_exp) => match logic_exp.as_ref() {
             LogicalExpression::And(l, r) => {
-                translate_helper(l, lir);
-                translate_helper(r, lir);
                 lir.instructions
                     .push(LirInstruction::LogicalOperator(LirLogicalOperators::And));
-            }
-            LogicalExpression::Or(l, r) => {
                 translate_helper(l, lir);
                 translate_helper(r, lir);
+            }
+            LogicalExpression::Or(l, r) => {
                 lir.instructions
                     .push(LirInstruction::LogicalOperator(LirLogicalOperators::Or));
+                translate_helper(l, lir);
+                translate_helper(r, lir);
             }
             LogicalExpression::Not(r) => {
-                translate_helper(r, lir);
                 lir.instructions
                     .push(LirInstruction::LogicalOperator(LirLogicalOperators::Not));
+                translate_helper(r, lir);
             }
         },
         Expression::Predicate(p) => {
@@ -76,55 +94,24 @@ fn translate_helper(exp: &Expression, lir: &mut LirProgram) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::parse;
     use crate::schema::Schema;
-    use crate::semantics::Validate;
-
-    fn format(lir: &LirProgram) -> String {
-        let mut predicate_vec: Vec<String> = Vec::new();
-        for instruction in &lir.instructions {
-            match instruction {
-                LirInstruction::LogicalOperator(op) => match op {
-                    LirLogicalOperators::And => {
-                        let right = predicate_vec.pop().unwrap();
-                        let left = predicate_vec.pop().unwrap();
-                        predicate_vec.push(format!("{} && {}", left, right));
-                    }
-                    LirLogicalOperators::Or => {
-                        let right = predicate_vec.pop().unwrap();
-                        let left = predicate_vec.pop().unwrap();
-                        predicate_vec.push(format!("{} || {}", left, right));
-                    }
-                    LirLogicalOperators::Not => {
-                        let operand = predicate_vec.pop().unwrap();
-                        predicate_vec.push(format!("!({})", operand));
-                    }
-                },
-                LirInstruction::Predicate(p) => {
-                    predicate_vec.push(format!(
-                        "{} {} {}",
-                        p.lhs.var_name.to_string(),
-                        p.op.to_string(),
-                        &p.rhs.to_string()
-                    ));
-                }
-            }
-        }
-        predicate_vec.pop().unwrap()
-    }
+    use uuid::Uuid;
 
     #[test]
     fn verify_translate() {
         let mut schema = Schema::default();
         schema.add_field("a", crate::ast::Type::Int);
-        let test_input: &str = r#"!(!(a == 1 && a == 2) || a == 3 && !(a == 4))"#;
-        let ast = parse(test_input).map_err(|e| e.to_string()).unwrap();
-        ast.validate(&schema).unwrap();
-        let lir = ast.translate();
-        let test_result = format(&lir);
-        assert_eq!(test_input, test_result, "Responses should be equal");
-        //use "cargo test -- --nocapture" to show following output
-        println!(" input: {}", test_input);
-        println!("output: {}", test_result);
+        schema.add_field("http.path", crate::ast::Type::String);
+        schema.add_field("http.version", crate::ast::Type::String);
+        let mut router = Router::new(&schema);
+        let uuid = Uuid::try_from("8cb2a7d0-c775-4ed9-989f-77697240ae96").unwrap();
+        //router.add_matcher(0,  uuid, r#"!(( a == 2) && ( a == 9 )) || !(a == 1) || (http.path == "hello" && http.version == "1.1") || ( a == 3 && a == 4) && !(a == 5)"#).unwrap();
+        router.add_matcher(0, uuid, r#"(http.path == "hello" && http.version == "1.1") || !(( a == 2) && ( a == 9 )) || !(a == 1) || ( a == 3 && a == 4) && !(a == 5)"#).unwrap();
+
+        let mut context = crate::context::Context::new(&schema);
+        context.add_value("http.path", crate::ast::Value::String("hello".to_string()));
+        context.add_value("http.version", crate::ast::Value::String("1.1".to_string()));
+        assert!(router.execute(&mut context));
+        println!("{:?}", context.result.unwrap().matches);
     }
 }
