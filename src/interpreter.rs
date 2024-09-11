@@ -1,6 +1,6 @@
 use crate::ast::{BinaryOperator, Predicate, Value};
 use crate::context::{Context, Match};
-use crate::lir::{LirInstruction, LirLogicalOperators, LirProgram};
+use crate::lir::{is_operator, LirInstruction, LirLogicalOperators, LirProgram};
 
 pub trait Execute {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
@@ -20,34 +20,218 @@ fn evaluate_operand_item(item: OperandItem, ctx: &mut Context, m: &mut Match) ->
     }
 }
 
+#[inline]
+fn check_short_circuit(
+    operator_stack: &Vec<LirLogicalOperators>,
+    operand_stack: &Vec<bool>,
+) -> bool {
+    // if it could be short-circuited, return true
+    if (operand_stack.len() > 0) && (operator_stack.len() > 0) {
+        match &operator_stack.last().unwrap() {
+            LirLogicalOperators::And => {
+                let operand = operand_stack.last().unwrap();
+                if *operand {
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+            LirLogicalOperators::Or => {
+                let operand = operand_stack.last().unwrap();
+                if *operand {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            LirLogicalOperators::Not => {
+                return false;
+            }
+        }
+    } else {
+        return false;
+    }
+}
+
+#[inline]
+fn compact_operation_stack(
+    operator_stack: &mut Vec<LirLogicalOperators>,
+    operand_stack: &mut Vec<bool>,
+) {
+    loop {
+        if operator_stack.len() > 0 {
+            match &operator_stack.last().unwrap() {
+                LirLogicalOperators::And => {
+                    if operand_stack.len() >= 2 {
+                        let right = operand_stack.pop().unwrap();
+                        let left = operand_stack.pop().unwrap();
+                        operand_stack.push(left && right);
+                        operator_stack.pop();
+                    } else {
+                        break;
+                    }
+                }
+                LirLogicalOperators::Or => {
+                    if operand_stack.len() >= 2 {
+                        let right = operand_stack.pop().unwrap();
+                        let left = operand_stack.pop().unwrap();
+                        operand_stack.push(left || right);
+                        operator_stack.pop();
+                    } else {
+                        break;
+                    }
+                }
+                LirLogicalOperators::Not => {
+                    if operand_stack.len() >= 1 {
+                        let right = operand_stack.pop().unwrap();
+                        operand_stack.push(!right);
+                        operator_stack.pop();
+                    } else {
+                        break;
+                    }
+                }
+            }
+        } else {
+            // operator stack drained
+            break;
+        }
+    }
+}
+
 impl Execute for LirProgram {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
-        let mut operand_stack: Vec<OperandItem> = Vec::new();
-        for instruction in &self.instructions {
-            match instruction {
+        let mut operand_stack: Vec<bool> = Vec::new();
+        let mut operator_stack: Vec<LirLogicalOperators> = Vec::new();
+        let mut index = 0;
+        loop {
+            match &self.instructions[index] {
                 LirInstruction::LogicalOperator(op) => match op {
                     LirLogicalOperators::And => {
-                        let result = evaluate_operand_item(operand_stack.pop().unwrap(), ctx, m)
-                            && evaluate_operand_item(operand_stack.pop().unwrap(), ctx, m);
-                        operand_stack.push(OperandItem::Val(result));
+                        let next_ins = &self.instructions[index + 1];
+                        if is_operator(next_ins) {
+                            // push LIR operator to ops stack
+                            // next is operator
+                            operator_stack.push(LirLogicalOperators::And);
+                            index += 1;
+                        } else {
+                            if check_short_circuit(&operator_stack, &operand_stack) {
+                                // short circuit
+                                index += 3;
+                                operator_stack.pop();
+                            } else {
+                                let left = evaluate_operand_item(
+                                    OperandItem::Predicate(next_ins.as_predicate().unwrap()),
+                                    ctx,
+                                    m,
+                                );
+
+                                if !left {
+                                    // short circuit
+                                    index += 3;
+                                    operand_stack.push(false);
+                                } else {
+                                    let next_next_ins = &self.instructions[index + 2];
+                                    let right = evaluate_operand_item(
+                                        OperandItem::Predicate(
+                                            next_next_ins.as_predicate().unwrap(),
+                                        ),
+                                        ctx,
+                                        m,
+                                    );
+                                    index += 3;
+                                    operand_stack.push(right);
+                                }
+
+                                compact_operation_stack(&mut operator_stack, &mut operand_stack);
+                            }
+                        }
                     }
                     LirLogicalOperators::Or => {
-                        let result = evaluate_operand_item(operand_stack.pop().unwrap(), ctx, m)
-                            || evaluate_operand_item(operand_stack.pop().unwrap(), ctx, m);
-                        operand_stack.push(OperandItem::Val(result));
+                        let next_ins = &self.instructions[index + 1];
+                        if is_operator(next_ins) {
+                            // push LIR operator to ops stack
+                            // next is operator
+                            operator_stack.push(LirLogicalOperators::Or);
+                            index += 1;
+                        } else {
+                            if check_short_circuit(&operator_stack, &operand_stack) {
+                                // short circuit
+                                index += 3;
+                                operator_stack.pop();
+                            } else {
+                                let left = evaluate_operand_item(
+                                    OperandItem::Predicate(next_ins.as_predicate().unwrap()),
+                                    ctx,
+                                    m,
+                                );
+
+                                if left {
+                                    // short circuit
+                                    index += 3;
+                                    operand_stack.push(true);
+                                } else {
+                                    let next_next_ins = &self.instructions[index + 2];
+                                    let right = evaluate_operand_item(
+                                        OperandItem::Predicate(
+                                            next_next_ins.as_predicate().unwrap(),
+                                        ),
+                                        ctx,
+                                        m,
+                                    );
+                                    index += 3;
+                                    operand_stack.push(right);
+                                }
+
+                                compact_operation_stack(&mut operator_stack, &mut operand_stack);
+                            }
+                        }
                     }
                     LirLogicalOperators::Not => {
-                        let result = evaluate_operand_item(operand_stack.pop().unwrap(), ctx, m);
-                        operand_stack.push(OperandItem::Val(!result));
+                        let next_ins = &self.instructions[index + 1];
+                        if is_operator(next_ins) {
+                            // push LIR operator to ops stack
+                            // next is operator
+                            operator_stack.push(LirLogicalOperators::Not);
+                            index += 1;
+                        } else {
+                            if check_short_circuit(&operator_stack, &operand_stack) {
+                                // short circuit
+                                index += 2;
+                                operator_stack.pop();
+                            } else {
+                                let right = evaluate_operand_item(
+                                    OperandItem::Predicate(next_ins.as_predicate().unwrap()),
+                                    ctx,
+                                    m,
+                                );
+                                index += 2;
+                                operand_stack.push(!right);
+
+                                compact_operation_stack(&mut operator_stack, &mut operand_stack);
+                            }
+                        }
                     }
                 },
                 LirInstruction::Predicate(p) => {
-                    operand_stack.push(OperandItem::Predicate(p));
+                    if check_short_circuit(&operator_stack, &operand_stack) {
+                        // short circuit
+                        operator_stack.pop();
+                    } else {
+                        let right = evaluate_operand_item(OperandItem::Predicate(p), ctx, m);
+                        operand_stack.push(right);
+                        compact_operation_stack(&mut operator_stack, &mut operand_stack);
+                    }
+                    index += 1;
                 }
             }
+
+            if index >= self.instructions.len() {
+                // end of LirProgram
+                break;
+            }
         }
-        let res = operand_stack.pop().unwrap();
-        evaluate_operand_item(res, ctx, m)
+        debug_assert_eq!(operand_stack.len(), 1);
+        operand_stack.pop().unwrap()
     }
 }
 
