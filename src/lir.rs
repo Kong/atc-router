@@ -1,5 +1,4 @@
 use crate::ast::{Expression, LogicalExpression, Predicate};
-use crate::router::Router;
 
 #[derive(Debug)]
 pub struct LirProgram {
@@ -94,6 +93,7 @@ fn translate_helper(exp: &Expression, lir: &mut LirProgram) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::router::Router;
     use crate::schema::Schema;
     use uuid::Uuid;
 
