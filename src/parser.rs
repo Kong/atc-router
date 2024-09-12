@@ -4,6 +4,7 @@ use crate::ast::{
     BinaryOperator, Expression, Lhs, LhsTransformations, LogicalExpression, Predicate, Value,
 };
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
+use memoize::memoize;
 use pest::error::Error as ParseError;
 use pest::error::ErrorVariant;
 use pest::iterators::Pair;
@@ -184,6 +185,25 @@ fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
     Ok(num)
 }
 
+#[memoize(Capacity: 1000000)]
+pub fn parse_regex(s: String) -> Result<Regex, regex::Error> {
+    Regex::new(s.as_str())
+}
+
+#[test]
+fn expr_regex_memoization() {
+    let mut count = 0u32;
+    let now = std::time::Instant::now();
+    loop {
+        parse_regex("^foo.*$".to_string()).unwrap();
+        count += 1;
+        if count == 50000 {
+            break;
+        }
+    }
+    assert!(now.elapsed().as_secs() < 1);
+}
+
 // predicate = { lhs ~ binary_operator ~ rhs }
 fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
     let mut pairs = pair.into_inner();
@@ -195,23 +215,12 @@ fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
         lhs,
         rhs: if op == BinaryOperator::Regex {
             if let Value::String(s) = rhs {
-                let r = Regex::new(&s).map_err(|e| {
-                    ParseError::new_from_span(
-                        ErrorVariant::CustomError {
-                            message: e.to_string(),
-                        },
-                        rhs_pair.as_span(),
-                    )
-                })?;
+                let r = parse_regex(s).into_parse_result(&rhs_pair)?;
 
                 Value::Regex(r)
             } else {
-                return Err(ParseError::new_from_span(
-                    ErrorVariant::CustomError {
-                        message: "regex operator can only be used with String operands".to_string(),
-                    },
-                    rhs_pair.as_span(),
-                ));
+                return Err("regex operator can only be used with String operands")
+                    .into_parse_result(&rhs_pair);
             }
         } else {
             rhs
