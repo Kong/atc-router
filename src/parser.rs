@@ -11,7 +11,14 @@ use pest::pratt_parser::Assoc as AssocNew;
 use pest::pratt_parser::{Op, PrattParser};
 use pest::Parser;
 use regex::Regex;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::rc::Rc;
+
+thread_local! {
+    static REGEX_CACHE: RefCell<HashMap<String, Rc<Regex>>> = RefCell::new(HashMap::new());
+}
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
 /// cbindgen:ignore
@@ -195,23 +202,25 @@ fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
         lhs,
         rhs: if op == BinaryOperator::Regex {
             if let Value::String(s) = rhs {
-                let r = Regex::new(&s).map_err(|e| {
-                    ParseError::new_from_span(
-                        ErrorVariant::CustomError {
-                            message: e.to_string(),
-                        },
-                        rhs_pair.as_span(),
-                    )
-                })?;
+                REGEX_CACHE.with_borrow_mut(|cached_map| {
+                    let regex_rc = match cached_map.get(&s) {
+                        Some(stored_regex_rc) => Ok(Rc::clone(stored_regex_rc)),
+                        _ => {
+                            let r = Regex::new(&s).into_parse_result(&rhs_pair)?;
 
-                Value::Regex(r)
+                            let rc = Rc::new(r);
+                            let result = Rc::clone(&rc);
+                            cached_map.insert(s, rc);
+
+                            Ok(result)
+                        }
+                    }?;
+
+                    Ok(Value::Regex(regex_rc))
+                })?
             } else {
-                return Err(ParseError::new_from_span(
-                    ErrorVariant::CustomError {
-                        message: "regex operator can only be used with String operands".to_string(),
-                    },
-                    rhs_pair.as_span(),
-                ));
+                return Err("regex operator can only be used with String operands")
+                    .into_parse_result(&rhs_pair);
             }
         } else {
             rhs
