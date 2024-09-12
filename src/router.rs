@@ -4,7 +4,9 @@ use crate::interpreter::Execute;
 use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
+use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
+use std::rc::Rc;
 use uuid::Uuid;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
@@ -14,6 +16,7 @@ pub struct Router<'a> {
     schema: &'a Schema,
     matchers: BTreeMap<MatcherKey, Expression>,
     pub fields: HashMap<String, usize>,
+    regex_cache: HashMap<String, Rc<Regex>>,
 }
 
 impl<'a> Router<'a> {
@@ -22,17 +25,19 @@ impl<'a> Router<'a> {
             schema,
             matchers: BTreeMap::new(),
             fields: HashMap::new(),
+            regex_cache: HashMap::new(),
         }
     }
 
     pub fn add_matcher(&mut self, priority: usize, uuid: Uuid, atc: &str) -> Result<(), String> {
         let key = MatcherKey(priority, uuid);
+        // println!("Adding {} and the regex_cache count is: {}", atc, self.regex_cache.len());
 
         if self.matchers.contains_key(&key) {
             return Err("UUID already exists".to_string());
         }
 
-        let ast = parse(atc).map_err(|e| e.to_string())?;
+        let ast = parse(atc, &mut self.regex_cache).map_err(|e| e.to_string())?;
 
         ast.validate(self.schema)?;
         ast.add_to_counter(&mut self.fields);
