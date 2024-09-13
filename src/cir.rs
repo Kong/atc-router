@@ -307,108 +307,96 @@ impl Execute for CirProgram {
     }
 }
 
-fn add_to_counter_helper(
-    cir_instructions: &[CirInstruction],
-    index: usize,
-    map: &mut HashMap<String, usize>,
-) {
-    match &cir_instructions[index] {
-        CirInstruction::AndIns(and) => {
-            if !is_index(&and.left) {
-                *map.entry(and.left.as_predicate().unwrap().lhs.var_name.clone())
-                    .or_default() += 1;
-            }
-            if !is_index(&and.right) {
-                *map.entry(and.right.as_predicate().unwrap().lhs.var_name.clone())
-                    .or_default() += 1;
-            }
-        }
-        CirInstruction::OrIns(or) => {
-            if !is_index(&or.left) {
-                *map.entry(or.left.as_predicate().unwrap().lhs.var_name.clone())
-                    .or_default() += 1;
-            }
-            if !is_index(&or.right) {
-                *map.entry(or.right.as_predicate().unwrap().lhs.var_name.clone())
-                    .or_default() += 1;
-            }
-        }
-        CirInstruction::NotIns(not) => {
-            if !is_index(&not.right) {
-                *map.entry(not.right.as_predicate().unwrap().lhs.var_name.clone())
-                    .or_default() += 1;
-            }
-        }
-    }
-}
-
-fn remove_from_counter_helper(
-    cir_instructions: &[CirInstruction],
-    index: usize,
-    map: &mut HashMap<String, usize>,
-) {
-    match &cir_instructions[index] {
-        CirInstruction::AndIns(and) => {
-            if !is_index(&and.left) {
-                let left = and.left.as_predicate().unwrap();
-                let val = map.get_mut(&left.lhs.var_name).unwrap();
-                *val -= 1;
-
-                if *val == 0 {
-                    assert!(map.remove(&left.lhs.var_name).is_some());
-                }
-            }
-
-            if !is_index(&and.right) {
-                let right = and.right.as_predicate().unwrap();
-                let val = map.get_mut(&right.lhs.var_name).unwrap();
-                *val -= 1;
-
-                if *val == 0 {
-                    assert!(map.remove(&right.lhs.var_name).is_some());
-                }
-            }
-        }
-        CirInstruction::OrIns(or) => {
-            if !is_index(&or.left) {
-                let left = or.left.as_predicate().unwrap();
-                let val = map.get_mut(&left.lhs.var_name).unwrap();
-                *val -= 1;
-
-                if *val == 0 {
-                    assert!(map.remove(&left.lhs.var_name).is_some());
-                }
-            }
-
-            if !is_index(&or.right) {
-                let right = or.right.as_predicate().unwrap();
-                let val = map.get_mut(&right.lhs.var_name).unwrap();
-                *val -= 1;
-
-                if *val == 0 {
-                    assert!(map.remove(&right.lhs.var_name).is_some());
-                }
-            }
-        }
-        CirInstruction::NotIns(not) => {
-            let right = not.right.as_predicate().unwrap();
-            let val = map.get_mut(&right.lhs.var_name).unwrap();
-            *val -= 1;
-
-            if *val == 0 {
-                assert!(map.remove(&right.lhs.var_name).is_some());
-            }
-        }
-    }
-}
-
 impl FieldCounter for CirProgram {
     fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
-        add_to_counter_helper(&self.instructions, self.instructions.len() - 1, map);
+        for instruction in &self.instructions {
+            match &instruction {
+                CirInstruction::AndIns(and) => {
+                    if !is_index(&and.left) {
+                        *map.entry(and.left.as_predicate().unwrap().lhs.var_name.clone())
+                            .or_default() += 1;
+                    }
+                    if !is_index(&and.right) {
+                        *map.entry(and.right.as_predicate().unwrap().lhs.var_name.clone())
+                            .or_default() += 1;
+                    }
+                }
+                CirInstruction::OrIns(or) => {
+                    if !is_index(&or.left) {
+                        *map.entry(or.left.as_predicate().unwrap().lhs.var_name.clone())
+                            .or_default() += 1;
+                    }
+                    if !is_index(&or.right) {
+                        *map.entry(or.right.as_predicate().unwrap().lhs.var_name.clone())
+                            .or_default() += 1;
+                    }
+                }
+                CirInstruction::NotIns(not) => {
+                    if !is_index(&not.right) {
+                        *map.entry(not.right.as_predicate().unwrap().lhs.var_name.clone())
+                            .or_default() += 1;
+                    }
+                }
+            }
+        }
     }
 
     fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
-        remove_from_counter_helper(&self.instructions, self.instructions.len() - 1, map);
+        for instruction in &self.instructions {
+            match &instruction {
+                CirInstruction::AndIns(and) => {
+                    if !is_index(&and.left) {
+                        let left = and.left.as_predicate().unwrap();
+                        let val = map.get_mut(&left.lhs.var_name).unwrap();
+                        *val -= 1;
+
+                        if *val == 0 {
+                            assert!(map.remove(&left.lhs.var_name).is_some());
+                        }
+                    }
+
+                    if !is_index(&and.right) {
+                        let right = and.right.as_predicate().unwrap();
+                        let val = map.get_mut(&right.lhs.var_name).unwrap();
+                        *val -= 1;
+
+                        if *val == 0 {
+                            assert!(map.remove(&right.lhs.var_name).is_some());
+                        }
+                    }
+                }
+                CirInstruction::OrIns(or) => {
+                    if !is_index(&or.left) {
+                        let left = or.left.as_predicate().unwrap();
+                        let val = map.get_mut(&left.lhs.var_name).unwrap();
+                        *val -= 1;
+
+                        if *val == 0 {
+                            assert!(map.remove(&left.lhs.var_name).is_some());
+                        }
+                    }
+
+                    if !is_index(&or.right) {
+                        let right = or.right.as_predicate().unwrap();
+                        let val = map.get_mut(&right.lhs.var_name).unwrap();
+                        *val -= 1;
+
+                        if *val == 0 {
+                            assert!(map.remove(&right.lhs.var_name).is_some());
+                        }
+                    }
+                }
+                CirInstruction::NotIns(not) => {
+                    let right = not.right.as_predicate().unwrap();
+                    let val = map.get_mut(&right.lhs.var_name).unwrap();
+                    *val -= 1;
+
+                    if *val == 0 {
+                        assert!(map.remove(&right.lhs.var_name).is_some());
+                    }
+                }
+            }
+        }
     }
 }
 
