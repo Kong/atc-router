@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 // To run this benchmark, execute the following command:
 // ```shell
-// cargo bench --bench match_int
+// cargo bench --bench not_match_int
 // ```
 
 const N: usize = 100;
@@ -22,7 +22,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let mut router = Router::new(&schema);
 
-    let expr = format!("((a < 1 || a == {}) && a != 0) && a != 1", N);
+    let expr = format!("((a < 1 || a == {}) && a != 0) && a == 1", N);
     let variant = make_uuid(2024);
     let uuid = Uuid::try_from(variant.as_str()).unwrap();
     router.add_matcher(1, uuid, &expr).unwrap();
@@ -33,7 +33,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             for _i in 0..N {
                 let is_match = router.execute(&mut context);
-                assert!(is_match);
+                assert!(!is_match);
             }
         });
     });
