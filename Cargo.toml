@@ -37,7 +37,15 @@ name = "match_int"
 harness = false
 
 [[bench]]
+name = "not_match_int"
+harness = false
+
+[[bench]]
 name = "match_string"
+harness = false
+
+[[bench]]
+name = "not_match_string"
 harness = false
 
 [[bench]]
