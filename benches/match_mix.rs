@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 // To run this benchmark, execute the following command:
 // ```shell
-// cargo bench --bench match_string
+// cargo bench --bench match_mix
 // ```
 
 const N: usize = 100000;
@@ -18,23 +18,26 @@ fn make_uuid(a: usize) -> String {
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut schema = Schema::default();
-    schema.add_field("http.path.segments.*", Type::String);
-    schema.add_field("http.path.segments.len", Type::Int);
+    schema.add_field("http.path", atc_router::ast::Type::String);
+    schema.add_field("http.version", atc_router::ast::Type::String);
+    schema.add_field("a", atc_router::ast::Type::Int);
 
     let mut router = Router::new(&schema);
 
-    let expr = format!(
-        r#"http.path.segments.0_1 == "test/run" && http.path.segments.3 == "address{}" && http.path.segments.len == 3"#,
-        2024
-    );
     let variant = make_uuid(2024);
     let uuid = Uuid::try_from(variant.as_str()).unwrap();
-    router.add_matcher(2, uuid, &expr).unwrap();
+    router.add_matcher(0, uuid, r#"(http.path == "hello" && http.version == "1.1") || !(( a == 2) && ( a == 9 )) || !(a == 1) || ( a == 3 && a == 4) && !(a == 5)"#).unwrap();
 
     let mut ctx_match = Context::new(&schema);
-    ctx_match.add_value("http.path.segments.0_1", "test/run".to_string().into());
-    ctx_match.add_value("http.path.segments.3", "address2024".to_string().into());
-    ctx_match.add_value("http.path.segments.len", Value::Int(3 as i64));
+    ctx_match.add_value(
+        "http.path",
+        atc_router::ast::Value::String("hello".to_string()),
+    );
+    ctx_match.add_value(
+        "http.version",
+        atc_router::ast::Value::String("1.1".to_string()),
+    );
+    ctx_match.add_value("a", Value::Int(3 as i64));
 
     c.bench_function("Match", |b| {
         b.iter(|| {

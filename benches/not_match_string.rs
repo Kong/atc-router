@@ -10,7 +10,7 @@ use uuid::Uuid;
 // cargo bench --bench not_match_string
 // ```
 
-const N: usize = 100;
+const N: usize = 100000;
 
 fn make_uuid(a: usize) -> String {
     format!("8cb2a7d0-c775-4ed9-989f-{:012}", a)
