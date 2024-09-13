@@ -1,6 +1,7 @@
+use crate::cir::CirProgram;
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
-use crate::lir::{LirProgram, Translate};
+use crate::lir::Translate;
 use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
@@ -12,7 +13,7 @@ struct MatcherKey(usize, Uuid);
 
 pub struct Router<'a> {
     schema: &'a Schema,
-    matchers: BTreeMap<MatcherKey, LirProgram>,
+    matchers: BTreeMap<MatcherKey, CirProgram>,
     pub fields: HashMap<String, usize>,
 }
 
@@ -34,9 +35,9 @@ impl<'a> Router<'a> {
 
         let ast = parse(atc).map_err(|e| e.to_string())?;
         ast.validate(self.schema)?;
-        let lir = ast.translate();
-        lir.add_to_counter(&mut self.fields);
-        assert!(self.matchers.insert(key, lir).is_none());
+        let cir = ast.translate().translate();
+        cir.add_to_counter(&mut self.fields);
+        assert!(self.matchers.insert(key, cir).is_none());
 
         Ok(())
     }
@@ -44,8 +45,8 @@ impl<'a> Router<'a> {
     pub fn remove_matcher(&mut self, priority: usize, uuid: Uuid) -> bool {
         let key = MatcherKey(priority, uuid);
 
-        if let Some(lir) = self.matchers.remove(&key) {
-            lir.remove_from_counter(&mut self.fields);
+        if let Some(cir) = self.matchers.remove(&key) {
+            cir.remove_from_counter(&mut self.fields);
             return true;
         }
 

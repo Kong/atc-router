@@ -1,5 +1,4 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
-use crate::lir::{LirInstruction, LirProgram};
 use crate::schema::Schema;
 use std::collections::HashMap;
 
@@ -104,39 +103,6 @@ impl Validate for Expression {
                             }
                             _ => Err("Contains operator only supports string operands".to_string())
                         }
-                    }
-                }
-            }
-        }
-    }
-}
-
-impl FieldCounter for LirProgram {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
-        for instruction in &self.instructions {
-            match instruction {
-                LirInstruction::LogicalOperator(_op) => {
-                    // need to do nothing here
-                }
-                LirInstruction::Predicate(p) => {
-                    *map.entry(p.lhs.var_name.clone()).or_default() += 1;
-                }
-            }
-        }
-    }
-
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
-        for instruction in &self.instructions {
-            match instruction {
-                LirInstruction::LogicalOperator(_op) => {
-                    // need to do nothing here
-                }
-                LirInstruction::Predicate(p) => {
-                    let val = map.get_mut(&p.lhs.var_name).unwrap();
-                    *val -= 1;
-
-                    if *val == 0 {
-                        assert!(map.remove(&p.lhs.var_name).is_some());
                     }
                 }
             }

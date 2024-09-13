@@ -18,6 +18,7 @@ for more detailed explainations of the concepts and APIs.
 */
 
 pub mod ast;
+pub mod cir;
 pub mod context;
 pub mod interpreter;
 pub mod lir;
