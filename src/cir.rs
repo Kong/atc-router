@@ -93,7 +93,7 @@ fn reduce_translation_stack(
     operand_stack: &mut Vec<CirOperand>,
 ) {
     loop {
-        if !operator_stack.is_empty() {
+        if operator_stack.len() > 0 {
             match &operator_stack.last().unwrap() {
                 LirLogicalOperators::And => {
                     if operand_stack.len() >= 2 {
@@ -126,7 +126,7 @@ fn reduce_translation_stack(
                     }
                 }
                 LirLogicalOperators::Not => {
-                    if !operand_stack.is_empty() {
+                    if operand_stack.len() >= 1 {
                         let right = operand_stack.pop().unwrap();
                         let not_ins = NotIns {
                             right: right.clone(),
@@ -263,11 +263,13 @@ fn execute_helper(
 
             if !left_val {
                 // short circuit
-                false
-            } else if is_index(&and.right) {
-                execute_helper(cir_instructions, and.right.as_index().unwrap(), ctx, m)
+                return false;
             } else {
-                and.right.as_predicate().unwrap().execute(ctx, m)
+                if is_index(&and.right) {
+                    return execute_helper(cir_instructions, and.right.as_index().unwrap(), ctx, m);
+                } else {
+                    return and.right.as_predicate().unwrap().execute(ctx, m);
+                }
             }
         }
         CirInstruction::OrIns(or) => {
@@ -279,11 +281,13 @@ fn execute_helper(
 
             if left_val {
                 // short circuit
-                true
-            } else if is_index(&or.right) {
-                execute_helper(cir_instructions, or.right.as_index().unwrap(), ctx, m)
+                return true;
             } else {
-                or.right.as_predicate().unwrap().execute(ctx, m)
+                if is_index(&or.right) {
+                    return execute_helper(cir_instructions, or.right.as_index().unwrap(), ctx, m);
+                } else {
+                    return or.right.as_predicate().unwrap().execute(ctx, m);
+                }
             }
         }
         CirInstruction::NotIns(not) => {
@@ -292,7 +296,7 @@ fn execute_helper(
             } else {
                 not.right.as_predicate().unwrap().execute(ctx, m)
             };
-            !right_val
+            return !right_val;
         }
     }
 }
