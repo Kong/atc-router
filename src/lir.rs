@@ -117,6 +117,24 @@ impl Translate for Expression {
     fn translate(&self) -> Self::Output {
         let mut lir = LirProgram::new();
         lir_translate_helper(self, &mut lir);
+
+        #[cfg(debug_assertions)]
+        {
+            println!(
+                "The vector capacity of lir instructions before shrink_to_fit: {} ",
+                lir.instructions.capacity()
+            );
+        }
+
+        lir.instructions.shrink_to_fit(); // shrink the memory
+
+        #[cfg(debug_assertions)]
+        {
+            println!(
+                "The vector capacity of lir instructions after shrink_to_fit: {} ",
+                lir.instructions.capacity()
+            );
+        }
         #[cfg(debug_assertions)]
         {
             use std::mem;
@@ -133,7 +151,7 @@ impl Translate for Expression {
             println!(
                 "The size of lir program: {} bytes",
                 mem::size_of::<LirProgram>()
-                    + mem::size_of::<LirInstruction>() * lir.instructions.len()
+                    + mem::size_of::<LirInstruction>() * lir.instructions.capacity()
             );
             println!("The number of lir instructions: {}", lir.instructions.len());
             println!("The lir instructions:");

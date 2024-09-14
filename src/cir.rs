@@ -88,11 +88,28 @@ impl Translate for LirProgram {
         cir_translate_helper(self, &mut cir);
         #[cfg(debug_assertions)]
         {
+            println!(
+                "The vector capacity of cir instructions before shrink_to_fit: {} ",
+                cir.instructions.capacity()
+            );
+        }
+
+        cir.instructions.shrink_to_fit(); // shrink the memory
+
+        #[cfg(debug_assertions)]
+        {
+            println!(
+                "The vector capacity of cir instructions after shrink_to_fit: {} ",
+                cir.instructions.capacity()
+            );
+        }
+        #[cfg(debug_assertions)]
+        {
             use std::mem;
             println!(
                 "The size of cir program: {} bytes",
                 mem::size_of::<CirProgram>()
-                    + mem::size_of::<CirInstruction>() * cir.instructions.len()
+                    + mem::size_of::<CirInstruction>() * cir.instructions.capacity()
             );
             println!("The number of cir instructions: {}", cir.instructions.len());
             println!("The cir instructions:");
