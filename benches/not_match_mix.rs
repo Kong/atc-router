@@ -37,15 +37,15 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut ctx_match = Context::new(&schema);
     ctx_match.add_value(
         "http.path",
-        atc_router::ast::Value::String("hello_world".to_string()),
+        atc_router::ast::Value::String("hello49999".to_string()),
     );
     ctx_match.add_value(
         "http.version",
         atc_router::ast::Value::String("1.1".to_string()),
     );
-    ctx_match.add_value("a", Value::Int(3 as i64));
+    ctx_match.add_value("a", Value::Int(5 as i64));
 
-    c.bench_function("Match", |b| {
+    c.bench_function("Doesn't Match", |b| {
         b.iter(|| {
             for _i in 0..N {
                 let is_match = router.execute(&mut ctx_match);
