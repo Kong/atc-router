@@ -28,7 +28,9 @@ pub enum LirInstruction {
 impl LirInstruction {
     pub fn as_predicate(&self) -> Option<&Predicate> {
         match &self {
-            LirInstruction::LogicalOperator(_ops) => None, // never be here, otherwise something wrong
+            LirInstruction::LogicalOperator(_ops) => {
+                panic!("Call as_predicate on LogicalOperator Operand, LirProgram is wrong.")
+            }
             LirInstruction::Predicate(p) => Some(p),
         }
     }
