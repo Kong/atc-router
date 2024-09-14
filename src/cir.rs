@@ -270,14 +270,12 @@ fn execute_helper(
                 and.left.as_predicate().unwrap().execute(ctx, m)
             };
 
-            if !left_val {
-                // short circuit
-                false
-            } else if is_index(&and.right) {
-                execute_helper(cir_instructions, and.right.as_index().unwrap(), ctx, m)
-            } else {
-                and.right.as_predicate().unwrap().execute(ctx, m)
-            }
+            left_val
+                && if is_index(&and.right) {
+                    execute_helper(cir_instructions, and.right.as_index().unwrap(), ctx, m)
+                } else {
+                    and.right.as_predicate().unwrap().execute(ctx, m)
+                }
         }
         CirInstruction::OrIns(or) => {
             let left_val = if is_index(&or.left) {
@@ -286,14 +284,12 @@ fn execute_helper(
                 or.left.as_predicate().unwrap().execute(ctx, m)
             };
 
-            if left_val {
-                // short circuit
-                true
-            } else if is_index(&or.right) {
-                execute_helper(cir_instructions, or.right.as_index().unwrap(), ctx, m)
-            } else {
-                or.right.as_predicate().unwrap().execute(ctx, m)
-            }
+            left_val
+                || if is_index(&or.right) {
+                    execute_helper(cir_instructions, or.right.as_index().unwrap(), ctx, m)
+                } else {
+                    or.right.as_predicate().unwrap().execute(ctx, m)
+                }
         }
         CirInstruction::NotIns(not) => {
             let right_val = if is_index(&not.right) {
