@@ -82,6 +82,16 @@ impl Translate for LirProgram {
     fn translate(&self) -> Self::Output {
         let mut cir = CirProgram::new();
         cir_translate_helper(self, &mut cir);
+        #[cfg(debug_assertions)]
+        {
+            use std::mem;
+            println!("The number of cir instructions: {}", cir.instructions.len());
+            println!(
+                "The size of cir program: {} bytes",
+                mem::size_of::<CirProgram>()
+                    + mem::size_of::<CirInstruction>() * cir.instructions.len()
+            );
+        }
         cir
     }
 }
