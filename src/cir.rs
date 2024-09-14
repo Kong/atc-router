@@ -85,12 +85,14 @@ impl Translate for LirProgram {
         #[cfg(debug_assertions)]
         {
             use std::mem;
-            println!("The number of cir instructions: {}", cir.instructions.len());
             println!(
                 "The size of cir program: {} bytes",
                 mem::size_of::<CirProgram>()
                     + mem::size_of::<CirInstruction>() * cir.instructions.len()
             );
+            println!("The number of cir instructions: {}", cir.instructions.len());
+            println!("The cir instructions:");
+            println!("{:?}", cir.instructions);
         }
         cir
     }
@@ -109,10 +111,7 @@ fn reduce_translation_stack(
                     if operand_stack.len() >= 2 {
                         let right = operand_stack.pop().unwrap();
                         let left = operand_stack.pop().unwrap();
-                        let and_ins = AndIns {
-                            left: left.clone(),
-                            right: right.clone(),
-                        };
+                        let and_ins = AndIns { left, right };
                         cir_instructions.push(CirInstruction::AndIns(and_ins));
                         operand_stack.push(CirOperand::Index(cir_instructions.len() - 1));
                         operator_stack.pop();
@@ -124,10 +123,7 @@ fn reduce_translation_stack(
                     if operand_stack.len() >= 2 {
                         let right = operand_stack.pop().unwrap();
                         let left = operand_stack.pop().unwrap();
-                        let or_ins = OrIns {
-                            left: left.clone(),
-                            right: right.clone(),
-                        };
+                        let or_ins = OrIns { left, right };
                         cir_instructions.push(CirInstruction::OrIns(or_ins));
                         operand_stack.push(CirOperand::Index(cir_instructions.len() - 1));
                         operator_stack.pop();
@@ -138,9 +134,7 @@ fn reduce_translation_stack(
                 LirLogicalOperators::Not => {
                     if !operand_stack.is_empty() {
                         let right = operand_stack.pop().unwrap();
-                        let not_ins = NotIns {
-                            right: right.clone(),
-                        };
+                        let not_ins = NotIns { right };
                         cir_instructions.push(CirInstruction::NotIns(not_ins));
                         operand_stack.push(CirOperand::Index(cir_instructions.len() - 1));
                         operator_stack.pop();
@@ -258,7 +252,6 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
     debug_assert_eq!(operator_stack.len(), 0);
 }
 
-#[inline]
 fn execute_helper(
     cir_instructions: &[CirInstruction],
     index: usize,

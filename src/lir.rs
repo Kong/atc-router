@@ -54,6 +54,62 @@ pub trait Translate {
     fn translate(&self) -> Self::Output;
 }
 
+#[cfg(debug_assertions)]
+trait CountSize {
+    type Output;
+    fn count_size(&self) -> Self::Output;
+}
+#[cfg(debug_assertions)]
+#[derive(Debug, Default)]
+struct ExpressionInsBytes {
+    ins_number: usize,
+    ins_bytes: usize,
+}
+#[cfg(debug_assertions)]
+impl ExpressionInsBytes {
+    pub fn new() -> Self {
+        Self {
+            ins_number: 0,
+            ins_bytes: 0,
+        }
+    }
+}
+#[cfg(debug_assertions)]
+fn expression_count_heler(exp: &Expression, counter: &mut ExpressionInsBytes) {
+    use crate::ast::{Expression, LogicalExpression};
+    use std::mem;
+    counter.ins_bytes += mem::size_of::<Expression>();
+    match exp {
+        Expression::Logical(l) => {
+            counter.ins_number += 1;
+            counter.ins_bytes += mem::size_of::<LogicalExpression>();
+            match l.as_ref() {
+                LogicalExpression::And(l, r) => {
+                    expression_count_heler(l, counter);
+                    expression_count_heler(r, counter);
+                }
+                LogicalExpression::Or(l, r) => {
+                    expression_count_heler(l, counter);
+                    expression_count_heler(r, counter);
+                }
+                LogicalExpression::Not(r) => {
+                    expression_count_heler(r, counter);
+                }
+            }
+        }
+        Expression::Predicate(_p) => {}
+    }
+}
+#[cfg(debug_assertions)]
+impl CountSize for Expression {
+    type Output = ExpressionInsBytes;
+    fn count_size(&self) -> Self::Output {
+        let mut counter = ExpressionInsBytes::new();
+        expression_count_heler(self, &mut counter);
+        counter
+    }
+}
+
 impl Translate for Expression {
     type Output = LirProgram;
     fn translate(&self) -> Self::Output {
@@ -62,12 +118,24 @@ impl Translate for Expression {
         #[cfg(debug_assertions)]
         {
             use std::mem;
-            println!("The number of lir instructions: {}", lir.instructions.len());
+            let ast_counter = self.count_size();
+
+            println!(
+                "The size of AST instructions: {} bytes",
+                ast_counter.ins_bytes
+            );
+            println!("The number of AST instructions: {}", ast_counter.ins_number);
+            println!("The AST instructions:");
+            println!("{:?}", self);
+
             println!(
                 "The size of lir program: {} bytes",
                 mem::size_of::<LirProgram>()
                     + mem::size_of::<LirInstruction>() * lir.instructions.len()
             );
+            println!("The number of lir instructions: {}", lir.instructions.len());
+            println!("The lir instructions:");
+            println!("{:?}", lir.instructions);
         }
         lir
     }
