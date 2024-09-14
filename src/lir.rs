@@ -26,6 +26,7 @@ pub enum LirInstruction {
 }
 
 impl LirInstruction {
+    #[inline]
     pub fn as_predicate(&self) -> &Predicate {
         match &self {
             LirInstruction::LogicalOperator(_ops) => {

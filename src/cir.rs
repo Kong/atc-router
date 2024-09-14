@@ -55,6 +55,7 @@ pub enum CirOperand {
 }
 
 impl CirOperand {
+    #[inline]
     pub fn as_predicate(&self) -> &Predicate {
         match &self {
             CirOperand::Index(_index) => {
@@ -64,6 +65,7 @@ impl CirOperand {
         }
     }
 
+    #[inline]
     pub fn as_index(&self) -> usize {
         match &self {
             CirOperand::Index(index) => *index,
@@ -74,6 +76,7 @@ impl CirOperand {
     }
 }
 
+#[inline]
 fn is_index(cir_operand: &CirOperand) -> bool {
     match cir_operand {
         CirOperand::Index(_index) => true,
