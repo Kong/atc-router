@@ -93,7 +93,7 @@ fn reduce_translation_stack(
     operand_stack: &mut Vec<CirOperand>,
 ) {
     loop {
-        if operator_stack.len() > 0 {
+        if !operator_stack.is_empty() {
             match &operator_stack.last().unwrap() {
                 LirLogicalOperators::And => {
                     if operand_stack.len() >= 2 {
@@ -126,7 +126,7 @@ fn reduce_translation_stack(
                     }
                 }
                 LirLogicalOperators::Not => {
-                    if operand_stack.len() >= 1 {
+                    if !operand_stack.is_empty() {
                         let right = operand_stack.pop().unwrap();
                         let not_ins = NotIns {
                             right: right.clone(),
@@ -146,6 +146,7 @@ fn reduce_translation_stack(
     }
 }
 
+#[inline]
 fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
     let mut operand_stack: Vec<CirOperand> = Vec::new();
     let mut operator_stack: Vec<LirLogicalOperators> = Vec::new();
@@ -247,6 +248,7 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
     debug_assert_eq!(operator_stack.len(), 0);
 }
 
+#[inline]
 fn execute_helper(
     cir_instructions: &[CirInstruction],
     index: usize,
@@ -263,13 +265,11 @@ fn execute_helper(
 
             if !left_val {
                 // short circuit
-                return false;
+                false
+            } else if is_index(&and.right) {
+                execute_helper(cir_instructions, and.right.as_index().unwrap(), ctx, m)
             } else {
-                if is_index(&and.right) {
-                    return execute_helper(cir_instructions, and.right.as_index().unwrap(), ctx, m);
-                } else {
-                    return and.right.as_predicate().unwrap().execute(ctx, m);
-                }
+                and.right.as_predicate().unwrap().execute(ctx, m)
             }
         }
         CirInstruction::OrIns(or) => {
@@ -281,13 +281,11 @@ fn execute_helper(
 
             if left_val {
                 // short circuit
-                return true;
+                true
+            } else if is_index(&or.right) {
+                execute_helper(cir_instructions, or.right.as_index().unwrap(), ctx, m)
             } else {
-                if is_index(&or.right) {
-                    return execute_helper(cir_instructions, or.right.as_index().unwrap(), ctx, m);
-                } else {
-                    return or.right.as_predicate().unwrap().execute(ctx, m);
-                }
+                or.right.as_predicate().unwrap().execute(ctx, m)
             }
         }
         CirInstruction::NotIns(not) => {
@@ -296,7 +294,7 @@ fn execute_helper(
             } else {
                 not.right.as_predicate().unwrap().execute(ctx, m)
             };
-            return !right_val;
+            !right_val
         }
     }
 }
@@ -387,12 +385,14 @@ impl FieldCounter for CirProgram {
                     }
                 }
                 CirInstruction::NotIns(not) => {
-                    let right = not.right.as_predicate().unwrap();
-                    let val = map.get_mut(&right.lhs.var_name).unwrap();
-                    *val -= 1;
+                    if !is_index(&not.right) {
+                        let right = not.right.as_predicate().unwrap();
+                        let val = map.get_mut(&right.lhs.var_name).unwrap();
+                        *val -= 1;
 
-                    if *val == 0 {
-                        assert!(map.remove(&right.lhs.var_name).is_some());
+                        if *val == 0 {
+                            assert!(map.remove(&right.lhs.var_name).is_some());
+                        }
                     }
                 }
             }
