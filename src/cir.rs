@@ -57,7 +57,9 @@ pub enum CirOperand {
 impl CirOperand {
     pub fn as_predicate(&self) -> Option<&Predicate> {
         match &self {
-            CirOperand::Index(_index) => None, // never be here, otherwise something wrong
+            CirOperand::Index(_index) => {
+                panic!("Call as_predicate on index Operand, CirProgram is wrong.")
+            }
             CirOperand::Predicate(p) => Some(p),
         }
     }
@@ -65,7 +67,9 @@ impl CirOperand {
     pub fn as_index(&self) -> Option<usize> {
         match &self {
             CirOperand::Index(index) => Some(*index),
-            CirOperand::Predicate(_p) => None, // never be here, otherwise something wrong
+            CirOperand::Predicate(_p) => {
+                panic!("Call as_index on predicate Operand, CirProgram is wrong.")
+            }
         }
     }
 }
