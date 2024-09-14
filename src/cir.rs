@@ -55,18 +55,18 @@ pub enum CirOperand {
 }
 
 impl CirOperand {
-    pub fn as_predicate(&self) -> Option<&Predicate> {
+    pub fn as_predicate(&self) -> &Predicate {
         match &self {
             CirOperand::Index(_index) => {
                 panic!("Call as_predicate on index Operand, CirProgram is wrong.")
             }
-            CirOperand::Predicate(p) => Some(p),
+            CirOperand::Predicate(p) => p,
         }
     }
 
-    pub fn as_index(&self) -> Option<usize> {
+    pub fn as_index(&self) -> usize {
         match &self {
-            CirOperand::Index(index) => Some(*index),
+            CirOperand::Index(index) => *index,
             CirOperand::Predicate(_p) => {
                 panic!("Call as_index on predicate Operand, CirProgram is wrong.")
             }
@@ -171,10 +171,8 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
                     } else {
                         let next_next_ins = &lir.instructions[index + 2];
                         let and_ins = AndIns {
-                            left: CirOperand::Predicate(next_ins.as_predicate().unwrap().clone()),
-                            right: CirOperand::Predicate(
-                                next_next_ins.as_predicate().unwrap().clone(),
-                            ),
+                            left: CirOperand::Predicate(next_ins.as_predicate().clone()),
+                            right: CirOperand::Predicate(next_next_ins.as_predicate().clone()),
                         };
                         cir.instructions.push(CirInstruction::AndIns(and_ins));
                         operand_stack.push(CirOperand::Index(cir.instructions.len() - 1));
@@ -196,10 +194,8 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
                     } else {
                         let next_next_ins = &lir.instructions[index + 2];
                         let or_ins = OrIns {
-                            left: CirOperand::Predicate(next_ins.as_predicate().unwrap().clone()),
-                            right: CirOperand::Predicate(
-                                next_next_ins.as_predicate().unwrap().clone(),
-                            ),
+                            left: CirOperand::Predicate(next_ins.as_predicate().clone()),
+                            right: CirOperand::Predicate(next_next_ins.as_predicate().clone()),
                         };
                         cir.instructions.push(CirInstruction::OrIns(or_ins));
                         operand_stack.push(CirOperand::Index(cir.instructions.len() - 1));
@@ -220,9 +216,9 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
                         operator_stack.push(LirLogicalOperators::Not);
                         index += 1;
                     } else {
-                        next_ins.as_predicate().unwrap(); //right
+                        next_ins.as_predicate(); //right
                         let not_ins = NotIns {
-                            right: CirOperand::Predicate(next_ins.as_predicate().unwrap().clone()),
+                            right: CirOperand::Predicate(next_ins.as_predicate().clone()),
                         };
                         cir.instructions.push(CirInstruction::NotIns(not_ins));
                         operand_stack.push(CirOperand::Index(cir.instructions.len() - 1));
@@ -265,37 +261,37 @@ fn execute_helper(
     match &cir_instructions[index] {
         CirInstruction::AndIns(and) => {
             let left_val = if is_index(&and.left) {
-                execute_helper(cir_instructions, and.left.as_index().unwrap(), ctx, m)
+                execute_helper(cir_instructions, and.left.as_index(), ctx, m)
             } else {
-                and.left.as_predicate().unwrap().execute(ctx, m)
+                and.left.as_predicate().execute(ctx, m)
             };
 
             left_val
                 && if is_index(&and.right) {
-                    execute_helper(cir_instructions, and.right.as_index().unwrap(), ctx, m)
+                    execute_helper(cir_instructions, and.right.as_index(), ctx, m)
                 } else {
-                    and.right.as_predicate().unwrap().execute(ctx, m)
+                    and.right.as_predicate().execute(ctx, m)
                 }
         }
         CirInstruction::OrIns(or) => {
             let left_val = if is_index(&or.left) {
-                execute_helper(cir_instructions, or.left.as_index().unwrap(), ctx, m)
+                execute_helper(cir_instructions, or.left.as_index(), ctx, m)
             } else {
-                or.left.as_predicate().unwrap().execute(ctx, m)
+                or.left.as_predicate().execute(ctx, m)
             };
 
             left_val
                 || if is_index(&or.right) {
-                    execute_helper(cir_instructions, or.right.as_index().unwrap(), ctx, m)
+                    execute_helper(cir_instructions, or.right.as_index(), ctx, m)
                 } else {
-                    or.right.as_predicate().unwrap().execute(ctx, m)
+                    or.right.as_predicate().execute(ctx, m)
                 }
         }
         CirInstruction::NotIns(not) => {
             let right_val = if is_index(&not.right) {
-                execute_helper(cir_instructions, not.right.as_index().unwrap(), ctx, m)
+                execute_helper(cir_instructions, not.right.as_index(), ctx, m)
             } else {
-                not.right.as_predicate().unwrap().execute(ctx, m)
+                not.right.as_predicate().execute(ctx, m)
             };
             !right_val
         }
@@ -314,27 +310,27 @@ impl FieldCounter for CirProgram {
             match &instruction {
                 CirInstruction::AndIns(and) => {
                     if !is_index(&and.left) {
-                        *map.entry(and.left.as_predicate().unwrap().lhs.var_name.clone())
+                        *map.entry(and.left.as_predicate().lhs.var_name.clone())
                             .or_default() += 1;
                     }
                     if !is_index(&and.right) {
-                        *map.entry(and.right.as_predicate().unwrap().lhs.var_name.clone())
+                        *map.entry(and.right.as_predicate().lhs.var_name.clone())
                             .or_default() += 1;
                     }
                 }
                 CirInstruction::OrIns(or) => {
                     if !is_index(&or.left) {
-                        *map.entry(or.left.as_predicate().unwrap().lhs.var_name.clone())
+                        *map.entry(or.left.as_predicate().lhs.var_name.clone())
                             .or_default() += 1;
                     }
                     if !is_index(&or.right) {
-                        *map.entry(or.right.as_predicate().unwrap().lhs.var_name.clone())
+                        *map.entry(or.right.as_predicate().lhs.var_name.clone())
                             .or_default() += 1;
                     }
                 }
                 CirInstruction::NotIns(not) => {
                     if !is_index(&not.right) {
-                        *map.entry(not.right.as_predicate().unwrap().lhs.var_name.clone())
+                        *map.entry(not.right.as_predicate().lhs.var_name.clone())
                             .or_default() += 1;
                     }
                 }
@@ -347,7 +343,7 @@ impl FieldCounter for CirProgram {
             match &instruction {
                 CirInstruction::AndIns(and) => {
                     if !is_index(&and.left) {
-                        let left = and.left.as_predicate().unwrap();
+                        let left = and.left.as_predicate();
                         let val = map.get_mut(&left.lhs.var_name).unwrap();
                         *val -= 1;
 
@@ -357,7 +353,7 @@ impl FieldCounter for CirProgram {
                     }
 
                     if !is_index(&and.right) {
-                        let right = and.right.as_predicate().unwrap();
+                        let right = and.right.as_predicate();
                         let val = map.get_mut(&right.lhs.var_name).unwrap();
                         *val -= 1;
 
@@ -368,7 +364,7 @@ impl FieldCounter for CirProgram {
                 }
                 CirInstruction::OrIns(or) => {
                     if !is_index(&or.left) {
-                        let left = or.left.as_predicate().unwrap();
+                        let left = or.left.as_predicate();
                         let val = map.get_mut(&left.lhs.var_name).unwrap();
                         *val -= 1;
 
@@ -378,7 +374,7 @@ impl FieldCounter for CirProgram {
                     }
 
                     if !is_index(&or.right) {
-                        let right = or.right.as_predicate().unwrap();
+                        let right = or.right.as_predicate();
                         let val = map.get_mut(&right.lhs.var_name).unwrap();
                         *val -= 1;
 
@@ -389,7 +385,7 @@ impl FieldCounter for CirProgram {
                 }
                 CirInstruction::NotIns(not) => {
                     if !is_index(&not.right) {
-                        let right = not.right.as_predicate().unwrap();
+                        let right = not.right.as_predicate();
                         let val = map.get_mut(&right.lhs.var_name).unwrap();
                         *val -= 1;
 
