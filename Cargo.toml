@@ -33,31 +33,11 @@ ffi = []
 serde = ["cidr/serde", "dep:serde", "dep:serde_regex"]
 
 [[bench]]
-name = "match_mem"
-harness = false
-
-[[bench]]
 name = "match_mix"
 harness = false
 
 [[bench]]
 name = "not_match_mix"
-harness = false
-
-[[bench]]
-name = "match_int"
-harness = false
-
-[[bench]]
-name = "not_match_int"
-harness = false
-
-[[bench]]
-name = "match_string"
-harness = false
-
-[[bench]]
-name = "not_match_string"
 harness = false
 
 [[bench]]
