@@ -59,6 +59,16 @@ impl Translate for Expression {
     fn translate(&self) -> Self::Output {
         let mut lir = LirProgram::new();
         lir_translate_helper(self, &mut lir);
+        #[cfg(debug_assertions)]
+        {
+            use std::mem;
+            println!("The number of lir instructions: {}", lir.instructions.len());
+            println!(
+                "The size of lir program: {} bytes",
+                mem::size_of::<LirProgram>()
+                    + mem::size_of::<LirInstruction>() * lir.instructions.len()
+            );
+        }
         lir
     }
 }
