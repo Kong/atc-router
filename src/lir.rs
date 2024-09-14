@@ -26,12 +26,12 @@ pub enum LirInstruction {
 }
 
 impl LirInstruction {
-    pub fn as_predicate(&self) -> Option<&Predicate> {
+    pub fn as_predicate(&self) -> &Predicate {
         match &self {
             LirInstruction::LogicalOperator(_ops) => {
                 panic!("Call as_predicate on LogicalOperator Operand, LirProgram is wrong.")
             }
-            LirInstruction::Predicate(p) => Some(p),
+            LirInstruction::Predicate(p) => p,
         }
     }
 }
@@ -292,7 +292,7 @@ mod tests {
                                     operator_stack.pop();
                                 } else {
                                     let left = evaluate_operand_item(
-                                        OperandItem::Predicate(next_ins.as_predicate().unwrap()),
+                                        OperandItem::Predicate(next_ins.as_predicate()),
                                         ctx,
                                         m,
                                     );
@@ -304,9 +304,7 @@ mod tests {
                                     } else {
                                         let next_next_ins = &self.instructions[index + 2];
                                         let right = evaluate_operand_item(
-                                            OperandItem::Predicate(
-                                                next_next_ins.as_predicate().unwrap(),
-                                            ),
+                                            OperandItem::Predicate(next_next_ins.as_predicate()),
                                             ctx,
                                             m,
                                         );
@@ -335,7 +333,7 @@ mod tests {
                                     operator_stack.pop();
                                 } else {
                                     let left = evaluate_operand_item(
-                                        OperandItem::Predicate(next_ins.as_predicate().unwrap()),
+                                        OperandItem::Predicate(next_ins.as_predicate()),
                                         ctx,
                                         m,
                                     );
@@ -347,9 +345,7 @@ mod tests {
                                     } else {
                                         let next_next_ins = &self.instructions[index + 2];
                                         let right = evaluate_operand_item(
-                                            OperandItem::Predicate(
-                                                next_next_ins.as_predicate().unwrap(),
-                                            ),
+                                            OperandItem::Predicate(next_next_ins.as_predicate()),
                                             ctx,
                                             m,
                                         );
@@ -378,7 +374,7 @@ mod tests {
                                     operator_stack.pop();
                                 } else {
                                     let right = evaluate_operand_item(
-                                        OperandItem::Predicate(next_ins.as_predicate().unwrap()),
+                                        OperandItem::Predicate(next_ins.as_predicate()),
                                         ctx,
                                         m,
                                     );
