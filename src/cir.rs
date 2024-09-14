@@ -1,3 +1,4 @@
+// cir:  compact intermediate representation
 use crate::ast::Predicate;
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;

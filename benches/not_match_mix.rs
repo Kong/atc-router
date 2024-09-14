@@ -24,14 +24,20 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let mut router = Router::new(&schema);
 
-    let variant = make_uuid(2024);
-    let uuid = Uuid::try_from(variant.as_str()).unwrap();
-    router.add_matcher(0, uuid, r#"(http.path == "hello" && http.version == "1.1") || !(( a == 2) && ( a == 9 )) || !(a == 1) || ( a == 5 && a == 4) && !(a == 3)"#).unwrap();
+    for i in 0..N {
+        let expr = format!(
+            r#"(http.path == "hello{}" && http.version == "1.1") || !(( a == 2) && ( a == 9 )) || !(a == 1) || ( a == 3 && a == 4) && !(a == 5)"#,
+            i
+        );
+        let variant = make_uuid(i);
+        let uuid = Uuid::try_from(variant.as_str()).unwrap();
+        router.add_matcher(N - i, uuid, &expr).unwrap();
+    }
 
     let mut ctx_match = Context::new(&schema);
     ctx_match.add_value(
         "http.path",
-        atc_router::ast::Value::String("hello2024".to_string()),
+        atc_router::ast::Value::String("hello_world".to_string()),
     );
     ctx_match.add_value(
         "http.version",
@@ -39,12 +45,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     );
     ctx_match.add_value("a", Value::Int(3 as i64));
 
-    c.bench_function("Doesn't Match", |b| {
+    c.bench_function("Match", |b| {
         b.iter(|| {
-            for _i in 0..N {
-                let is_match = router.execute(&mut ctx_match);
-                assert!(!is_match);
-            }
+            let is_match = router.execute(&mut ctx_match);
+            assert!(!is_match);
         });
     });
 }

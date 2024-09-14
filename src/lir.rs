@@ -1,3 +1,4 @@
+// lir:  linear intermediate representation
 use crate::ast::{Expression, LogicalExpression, Predicate};
 
 #[derive(Debug)]
