@@ -240,7 +240,6 @@ mod tests {
 
     #[test]
     fn expr_op_and_prec() {
-        let mut regex_cache = HashMap::new();
         let tests = vec![
             ("a > 0", "(a > 0)"),
             ("a in \"abc\"", "(a in \"abc\")"),
@@ -272,14 +271,13 @@ mod tests {
             ),
         ];
         for (input, expected) in tests {
-            let result = parse(input, &mut regex_cache).unwrap();
+            let result = parse(input).unwrap();
             assert_eq!(result.to_string(), expected);
         }
     }
 
     #[test]
     fn expr_var_name_and_ip() {
-        let mut regex_cache = HashMap::new();
         let tests = vec![
             // ipv4_literal
             ("kong.foo in 1.1.1.1", "(kong.foo in 1.1.1.1)"),
@@ -300,14 +298,13 @@ mod tests {
             ),
         ];
         for (input, expected) in tests {
-            let result = parse(input, &mut regex_cache).unwrap();
+            let result = parse(input).unwrap();
             assert_eq!(result.to_string(), expected);
         }
     }
 
     #[test]
     fn expr_regex() {
-        let mut regex_cache = HashMap::new();
         let tests = vec![
             // regex_literal
             (
@@ -321,14 +318,13 @@ mod tests {
             ),
         ];
         for (input, expected) in tests {
-            let result = parse(input, &mut regex_cache).unwrap();
+            let result = parse(input).unwrap();
             assert_eq!(result.to_string(), expected);
         }
     }
 
     #[test]
     fn expr_digits() {
-        let mut regex_cache = HashMap::new();
         let tests = vec![
             // dec literal
             ("kong.foo.foo7 == 123", "(kong.foo.foo7 == 123)"),
@@ -344,14 +340,13 @@ mod tests {
             ("kong.foo.foo12 == -0123", "(kong.foo.foo12 == -83)"),
         ];
         for (input, expected) in tests {
-            let result = parse(input, &mut regex_cache).unwrap();
+            let result = parse(input).unwrap();
             assert_eq!(result.to_string(), expected);
         }
     }
 
     #[test]
     fn expr_transformations() {
-        let mut regex_cache = HashMap::new();
         let tests = vec![
             // lower
             (
@@ -365,14 +360,13 @@ mod tests {
             ),
         ];
         for (input, expected) in tests {
-            let result = parse(input, &mut regex_cache).unwrap();
+            let result = parse(input).unwrap();
             assert_eq!(result.to_string(), expected);
         }
     }
 
     #[test]
     fn expr_transformations_nested() {
-        let mut regex_cache = HashMap::new();
         let tests = vec![
             // lower + lower
             (
@@ -396,14 +390,13 @@ mod tests {
             ),
         ];
         for (input, expected) in tests {
-            let result = parse(input, &mut regex_cache).unwrap();
+            let result = parse(input).unwrap();
             assert_eq!(result.to_string(), expected);
         }
     }
 
     #[test]
     fn str_unicode_test() {
-        let mut regex_cache = HashMap::new();
         let tests = vec![
             // cjk chars
             ("t_msg in \"你好\"", "(t_msg in \"你好\")"),
@@ -411,14 +404,13 @@ mod tests {
             ("t_msg in \"\u{4f60}\u{597d}\"", "(t_msg in \"你好\")"),
         ];
         for (input, expected) in tests {
-            let result = parse(input, &mut regex_cache).unwrap();
+            let result = parse(input).unwrap();
             assert_eq!(result.to_string(), expected);
         }
     }
 
     #[test]
     fn rawstr_test() {
-        let mut regex_cache = HashMap::new();
         let tests = vec![
             // invalid escape sequence
             (r##"a == r#"/path/to/\d+"#"##, r#"(a == "/path/to/\d+")"#),
@@ -426,7 +418,7 @@ mod tests {
             (r##"a == r#"/path/to/\n+"#"##, r#"(a == "/path/to/\n+")"#),
         ];
         for (input, expected) in tests {
-            let result = parse(input, &mut regex_cache).unwrap();
+            let result = parse(input).unwrap();
             assert_eq!(result.to_string(), expected);
         }
     }

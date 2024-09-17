@@ -11,9 +11,14 @@ use pest::pratt_parser::Assoc as AssocNew;
 use pest::pratt_parser::{Op, PrattParser};
 use pest::Parser;
 use regex::Regex;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::rc::Rc;
+
+thread_local! {
+    static REGEX_CACHE: RefCell<HashMap<String, Rc<Regex>>> = RefCell::new(HashMap::new());
+}
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
 /// cbindgen:ignore
@@ -61,16 +66,12 @@ impl ATCParser {
         }
     }
     // matcher = { SOI ~ expression ~ EOI }
-    fn parse_matcher(
-        &mut self,
-        source: &str,
-        regex_cache: &mut HashMap<String, Rc<Regex>>,
-    ) -> ParseResult<Expression> {
+    fn parse_matcher(&mut self, source: &str) -> ParseResult<Expression> {
         let pairs = ATCParser::parse(Rule::matcher, source)?;
         let expr_pair = pairs.peek().unwrap().into_inner().peek().unwrap();
         let rule = expr_pair.as_rule();
         match rule {
-            Rule::expression => parse_expression(expr_pair, &self.pratt_parser, regex_cache),
+            Rule::expression => parse_expression(expr_pair, &self.pratt_parser),
             _ => unreachable!(),
         }
     }
@@ -191,10 +192,7 @@ fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
 }
 
 // predicate = { lhs ~ binary_operator ~ rhs }
-fn parse_predicate(
-    pair: Pair<Rule>,
-    regex_cache: &mut HashMap<String, Rc<Regex>>,
-) -> ParseResult<Predicate> {
+fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
     let mut pairs = pair.into_inner();
     let lhs = parse_lhs(pairs.next().unwrap())?;
     let op = parse_binary_operator(pairs.next().unwrap());
@@ -204,33 +202,25 @@ fn parse_predicate(
         lhs,
         rhs: if op == BinaryOperator::Regex {
             if let Value::String(s) = rhs {
-                let regex_rc = match regex_cache.get(&s) {
-                    Some(stored_regex_rc) => stored_regex_rc.clone(),
-                    _ => {
-                        let r = Regex::new(&s).map_err(|e| {
-                            ParseError::new_from_span(
-                                ErrorVariant::CustomError {
-                                    message: e.to_string(),
-                                },
-                                rhs_pair.as_span(),
-                            )
-                        })?;
+                REGEX_CACHE.with_borrow_mut(|cached_map| {
+                    let regex_rc = match cached_map.get(&s) {
+                        Some(stored_regex_rc) => Rc::clone(stored_regex_rc),
+                        _ => {
+                            let r = Regex::new(&s).into_parse_result(&rhs_pair).unwrap();
 
-                        let rc = Rc::new(r);
+                            let rc = Rc::new(r);
+                            let result = Rc::clone(&rc);
+                            cached_map.insert(s, rc);
 
-                        regex_cache.insert(s, rc.clone());
-                        rc
-                    }
-                };
+                            result
+                        }
+                    };
 
-                Value::Regex(regex_rc)
+                    Value::Regex(regex_rc)
+                })
             } else {
-                return Err(ParseError::new_from_span(
-                    ErrorVariant::CustomError {
-                        message: "regex operator can only be used with String operands".to_string(),
-                    },
-                    rhs_pair.as_span(),
-                ));
+                return Err("regex operator can only be used with String operands")
+                    .into_parse_result(&rhs_pair);
             }
         } else {
             rhs
@@ -286,51 +276,37 @@ fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
 fn parse_parenthesised_expression(
     pair: Pair<Rule>,
     pratt: &PrattParser<Rule>,
-    regex_cache: &mut HashMap<String, Rc<Regex>>,
 ) -> ParseResult<Expression> {
     let mut pairs = pair.into_inner();
     let pair = pairs.next().unwrap();
     let rule = pair.as_rule();
     match rule {
-        Rule::expression => parse_expression(pair, pratt, regex_cache),
+        Rule::expression => parse_expression(pair, pratt),
         Rule::not_op => Ok(Expression::Logical(Box::new(LogicalExpression::Not(
-            parse_expression(pairs.next().unwrap(), pratt, regex_cache)?,
+            parse_expression(pairs.next().unwrap(), pratt)?,
         )))),
         _ => unreachable!(),
     }
 }
 
 // term = { predicate | parenthesised_expression }
-fn parse_term(
-    pair: Pair<Rule>,
-    pratt: &PrattParser<Rule>,
-    regex_cache: &mut HashMap<String, Rc<Regex>>,
-) -> ParseResult<Expression> {
+fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
     let pairs = pair.into_inner();
     let inner_rule = pairs.peek().unwrap();
     let rule = inner_rule.as_rule();
     match rule {
-        Rule::predicate => Ok(Expression::Predicate(parse_predicate(
-            inner_rule,
-            regex_cache,
-        )?)),
-        Rule::parenthesised_expression => {
-            parse_parenthesised_expression(inner_rule, pratt, regex_cache)
-        }
+        Rule::predicate => Ok(Expression::Predicate(parse_predicate(inner_rule)?)),
+        Rule::parenthesised_expression => parse_parenthesised_expression(inner_rule, pratt),
         _ => unreachable!(),
     }
 }
 
 // expression = { term ~ ( logical_operator ~ term )* }
-fn parse_expression(
-    pair: Pair<Rule>,
-    pratt: &PrattParser<Rule>,
-    regex_cache: &mut HashMap<String, Rc<Regex>>,
-) -> ParseResult<Expression> {
+fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
     let pairs = pair.into_inner();
     pratt
         .map_primary(|operand| match operand.as_rule() {
-            Rule::term => parse_term(operand, pratt, regex_cache),
+            Rule::term => parse_term(operand, pratt),
             _ => unreachable!(),
         })
         .map_infix(|lhs, op, rhs| {
@@ -343,11 +319,8 @@ fn parse_expression(
         .parse(pairs)
 }
 
-pub fn parse(
-    source: &str,
-    regex_cache: &mut HashMap<String, Rc<Regex>>,
-) -> ParseResult<Expression> {
-    ATCParser::new().parse_matcher(source, regex_cache)
+pub fn parse(source: &str) -> ParseResult<Expression> {
+    ATCParser::new().parse_matcher(source)
 }
 
 #[cfg(test)]
@@ -356,19 +329,16 @@ mod tests {
 
     #[test]
     fn test_bad_syntax() {
-        let mut regex_cache = HashMap::new();
         assert_eq!(
-            parse("! a == 1", &mut regex_cache).unwrap_err().to_string(),
+            parse("! a == 1").unwrap_err().to_string(),
             " --> 1:1\n  |\n1 | ! a == 1\n  | ^---\n  |\n  = expected term"
         );
         assert_eq!(
-            parse("a == 1 || ! b == 2", &mut regex_cache)
-                .unwrap_err()
-                .to_string(),
+            parse("a == 1 || ! b == 2").unwrap_err().to_string(),
             " --> 1:11\n  |\n1 | a == 1 || ! b == 2\n  |           ^---\n  |\n  = expected term"
         );
         assert_eq!(
-            parse("(a == 1 || b == 2) && ! c == 3", &mut regex_cache)
+            parse("(a == 1 || b == 2) && ! c == 3")
                 .unwrap_err()
                 .to_string(),
                 " --> 1:23\n  |\n1 | (a == 1 || b == 2) && ! c == 3\n  |                       ^---\n  |\n  = expected term"

@@ -177,8 +177,7 @@ mod tests {
 
     #[test]
     fn unknown_field() {
-        let mut regex_cache = HashMap::new();
-        let expression = parse(r#"unkn == "abc""#, &mut regex_cache).unwrap();
+        let expression = parse(r#"unkn == "abc""#).unwrap();
         assert_eq!(
             expression.validate(&SCHEMA).unwrap_err(),
             "Unknown LHS field"
@@ -187,7 +186,6 @@ mod tests {
 
     #[test]
     fn string_lhs() {
-        let mut regex_cache = HashMap::new();
         let tests = vec![
             r#"string == "abc""#,
             r#"string != "abc""#,
@@ -197,7 +195,7 @@ mod tests {
             r#"lower(string) =^ "abc""#,
         ];
         for input in tests {
-            let expression = parse(input, &mut regex_cache).unwrap();
+            let expression = parse(input).unwrap();
             expression.validate(&SCHEMA).unwrap();
         }
 
@@ -208,14 +206,13 @@ mod tests {
             r#"string in "abc""#,
         ];
         for input in failing_tests {
-            let expression = parse(input, &mut regex_cache).unwrap();
+            let expression = parse(input).unwrap();
             assert!(expression.validate(&SCHEMA).is_err());
         }
     }
 
     #[test]
     fn ipaddr_lhs() {
-        let mut regex_cache = HashMap::new();
         let tests = vec![
             r#"ipaddr == 192.168.0.1"#,
             r#"ipaddr == fd00::1"#,
@@ -225,7 +222,7 @@ mod tests {
             r#"ipaddr not in fd00::/64"#,
         ];
         for input in tests {
-            let expression = parse(input, &mut regex_cache).unwrap();
+            let expression = parse(input).unwrap();
             expression.validate(&SCHEMA).unwrap();
         }
 
@@ -239,14 +236,13 @@ mod tests {
             r#"lower(ipaddr) == fd00::1"#,
         ];
         for input in failing_tests {
-            let expression = parse(input, &mut regex_cache).unwrap();
+            let expression = parse(input).unwrap();
             assert!(expression.validate(&SCHEMA).is_err());
         }
     }
 
     #[test]
     fn int_lhs() {
-        let mut regex_cache = HashMap::new();
         let tests = vec![
             r#"int == 123"#,
             r#"int >= 123"#,
@@ -255,7 +251,7 @@ mod tests {
             r#"int < 123"#,
         ];
         for input in tests {
-            let expression = parse(input, &mut regex_cache).unwrap();
+            let expression = parse(input).unwrap();
             expression.validate(&SCHEMA).unwrap();
         }
 
@@ -265,7 +261,7 @@ mod tests {
             r#"lower(int) == 123"#,
         ];
         for input in failing_tests {
-            let expression = parse(input, &mut regex_cache).unwrap();
+            let expression = parse(input).unwrap();
             assert!(expression.validate(&SCHEMA).is_err());
         }
     }
