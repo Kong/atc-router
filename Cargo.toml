@@ -21,7 +21,12 @@ serde_regex = { version = "1.1", optional = true }
 fnv = "1"
 
 [dev-dependencies]
+criterion = "0.3"
 dhat = "0.3.3"
+
+[[bench]]
+name = "regex_queries"
+harness = false
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
