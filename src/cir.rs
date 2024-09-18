@@ -259,14 +259,13 @@ fn execute_helper(
                 }
                 CirOperand::Predicate(_p) => and.left.as_predicate().execute(ctx, m),
             };
-            let right_val = match &and.right {
-                CirOperand::Index(_index) => {
-                    execute_helper(cir_instructions, and.right.as_index(), ctx, m)
+            left_val
+                && match &and.right {
+                    CirOperand::Index(_index) => {
+                        execute_helper(cir_instructions, and.right.as_index(), ctx, m)
+                    }
+                    CirOperand::Predicate(_p) => and.right.as_predicate().execute(ctx, m),
                 }
-                CirOperand::Predicate(_p) => and.right.as_predicate().execute(ctx, m),
-            };
-
-            left_val && right_val
         }
         CirInstruction::OrIns(or) => {
             let left_val = match &or.left {
@@ -275,14 +274,13 @@ fn execute_helper(
                 }
                 CirOperand::Predicate(_p) => or.left.as_predicate().execute(ctx, m),
             };
-            let right_val = match &or.right {
-                CirOperand::Index(_index) => {
-                    execute_helper(cir_instructions, or.right.as_index(), ctx, m)
+            left_val
+                || match &or.right {
+                    CirOperand::Index(_index) => {
+                        execute_helper(cir_instructions, or.right.as_index(), ctx, m)
+                    }
+                    CirOperand::Predicate(_p) => or.right.as_predicate().execute(ctx, m),
                 }
-                CirOperand::Predicate(_p) => or.right.as_predicate().execute(ctx, m),
-            };
-
-            left_val || right_val
         }
         CirInstruction::NotIns(not) => {
             let right_val = match &not.right {
