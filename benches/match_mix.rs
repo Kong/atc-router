@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 // To run this benchmark, execute the following command:
 // ```shell
-// cargo bench --bench match_mem
+// cargo bench --bench match_mix
 // ```
 
 const N: usize = 100000;
