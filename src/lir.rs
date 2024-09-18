@@ -121,6 +121,7 @@ impl Translate for Expression {
         lir_translate_helper(self, &mut lir);
         lir.instructions.shrink_to_fit(); // shrink the memory
         #[cfg(debug_assertions)]
+        #[allow(clippy::all)]
         {
             let ast_counter = self.count_size();
             ast_counter.ins_bytes;
