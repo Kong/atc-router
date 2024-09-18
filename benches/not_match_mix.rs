@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 // To run this benchmark, execute the following command:
 // ```shell
-// cargo bench --bench match_mem
+// cargo bench --bench not_match_mix
 // ```
 
 const N: usize = 100000;
@@ -47,10 +47,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("Doesn't Match", |b| {
         b.iter(|| {
-            for _i in 0..3 {
-                let is_match = router.execute(&mut ctx_match);
-                assert!(!is_match);
-            }
+            let is_match = router.execute(&mut ctx_match);
+            assert!(!is_match);
         });
     });
 }
