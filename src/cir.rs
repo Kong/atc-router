@@ -30,6 +30,7 @@ pub enum CirInstruction {
     AndIns(AndIns),
     OrIns(OrIns),
     NotIns(NotIns),
+    Predicate(Predicate),
 }
 
 #[derive(Debug)]
@@ -152,6 +153,22 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
     let mut operand_stack: Vec<CirOperand> = Vec::new();
     let mut operator_stack: Vec<LirLogicalOperator> = Vec::new();
     let mut index = 0;
+
+    if lir.instructions.len() == 1 {
+        // this should be predicate only
+        match &lir.instructions[0] {
+            LirInstruction::LogicalOperator(_op) => panic!(
+                "Wrong input for Cir, {:?}, it should be predicate only!",
+                lir
+            ),
+            LirInstruction::Predicate(p) => {
+                let predicate = p.clone();
+                cir.instructions.push(CirInstruction::Predicate(predicate));
+            }
+        }
+        return;
+    }
+
     loop {
         if index >= lir.instructions.len() {
             // end of LirProgram
@@ -291,6 +308,7 @@ fn execute_helper(
             };
             !right_val
         }
+        CirInstruction::Predicate(p) => p.execute(ctx, m),
     }
 }
 
@@ -329,6 +347,9 @@ impl FieldCounter for CirProgram {
                         *map.entry(not.right.as_predicate().lhs.var_name.clone())
                             .or_default() += 1;
                     }
+                }
+                CirInstruction::Predicate(p) => {
+                    *map.entry(p.lhs.var_name.clone()).or_default() += 1;
                 }
             }
         }
@@ -388,6 +409,14 @@ impl FieldCounter for CirProgram {
                         if *val == 0 {
                             assert!(map.remove(&right.lhs.var_name).is_some());
                         }
+                    }
+                }
+                CirInstruction::Predicate(p) => {
+                    let val = map.get_mut(&p.lhs.var_name).unwrap();
+                    *val -= 1;
+
+                    if *val == 0 {
+                        assert!(map.remove(&p.lhs.var_name).is_some());
                     }
                 }
             }
