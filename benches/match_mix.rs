@@ -1,4 +1,4 @@
-use atc_router::ast::{Type, Value};
+use atc_router::ast::Value;
 use atc_router::context::Context;
 use atc_router::router::Router;
 use atc_router::schema::Schema;
