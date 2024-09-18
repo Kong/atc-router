@@ -2,7 +2,7 @@
 use crate::ast::Predicate;
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
-use crate::lir::{is_operator, LirInstruction, LirLogicalOperators, LirProgram, Translate};
+use crate::lir::{is_operator, LirInstruction, LirLogicalOperator, LirProgram, Translate};
 use crate::semantics::FieldCounter;
 use std::collections::HashMap;
 
@@ -90,35 +90,7 @@ impl Translate for LirProgram {
     fn translate(&self) -> Self::Output {
         let mut cir = CirProgram::new();
         cir_translate_helper(self, &mut cir);
-        #[cfg(debug_assertions)]
-        {
-            println!(
-                "The vector capacity of cir instructions before shrink_to_fit: {} ",
-                cir.instructions.capacity()
-            );
-        }
-
         cir.instructions.shrink_to_fit(); // shrink the memory
-
-        #[cfg(debug_assertions)]
-        {
-            println!(
-                "The vector capacity of cir instructions after shrink_to_fit: {} ",
-                cir.instructions.capacity()
-            );
-        }
-        #[cfg(debug_assertions)]
-        {
-            use std::mem;
-            println!(
-                "The size of cir program: {} bytes",
-                mem::size_of::<CirProgram>()
-                    + mem::size_of::<CirInstruction>() * cir.instructions.capacity()
-            );
-            println!("The number of cir instructions: {}", cir.instructions.len());
-            println!("The cir instructions:");
-            println!("{:?}", cir.instructions);
-        }
         cir
     }
 }
@@ -126,13 +98,13 @@ impl Translate for LirProgram {
 #[inline]
 fn reduce_translation_stack(
     cir_instructions: &mut Vec<CirInstruction>,
-    operator_stack: &mut Vec<LirLogicalOperators>,
+    operator_stack: &mut Vec<LirLogicalOperator>,
     operand_stack: &mut Vec<CirOperand>,
 ) {
     loop {
         if !operator_stack.is_empty() {
             match &operator_stack.last().unwrap() {
-                LirLogicalOperators::And => {
+                LirLogicalOperator::And => {
                     if operand_stack.len() >= 2 {
                         let right = operand_stack.pop().unwrap();
                         let left = operand_stack.pop().unwrap();
@@ -144,7 +116,7 @@ fn reduce_translation_stack(
                         break;
                     }
                 }
-                LirLogicalOperators::Or => {
+                LirLogicalOperator::Or => {
                     if operand_stack.len() >= 2 {
                         let right = operand_stack.pop().unwrap();
                         let left = operand_stack.pop().unwrap();
@@ -156,7 +128,7 @@ fn reduce_translation_stack(
                         break;
                     }
                 }
-                LirLogicalOperators::Not => {
+                LirLogicalOperator::Not => {
                     if !operand_stack.is_empty() {
                         let right = operand_stack.pop().unwrap();
                         let not_ins = NotIns { right };
@@ -178,16 +150,21 @@ fn reduce_translation_stack(
 #[inline]
 fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
     let mut operand_stack: Vec<CirOperand> = Vec::new();
-    let mut operator_stack: Vec<LirLogicalOperators> = Vec::new();
+    let mut operator_stack: Vec<LirLogicalOperator> = Vec::new();
     let mut index = 0;
     loop {
+        if index >= lir.instructions.len() {
+            // end of LirProgram
+            break;
+        }
+
         match &lir.instructions[index] {
             LirInstruction::LogicalOperator(op) => match op {
-                LirLogicalOperators::And => {
+                LirLogicalOperator::And => {
                     let next_ins = &lir.instructions[index + 1];
                     if is_operator(next_ins) {
                         // next is operator
-                        operator_stack.push(LirLogicalOperators::And);
+                        operator_stack.push(LirLogicalOperator::And);
                         index += 1;
                     } else {
                         let next_next_ins = &lir.instructions[index + 2];
@@ -206,11 +183,11 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
                         );
                     }
                 }
-                LirLogicalOperators::Or => {
+                LirLogicalOperator::Or => {
                     let next_ins = &lir.instructions[index + 1];
                     if is_operator(next_ins) {
                         // next is operator
-                        operator_stack.push(LirLogicalOperators::Or);
+                        operator_stack.push(LirLogicalOperator::Or);
                         index += 1;
                     } else {
                         let next_next_ins = &lir.instructions[index + 2];
@@ -229,12 +206,12 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
                         );
                     }
                 }
-                LirLogicalOperators::Not => {
+                LirLogicalOperator::Not => {
                     let next_ins = &lir.instructions[index + 1];
                     if is_operator(next_ins) {
                         // push LIR operator to ops stack
                         // next is operator
-                        operator_stack.push(LirLogicalOperators::Not);
+                        operator_stack.push(LirLogicalOperator::Not);
                         index += 1;
                     } else {
                         next_ins.as_predicate(); //right
@@ -264,11 +241,6 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
                 index += 1;
             }
         }
-
-        if index >= lir.instructions.len() {
-            // end of LirProgram
-            break;
-        }
     }
     debug_assert_eq!(operator_stack.len(), 0);
 }
@@ -281,38 +253,43 @@ fn execute_helper(
 ) -> bool {
     match &cir_instructions[index] {
         CirInstruction::AndIns(and) => {
-            let left_val = if is_index(&and.left) {
-                execute_helper(cir_instructions, and.left.as_index(), ctx, m)
-            } else {
-                and.left.as_predicate().execute(ctx, m)
+            let left_val = match &and.left {
+                CirOperand::Index(_index) => {
+                    execute_helper(cir_instructions, and.left.as_index(), ctx, m)
+                }
+                CirOperand::Predicate(_p) => and.left.as_predicate().execute(ctx, m),
+            };
+            let right_val = match &and.right {
+                CirOperand::Index(_index) => {
+                    execute_helper(cir_instructions, and.right.as_index(), ctx, m)
+                }
+                CirOperand::Predicate(_p) => and.right.as_predicate().execute(ctx, m),
             };
 
-            left_val
-                && if is_index(&and.right) {
-                    execute_helper(cir_instructions, and.right.as_index(), ctx, m)
-                } else {
-                    and.right.as_predicate().execute(ctx, m)
-                }
+            left_val && right_val
         }
         CirInstruction::OrIns(or) => {
-            let left_val = if is_index(&or.left) {
-                execute_helper(cir_instructions, or.left.as_index(), ctx, m)
-            } else {
-                or.left.as_predicate().execute(ctx, m)
+            let left_val = match &or.left {
+                CirOperand::Index(_index) => {
+                    execute_helper(cir_instructions, or.left.as_index(), ctx, m)
+                }
+                CirOperand::Predicate(_p) => or.left.as_predicate().execute(ctx, m),
+            };
+            let right_val = match &or.right {
+                CirOperand::Index(_index) => {
+                    execute_helper(cir_instructions, or.right.as_index(), ctx, m)
+                }
+                CirOperand::Predicate(_p) => or.right.as_predicate().execute(ctx, m),
             };
 
-            left_val
-                || if is_index(&or.right) {
-                    execute_helper(cir_instructions, or.right.as_index(), ctx, m)
-                } else {
-                    or.right.as_predicate().execute(ctx, m)
-                }
+            left_val || right_val
         }
         CirInstruction::NotIns(not) => {
-            let right_val = if is_index(&not.right) {
-                execute_helper(cir_instructions, not.right.as_index(), ctx, m)
-            } else {
-                not.right.as_predicate().execute(ctx, m)
+            let right_val = match &not.right {
+                CirOperand::Index(_index) => {
+                    execute_helper(cir_instructions, not.right.as_index(), ctx, m)
+                }
+                CirOperand::Predicate(_p) => not.right.as_predicate().execute(ctx, m),
             };
             !right_val
         }

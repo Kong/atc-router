@@ -22,7 +22,7 @@ impl Default for LirProgram {
 
 #[derive(Debug)]
 pub enum LirInstruction {
-    LogicalOperator(LirLogicalOperators),
+    LogicalOperator(LirLogicalOperator),
     Predicate(Predicate),
 }
 
@@ -47,7 +47,7 @@ pub(crate) fn is_operator(instruction: &LirInstruction) -> bool {
 }
 
 #[derive(Debug)]
-pub enum LirLogicalOperators {
+pub enum LirLogicalOperator {
     And,
     Or,
     Not,
@@ -119,45 +119,12 @@ impl Translate for Expression {
     fn translate(&self) -> Self::Output {
         let mut lir = LirProgram::new();
         lir_translate_helper(self, &mut lir);
-
-        #[cfg(debug_assertions)]
-        {
-            println!(
-                "The vector capacity of lir instructions before shrink_to_fit: {} ",
-                lir.instructions.capacity()
-            );
-        }
-
         lir.instructions.shrink_to_fit(); // shrink the memory
-
         #[cfg(debug_assertions)]
         {
-            println!(
-                "The vector capacity of lir instructions after shrink_to_fit: {} ",
-                lir.instructions.capacity()
-            );
-        }
-        #[cfg(debug_assertions)]
-        {
-            use std::mem;
             let ast_counter = self.count_size();
-
-            println!(
-                "The size of AST instructions: {} bytes",
-                ast_counter.ins_bytes
-            );
-            println!("The number of AST instructions: {}", ast_counter.ins_number);
-            println!("The AST instructions:");
-            println!("{:?}", self);
-
-            println!(
-                "The size of lir program: {} bytes",
-                mem::size_of::<LirProgram>()
-                    + mem::size_of::<LirInstruction>() * lir.instructions.capacity()
-            );
-            println!("The number of lir instructions: {}", lir.instructions.len());
-            println!("The lir instructions:");
-            println!("{:?}", lir.instructions);
+            ast_counter.ins_bytes;
+            ast_counter.ins_number;
         }
         lir
     }
@@ -168,19 +135,19 @@ fn lir_translate_helper(exp: &Expression, lir: &mut LirProgram) {
         Expression::Logical(logic_exp) => match logic_exp.as_ref() {
             LogicalExpression::And(l, r) => {
                 lir.instructions
-                    .push(LirInstruction::LogicalOperator(LirLogicalOperators::And));
+                    .push(LirInstruction::LogicalOperator(LirLogicalOperator::And));
                 lir_translate_helper(l, lir);
                 lir_translate_helper(r, lir);
             }
             LogicalExpression::Or(l, r) => {
                 lir.instructions
-                    .push(LirInstruction::LogicalOperator(LirLogicalOperators::Or));
+                    .push(LirInstruction::LogicalOperator(LirLogicalOperator::Or));
                 lir_translate_helper(l, lir);
                 lir_translate_helper(r, lir);
             }
             LogicalExpression::Not(r) => {
                 lir.instructions
-                    .push(LirInstruction::LogicalOperator(LirLogicalOperators::Not));
+                    .push(LirInstruction::LogicalOperator(LirLogicalOperator::Not));
                 lir_translate_helper(r, lir);
             }
         },
@@ -216,11 +183,11 @@ mod tests {
     }
 
     #[inline]
-    fn check_short_circuit(operator_stack: &[LirLogicalOperators], operand_stack: &[bool]) -> bool {
+    fn check_short_circuit(operator_stack: &[LirLogicalOperator], operand_stack: &[bool]) -> bool {
         // if it could be short-circuited, return true
         if (operand_stack.len() > 0) && (operator_stack.len() > 0) {
             match &operator_stack.last().unwrap() {
-                LirLogicalOperators::And => {
+                LirLogicalOperator::And => {
                     let operand = operand_stack.last().unwrap();
                     if *operand {
                         return false;
@@ -228,7 +195,7 @@ mod tests {
                         return true;
                     }
                 }
-                LirLogicalOperators::Or => {
+                LirLogicalOperator::Or => {
                     let operand = operand_stack.last().unwrap();
                     if *operand {
                         return true;
@@ -236,7 +203,7 @@ mod tests {
                         return false;
                     }
                 }
-                LirLogicalOperators::Not => {
+                LirLogicalOperator::Not => {
                     return false;
                 }
             }
@@ -247,13 +214,13 @@ mod tests {
 
     #[inline]
     fn compact_operation_stack(
-        operator_stack: &mut Vec<LirLogicalOperators>,
+        operator_stack: &mut Vec<LirLogicalOperator>,
         operand_stack: &mut Vec<bool>,
     ) {
         loop {
             if operator_stack.len() > 0 {
                 match &operator_stack.last().unwrap() {
-                    LirLogicalOperators::And => {
+                    LirLogicalOperator::And => {
                         if operand_stack.len() >= 2 {
                             let right = operand_stack.pop().unwrap();
                             let left = operand_stack.pop().unwrap();
@@ -263,7 +230,7 @@ mod tests {
                             break;
                         }
                     }
-                    LirLogicalOperators::Or => {
+                    LirLogicalOperator::Or => {
                         if operand_stack.len() >= 2 {
                             let right = operand_stack.pop().unwrap();
                             let left = operand_stack.pop().unwrap();
@@ -273,7 +240,7 @@ mod tests {
                             break;
                         }
                     }
-                    LirLogicalOperators::Not => {
+                    LirLogicalOperator::Not => {
                         if operand_stack.len() >= 1 {
                             let right = operand_stack.pop().unwrap();
                             operand_stack.push(!right);
@@ -293,7 +260,7 @@ mod tests {
     impl Execute for LirProgram {
         fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
             let mut operand_stack: Vec<bool> = Vec::new();
-            let mut operator_stack: Vec<LirLogicalOperators> = Vec::new();
+            let mut operator_stack: Vec<LirLogicalOperator> = Vec::new();
             let mut index = 0;
             loop {
                 match &self.instructions[index] {
@@ -303,20 +270,20 @@ mod tests {
                             // push LIR operator to ops stack
                             // next is operator
                             match op {
-                                LirLogicalOperators::And => {
-                                    operator_stack.push(LirLogicalOperators::And)
+                                LirLogicalOperator::And => {
+                                    operator_stack.push(LirLogicalOperator::And)
                                 }
-                                LirLogicalOperators::Or => {
-                                    operator_stack.push(LirLogicalOperators::Or)
+                                LirLogicalOperator::Or => {
+                                    operator_stack.push(LirLogicalOperator::Or)
                                 }
-                                LirLogicalOperators::Not => {
-                                    operator_stack.push(LirLogicalOperators::Not)
+                                LirLogicalOperator::Not => {
+                                    operator_stack.push(LirLogicalOperator::Not)
                                 }
                             }
                             index += 1;
                         } else {
                             match op {
-                                LirLogicalOperators::And => {
+                                LirLogicalOperator::And => {
                                     if check_short_circuit(&operator_stack, &operand_stack) {
                                         // short circuit
                                         index += 3;
@@ -351,7 +318,7 @@ mod tests {
                                         );
                                     }
                                 }
-                                LirLogicalOperators::Or => {
+                                LirLogicalOperator::Or => {
                                     if check_short_circuit(&operator_stack, &operand_stack) {
                                         // short circuit
                                         index += 3;
@@ -386,7 +353,7 @@ mod tests {
                                         );
                                     }
                                 }
-                                LirLogicalOperators::Not => {
+                                LirLogicalOperator::Not => {
                                     if check_short_circuit(&operator_stack, &operand_stack) {
                                         // short circuit
                                         index += 2;
