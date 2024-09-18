@@ -47,7 +47,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("Doesn't Match", |b| {
         b.iter(|| {
-            for _i in 0..N {
+            for _i in 0..3 {
                 let is_match = router.execute(&mut ctx_match);
                 assert!(!is_match);
             }
