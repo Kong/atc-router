@@ -121,11 +121,8 @@ impl Translate for Expression {
         lir_translate_helper(self, &mut lir);
         lir.instructions.shrink_to_fit(); // shrink the memory
         #[cfg(debug_assertions)]
-        #[allow(clippy::all)]
         {
-            let ast_counter = self.count_size();
-            ast_counter.ins_bytes;
-            ast_counter.ins_number;
+            let _ast_counter = self.count_size();
         }
         lir
     }
@@ -169,47 +166,17 @@ mod tests {
     use std::collections::HashMap;
     use uuid::Uuid;
 
-    #[derive(Debug, Clone, Copy)]
-    pub enum OperandItem<'a> {
-        Val(bool),
-        Predicate(&'a Predicate),
-    }
-
-    #[inline]
-    fn evaluate_operand_item(item: OperandItem, ctx: &mut Context, m: &mut Match) -> bool {
-        match item {
-            OperandItem::Val(b) => b,
-            OperandItem::Predicate(p) => p.execute(ctx, m),
-        }
-    }
-
     #[inline]
     fn check_short_circuit(operator_stack: &[LirLogicalOperator], operand_stack: &[bool]) -> bool {
         // if it could be short-circuited, return true
-        if (operand_stack.len() > 0) && (operator_stack.len() > 0) {
+        if (!operand_stack.is_empty()) && (!operator_stack.is_empty()) {
             match &operator_stack.last().unwrap() {
-                LirLogicalOperator::And => {
-                    let operand = operand_stack.last().unwrap();
-                    if *operand {
-                        return false;
-                    } else {
-                        return true;
-                    }
-                }
-                LirLogicalOperator::Or => {
-                    let operand = operand_stack.last().unwrap();
-                    if *operand {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-                LirLogicalOperator::Not => {
-                    return false;
-                }
+                LirLogicalOperator::And => !*operand_stack.last().unwrap(),
+                LirLogicalOperator::Or => *operand_stack.last().unwrap(),
+                LirLogicalOperator::Not => false,
             }
         } else {
-            return false;
+            false
         }
     }
 
@@ -290,11 +257,7 @@ mod tests {
                                         index += 3;
                                         operator_stack.pop();
                                     } else {
-                                        let left = evaluate_operand_item(
-                                            OperandItem::Predicate(next_ins.as_predicate()),
-                                            ctx,
-                                            m,
-                                        );
+                                        let left = next_ins.as_predicate().execute(ctx, m);
 
                                         if !left {
                                             // short circuit
@@ -302,13 +265,8 @@ mod tests {
                                             operand_stack.push(false);
                                         } else {
                                             let next_next_ins = &self.instructions[index + 2];
-                                            let right = evaluate_operand_item(
-                                                OperandItem::Predicate(
-                                                    next_next_ins.as_predicate(),
-                                                ),
-                                                ctx,
-                                                m,
-                                            );
+                                            let right =
+                                                next_next_ins.as_predicate().execute(ctx, m);
                                             index += 3;
                                             operand_stack.push(right);
                                         }
@@ -325,11 +283,7 @@ mod tests {
                                         index += 3;
                                         operator_stack.pop();
                                     } else {
-                                        let left = evaluate_operand_item(
-                                            OperandItem::Predicate(next_ins.as_predicate()),
-                                            ctx,
-                                            m,
-                                        );
+                                        let left = next_ins.as_predicate().execute(ctx, m);
 
                                         if left {
                                             // short circuit
@@ -337,13 +291,8 @@ mod tests {
                                             operand_stack.push(true);
                                         } else {
                                             let next_next_ins = &self.instructions[index + 2];
-                                            let right = evaluate_operand_item(
-                                                OperandItem::Predicate(
-                                                    next_next_ins.as_predicate(),
-                                                ),
-                                                ctx,
-                                                m,
-                                            );
+                                            let right =
+                                                next_next_ins.as_predicate().execute(ctx, m);
                                             index += 3;
                                             operand_stack.push(right);
                                         }
@@ -360,11 +309,7 @@ mod tests {
                                         index += 2;
                                         operator_stack.pop();
                                     } else {
-                                        let right = evaluate_operand_item(
-                                            OperandItem::Predicate(next_ins.as_predicate()),
-                                            ctx,
-                                            m,
-                                        );
+                                        let right = next_ins.as_predicate().execute(ctx, m);
                                         index += 2;
                                         operand_stack.push(!right);
 
@@ -382,7 +327,7 @@ mod tests {
                             // short circuit
                             operator_stack.pop();
                         } else {
-                            let right = evaluate_operand_item(OperandItem::Predicate(p), ctx, m);
+                            let right = p.execute(ctx, m);
                             operand_stack.push(right);
                             compact_operation_stack(&mut operator_stack, &mut operand_stack);
                         }
