@@ -58,72 +58,12 @@ pub trait Translate {
     fn translate(&self) -> Self::Output;
 }
 
-#[cfg(debug_assertions)]
-trait CountSize {
-    type Output;
-    fn count_size(&self) -> Self::Output;
-}
-#[cfg(debug_assertions)]
-#[derive(Debug, Default)]
-struct ExpressionInsBytes {
-    ins_number: usize,
-    ins_bytes: usize,
-}
-#[cfg(debug_assertions)]
-impl ExpressionInsBytes {
-    pub fn new() -> Self {
-        Self {
-            ins_number: 0,
-            ins_bytes: 0,
-        }
-    }
-}
-#[cfg(debug_assertions)]
-fn expression_count_heler(exp: &Expression, counter: &mut ExpressionInsBytes) {
-    use crate::ast::{Expression, LogicalExpression};
-    use std::mem;
-    counter.ins_bytes += mem::size_of::<Expression>();
-    match exp {
-        Expression::Logical(l) => {
-            counter.ins_number += 1;
-            counter.ins_bytes += mem::size_of::<LogicalExpression>();
-            match l.as_ref() {
-                LogicalExpression::And(l, r) => {
-                    expression_count_heler(l, counter);
-                    expression_count_heler(r, counter);
-                }
-                LogicalExpression::Or(l, r) => {
-                    expression_count_heler(l, counter);
-                    expression_count_heler(r, counter);
-                }
-                LogicalExpression::Not(r) => {
-                    expression_count_heler(r, counter);
-                }
-            }
-        }
-        Expression::Predicate(_p) => {}
-    }
-}
-#[cfg(debug_assertions)]
-impl CountSize for Expression {
-    type Output = ExpressionInsBytes;
-    fn count_size(&self) -> Self::Output {
-        let mut counter = ExpressionInsBytes::new();
-        expression_count_heler(self, &mut counter);
-        counter
-    }
-}
-
 impl Translate for Expression {
     type Output = LirProgram;
     fn translate(&self) -> Self::Output {
         let mut lir = LirProgram::new();
         lir_translate_helper(self, &mut lir);
         lir.instructions.shrink_to_fit(); // shrink the memory
-        #[cfg(debug_assertions)]
-        {
-            let _ast_counter = self.count_size();
-        }
         lir
     }
 }
@@ -165,6 +105,67 @@ mod tests {
     use crate::semantics::FieldCounter;
     use std::collections::HashMap;
     use uuid::Uuid;
+
+    #[cfg(debug_assertions)]
+    trait CountSize {
+        type Output;
+        fn count_size(&self) -> Self::Output;
+    }
+    #[cfg(debug_assertions)]
+    #[derive(Debug, Default)]
+    struct ExpressionInsBytes {
+        ins_number: usize,
+        ins_bytes: usize,
+    }
+    #[cfg(debug_assertions)]
+    impl ExpressionInsBytes {
+        pub fn new() -> Self {
+            Self {
+                ins_number: 0,
+                ins_bytes: 0,
+            }
+        }
+    }
+    #[cfg(debug_assertions)]
+    fn expression_count_heler(exp: &Expression, counter: &mut ExpressionInsBytes) {
+        use crate::ast::{Expression, LogicalExpression};
+        use std::mem;
+        counter.ins_bytes += mem::size_of::<Expression>();
+        match exp {
+            Expression::Logical(l) => {
+                counter.ins_number += 1;
+                counter.ins_bytes += mem::size_of::<LogicalExpression>();
+                match l.as_ref() {
+                    LogicalExpression::And(l, r) => {
+                        expression_count_heler(l, counter);
+                        expression_count_heler(r, counter);
+                    }
+                    LogicalExpression::Or(l, r) => {
+                        expression_count_heler(l, counter);
+                        expression_count_heler(r, counter);
+                    }
+                    LogicalExpression::Not(r) => {
+                        expression_count_heler(r, counter);
+                    }
+                }
+            }
+            Expression::Predicate(_p) => {}
+        }
+    }
+    #[cfg(debug_assertions)]
+    impl CountSize for Expression {
+        type Output = ExpressionInsBytes;
+        fn count_size(&self) -> Self::Output {
+            let mut counter = ExpressionInsBytes::new();
+            expression_count_heler(self, &mut counter);
+            counter
+        }
+    }
+
+    #[cfg(debug_assertions)]
+    fn Calculate_expression_size(exp: &Expression) {
+        let _ast_counter = exp.count_size();
+    }
 
     #[inline]
     fn check_short_circuit(operator_stack: &[LirLogicalOperator], operand_stack: &[bool]) -> bool {
