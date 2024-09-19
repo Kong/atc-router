@@ -1,8 +1,9 @@
-use crate::cir::CirProgram;
+use crate::cir::{Build, CirProgram};
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
 use crate::lir::Translate;
 use crate::parser::parse;
+use crate::repo::ProgramRepo;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
 use std::collections::{BTreeMap, HashMap};
@@ -14,6 +15,7 @@ struct MatcherKey(usize, Uuid);
 pub struct Router<'a> {
     schema: &'a Schema,
     matchers: BTreeMap<MatcherKey, CirProgram>,
+    program_repo: ProgramRepo,
     pub fields: HashMap<String, usize>,
 }
 
@@ -22,6 +24,7 @@ impl<'a> Router<'a> {
         Self {
             schema,
             matchers: BTreeMap::new(),
+            program_repo: ProgramRepo::new(),
             fields: HashMap::new(),
         }
     }
@@ -35,8 +38,8 @@ impl<'a> Router<'a> {
 
         let ast = parse(atc).map_err(|e| e.to_string())?;
         ast.validate(self.schema)?;
-        let cir = ast.translate().translate();
-        cir.add_to_counter(&mut self.fields);
+        let cir = ast.translate().build(&mut self.program_repo);
+        cir.add_to_counter(&self.program_repo, &mut self.fields);
         assert!(self.matchers.insert(key, cir).is_none());
 
         Ok(())
@@ -46,7 +49,7 @@ impl<'a> Router<'a> {
         let key = MatcherKey(priority, uuid);
 
         if let Some(cir) = self.matchers.remove(&key) {
-            cir.remove_from_counter(&mut self.fields);
+            cir.remove_from_counter(&self.program_repo, &mut self.fields);
             return true;
         }
 
@@ -56,7 +59,7 @@ impl<'a> Router<'a> {
     pub fn execute(&self, context: &mut Context) -> bool {
         for (MatcherKey(_, id), m) in self.matchers.iter().rev() {
             let mut mat = Match::new();
-            if m.execute(context, &mut mat) {
+            if m.execute(&self.program_repo, context, &mut mat) {
                 mat.uuid = *id;
                 context.result = Some(mat);
 

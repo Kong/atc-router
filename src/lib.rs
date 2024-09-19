@@ -23,6 +23,7 @@ pub mod context;
 pub mod interpreter;
 pub mod lir;
 pub mod parser;
+pub mod repo;
 pub mod router;
 pub mod schema;
 pub mod semantics;

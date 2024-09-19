@@ -1,12 +1,17 @@
 use crate::ast::{BinaryOperator, Predicate, Value};
 use crate::context::{Context, Match};
+use crate::repo::ProgramRepo;
 
 pub trait Execute {
-    fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
+    fn execute(&self, program_repo: &ProgramRepo, ctx: &mut Context, m: &mut Match) -> bool;
 }
 
-impl Execute for Predicate {
-    fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
+pub trait Evaluate {
+    fn evaluate(&self, ctx: &mut Context, m: &mut Match) -> bool;
+}
+
+impl Evaluate for Predicate {
+    fn evaluate(&self, ctx: &mut Context, m: &mut Match) -> bool {
         let lhs_values = match ctx.value_of(&self.lhs.var_name) {
             None => return false,
             Some(v) => v,

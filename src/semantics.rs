@@ -1,4 +1,5 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
+use crate::repo::ProgramRepo;
 use crate::schema::Schema;
 use std::collections::HashMap;
 
@@ -9,8 +10,8 @@ pub trait Validate {
 }
 
 pub trait FieldCounter {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>);
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>);
+    fn add_to_counter(&self, program_repo: &ProgramRepo, map: &mut HashMap<String, usize>);
+    fn remove_from_counter(&self, program_repo: &ProgramRepo, map: &mut HashMap<String, usize>);
 }
 
 impl Validate for Expression {

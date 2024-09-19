@@ -1,27 +1,21 @@
 // cir:  compact intermediate representation
 use crate::ast::Predicate;
 use crate::context::{Context, Match};
-use crate::interpreter::Execute;
-use crate::lir::{is_operator, LirInstruction, LirLogicalOperator, LirProgram, Translate};
+use crate::interpreter::{Evaluate, Execute};
+use crate::lir::{is_operator, LirInstruction, LirLogicalOperator, LirProgram};
+use crate::repo::ProgramRepo;
 use crate::semantics::FieldCounter;
 use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct CirProgram {
-    pub(crate) instructions: Vec<CirInstruction>,
+    pub(crate) first: usize,
+    pub(crate) last: usize,
 }
 
 impl CirProgram {
-    pub fn new() -> Self {
-        Self {
-            instructions: Vec::new(),
-        }
-    }
-}
-
-impl Default for CirProgram {
-    fn default() -> Self {
-        Self::new()
+    pub fn new(first: usize, last: usize) -> Self {
+        Self { first, last }
     }
 }
 
@@ -86,12 +80,17 @@ fn is_index(cir_operand: &CirOperand) -> bool {
     }
 }
 
-impl Translate for LirProgram {
+pub trait Build {
+    type Output;
+    fn build(&self, program_repo: &mut ProgramRepo) -> Self::Output;
+}
+
+impl Build for LirProgram {
     type Output = CirProgram;
-    fn translate(&self) -> Self::Output {
-        let mut cir = CirProgram::new();
-        cir_translate_helper(self, &mut cir);
-        cir.instructions.shrink_to_fit(); // shrink the memory
+    fn build(&self, program_repo: &mut ProgramRepo) -> Self::Output {
+        let previous_len = program_repo.instructions.len();
+        cir_translate_helper(self, program_repo);
+        let cir = CirProgram::new(previous_len, program_repo.instructions.len() - 1);
         cir
     }
 }
@@ -149,7 +148,7 @@ fn reduce_translation_stack(
 }
 
 #[inline]
-fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
+fn cir_translate_helper(lir: &LirProgram, cir: &mut ProgramRepo) {
     let mut operand_stack: Vec<CirOperand> = Vec::new();
     let mut operator_stack: Vec<LirLogicalOperator> = Vec::new();
     let mut index = 0;
@@ -274,14 +273,14 @@ fn execute_helper(
                 CirOperand::Index(_index) => {
                     execute_helper(cir_instructions, and.left.as_index(), ctx, m)
                 }
-                CirOperand::Predicate(_p) => and.left.as_predicate().execute(ctx, m),
+                CirOperand::Predicate(_p) => and.left.as_predicate().evaluate(ctx, m),
             };
             left_val
                 && match &and.right {
                     CirOperand::Index(_index) => {
                         execute_helper(cir_instructions, and.right.as_index(), ctx, m)
                     }
-                    CirOperand::Predicate(_p) => and.right.as_predicate().execute(ctx, m),
+                    CirOperand::Predicate(_p) => and.right.as_predicate().evaluate(ctx, m),
                 }
         }
         CirInstruction::OrIns(or) => {
@@ -289,14 +288,14 @@ fn execute_helper(
                 CirOperand::Index(_index) => {
                     execute_helper(cir_instructions, or.left.as_index(), ctx, m)
                 }
-                CirOperand::Predicate(_p) => or.left.as_predicate().execute(ctx, m),
+                CirOperand::Predicate(_p) => or.left.as_predicate().evaluate(ctx, m),
             };
             left_val
                 || match &or.right {
                     CirOperand::Index(_index) => {
                         execute_helper(cir_instructions, or.right.as_index(), ctx, m)
                     }
-                    CirOperand::Predicate(_p) => or.right.as_predicate().execute(ctx, m),
+                    CirOperand::Predicate(_p) => or.right.as_predicate().evaluate(ctx, m),
                 }
         }
         CirInstruction::NotIns(not) => {
@@ -304,23 +303,23 @@ fn execute_helper(
                 CirOperand::Index(_index) => {
                     execute_helper(cir_instructions, not.right.as_index(), ctx, m)
                 }
-                CirOperand::Predicate(_p) => not.right.as_predicate().execute(ctx, m),
+                CirOperand::Predicate(_p) => not.right.as_predicate().evaluate(ctx, m),
             };
             !right_val
         }
-        CirInstruction::Predicate(p) => p.execute(ctx, m),
+        CirInstruction::Predicate(p) => p.evaluate(ctx, m),
     }
 }
 
 impl Execute for CirProgram {
-    fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
-        execute_helper(&self.instructions, self.instructions.len() - 1, ctx, m)
+    fn execute(&self, program_repo: &ProgramRepo, ctx: &mut Context, m: &mut Match) -> bool {
+        execute_helper(&program_repo.instructions, self.last, ctx, m)
     }
 }
 
 impl FieldCounter for CirProgram {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
-        for instruction in &self.instructions {
+    fn add_to_counter(&self, program_repo: &ProgramRepo, map: &mut HashMap<String, usize>) {
+        for instruction in &program_repo.instructions[self.first..self.last] {
             match &instruction {
                 CirInstruction::AndIns(and) => {
                     if !is_index(&and.left) {
@@ -355,8 +354,8 @@ impl FieldCounter for CirProgram {
         }
     }
 
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
-        for instruction in &self.instructions {
+    fn remove_from_counter(&self, program_repo: &ProgramRepo, map: &mut HashMap<String, usize>) {
+        for instruction in &program_repo.instructions[self.first..self.last] {
             match &instruction {
                 CirInstruction::AndIns(and) => {
                     if !is_index(&and.left) {
