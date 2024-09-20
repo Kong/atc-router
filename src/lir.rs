@@ -2,11 +2,11 @@
 use crate::ast::{Expression, LogicalExpression, Predicate};
 
 #[derive(Debug)]
-pub struct LirProgram {
-    pub(crate) instructions: Vec<LirInstruction>,
+pub struct LirProgram<'a> {
+    pub(crate) instructions: Vec<LirInstruction<'a>>,
 }
 
-impl LirProgram {
+impl<'a> LirProgram<'a> {
     pub fn new() -> Self {
         Self {
             instructions: Vec::new(),
@@ -14,19 +14,19 @@ impl LirProgram {
     }
 }
 
-impl Default for LirProgram {
+impl<'a> Default for LirProgram<'a> {
     fn default() -> Self {
         Self::new()
     }
 }
 
 #[derive(Debug)]
-pub enum LirInstruction {
+pub enum LirInstruction<'a> {
     LogicalOperator(LirLogicalOperator),
-    Predicate(Predicate),
+    Predicate(&'a Predicate),
 }
 
-impl LirInstruction {
+impl<'a> LirInstruction<'a> {
     #[inline]
     pub fn as_predicate(&self) -> &Predicate {
         match &self {
@@ -53,14 +53,14 @@ pub enum LirLogicalOperator {
     Not,
 }
 
-pub trait Translate {
+pub trait Translate<'a> {
     type Output;
-    fn translate(&self) -> Self::Output;
+    fn translate(&'a self) -> Self::Output;
 }
 
-impl Translate for Expression {
-    type Output = LirProgram;
-    fn translate(&self) -> Self::Output {
+impl<'a> Translate<'a> for Expression {
+    type Output = LirProgram<'a>;
+    fn translate(&'a self) -> Self::Output {
         let mut lir = LirProgram::new();
         lir_translate_helper(self, &mut lir);
         lir.instructions.shrink_to_fit(); // shrink the memory
@@ -68,7 +68,7 @@ impl Translate for Expression {
     }
 }
 
-fn lir_translate_helper(exp: &Expression, lir: &mut LirProgram) {
+fn lir_translate_helper<'a>(exp: &'a Expression, lir: &mut LirProgram<'a>) {
     match exp {
         Expression::Logical(logic_exp) => match logic_exp.as_ref() {
             LogicalExpression::And(l, r) => {
@@ -90,7 +90,7 @@ fn lir_translate_helper(exp: &Expression, lir: &mut LirProgram) {
             }
         },
         Expression::Predicate(p) => {
-            lir.instructions.push(LirInstruction::Predicate(p.clone()));
+            lir.instructions.push(LirInstruction::Predicate(p));
         }
     }
 }

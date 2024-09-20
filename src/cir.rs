@@ -86,7 +86,7 @@ fn is_index(cir_operand: &CirOperand) -> bool {
     }
 }
 
-impl Translate for LirProgram {
+impl<'a> Translate<'a> for LirProgram<'a> {
     type Output = CirProgram;
     fn translate(&self) -> Self::Output {
         let mut cir = CirProgram::new();
@@ -162,8 +162,8 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
                 lir
             ),
             LirInstruction::Predicate(p) => {
-                let predicate = p.clone();
-                cir.instructions.push(CirInstruction::Predicate(predicate));
+                cir.instructions
+                    .push(CirInstruction::Predicate((*p).clone()));
             }
         }
         return;
@@ -248,7 +248,7 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
                 }
             },
             LirInstruction::Predicate(p) => {
-                operand_stack.push(CirOperand::Predicate(p.clone()));
+                operand_stack.push(CirOperand::Predicate((*p).clone()));
                 reduce_translation_stack(
                     &mut cir.instructions,
                     &mut operator_stack,
