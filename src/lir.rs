@@ -31,7 +31,7 @@ impl LirInstruction {
     pub fn as_predicate(&self) -> &Predicate {
         match &self {
             LirInstruction::LogicalOperator(_ops) => {
-                panic!("Call as_predicate on LogicalOperator Operand, LirProgram is wrong.")
+                panic!("unexpected call to as_predicate with logical operator operand.")
             }
             LirInstruction::Predicate(p) => p,
         }

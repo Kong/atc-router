@@ -61,7 +61,7 @@ impl CirOperand {
     pub fn as_predicate(&self) -> &Predicate {
         match &self {
             CirOperand::Index(_index) => {
-                panic!("Call as_predicate on index Operand, CirProgram is wrong.")
+                panic!("unexpected call to as_predicate with index operand.")
             }
             CirOperand::Predicate(p) => p,
         }
@@ -72,7 +72,7 @@ impl CirOperand {
         match &self {
             CirOperand::Index(index) => *index,
             CirOperand::Predicate(_p) => {
-                panic!("Call as_index on predicate Operand, CirProgram is wrong.")
+                panic!("unexpected call to as_index with predicate operand.")
             }
         }
     }
@@ -158,7 +158,7 @@ fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
         // this should be predicate only
         match &lir.instructions[0] {
             LirInstruction::LogicalOperator(_op) => panic!(
-                "Wrong input for Cir, {:?}, it should be predicate only!",
+                "wrong input for Cir, {:?}, it should be predicate only!",
                 lir
             ),
             LirInstruction::Predicate(p) => {
