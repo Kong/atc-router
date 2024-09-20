@@ -427,25 +427,25 @@ impl FieldCounter for CirProgram {
 #[cfg(test)]
 mod tests {
     // use super::*;
-    use crate::router::Router;
+    use crate::context::Match;
+    use crate::interpreter::Execute;
+    use crate::lir::Translate;
     use crate::schema::Schema;
-    use uuid::Uuid;
-
     #[test]
-    fn verify_translate() {
+    fn verify_translate_execute() {
         let mut schema = Schema::default();
         schema.add_field("a", crate::ast::Type::Int);
         schema.add_field("http.path", crate::ast::Type::String);
         schema.add_field("http.version", crate::ast::Type::String);
-        let mut router = Router::new(&schema);
-        let uuid = Uuid::try_from("8cb2a7d0-c775-4ed9-989f-77697240ae96").unwrap();
-        //router.add_matcher(0,  uuid, r#"!(( a == 2) && ( a == 9 )) || !(a == 1) || (http.path == "hello" && http.version == "1.1") || ( a == 3 && a == 4) && !(a == 5)"#).unwrap();
-        router.add_matcher(0, uuid, r#"(http.path == "hello" && http.version == "1.1") || !(( a == 2) && ( a == 9 )) || !(a == 1) || ( a == 3 && a == 4) && !(a == 5)"#).unwrap();
-
+        let ast = crate::parser::parse(r#"(http.path == "hello" && http.version == "1.1") || !(( a == 2) && ( a == 9 )) || !(a == 1) || ( a == 3 && a == 4) && !(a == 5)"#).map_err(|e| e.to_string());
         let mut context = crate::context::Context::new(&schema);
         context.add_value("http.path", crate::ast::Value::String("hello".to_string()));
         context.add_value("http.version", crate::ast::Value::String("1.1".to_string()));
-        assert!(router.execute(&mut context));
-        println!("{:?}", context.result.unwrap().matches);
+        let mut mat = Match::new();
+        assert!(ast
+            .unwrap()
+            .translate()
+            .translate()
+            .execute(&mut context, &mut mat));
     }
 }

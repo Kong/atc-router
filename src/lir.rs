@@ -100,11 +100,9 @@ mod tests {
     use super::*;
     use crate::context::{Context, Match};
     use crate::interpreter::Execute;
-    use crate::router::Router;
     use crate::schema::Schema;
     use crate::semantics::FieldCounter;
     use std::collections::HashMap;
-    use uuid::Uuid;
 
     #[cfg(debug_assertions)]
     trait CountSize {
@@ -112,7 +110,7 @@ mod tests {
         fn count_size(&self) -> Self::Output;
     }
     #[cfg(debug_assertions)]
-    #[derive(Debug, Default)]
+    #[derive(Default)]
     struct ExpressionInsBytes {
         ins_number: usize,
         ins_bytes: usize,
@@ -163,7 +161,7 @@ mod tests {
     }
 
     #[cfg(debug_assertions)]
-    fn Calculate_expression_size(exp: &Expression) {
+    fn calculate_expression_size(exp: &Expression) {
         let _ast_counter = exp.count_size();
     }
 
@@ -226,7 +224,7 @@ mod tests {
         }
     }
 
-    impl Execute for LirProgram {
+    impl<'a> Execute for LirProgram<'a> {
         fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
             let mut operand_stack: Vec<bool> = Vec::new();
             let mut operator_stack: Vec<LirLogicalOperator> = Vec::new();
@@ -346,7 +344,7 @@ mod tests {
         }
     }
 
-    impl FieldCounter for LirProgram {
+    impl<'a> FieldCounter for LirProgram<'a> {
         fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
             for instruction in &self.instructions {
                 match instruction {
@@ -380,20 +378,19 @@ mod tests {
     }
 
     #[test]
-    fn verify_translate() {
+    fn verify_translate_execute() {
+        let ast = crate::parser::parse(r#"!(( a == 2) && ( a == 9 )) || !(a == 1) || (http.path == "hello" && http.version == "1.1") || ( a == 3 && a == 4) && !(a == 5)"#).map_err(|e| e.to_string());
+        calculate_expression_size(&ast.unwrap());
+
         let mut schema = Schema::default();
         schema.add_field("a", crate::ast::Type::Int);
         schema.add_field("http.path", crate::ast::Type::String);
         schema.add_field("http.version", crate::ast::Type::String);
-        let mut router = Router::new(&schema);
-        let uuid = Uuid::try_from("8cb2a7d0-c775-4ed9-989f-77697240ae96").unwrap();
-        //router.add_matcher(0,  uuid, r#"!(( a == 2) && ( a == 9 )) || !(a == 1) || (http.path == "hello" && http.version == "1.1") || ( a == 3 && a == 4) && !(a == 5)"#).unwrap();
-        router.add_matcher(0, uuid, r#"(http.path == "hello" && http.version == "1.1") || !(( a == 2) && ( a == 9 )) || !(a == 1) || ( a == 3 && a == 4) && !(a == 5)"#).unwrap();
-
+        let ast_1 = crate::parser::parse(r#"(http.path == "hello" && http.version == "1.1") || !(( a == 2) && ( a == 9 )) || !(a == 1) || ( a == 3 && a == 4) && !(a == 5)"#).map_err(|e| e.to_string());
         let mut context = crate::context::Context::new(&schema);
         context.add_value("http.path", crate::ast::Value::String("hello".to_string()));
         context.add_value("http.version", crate::ast::Value::String("1.1".to_string()));
-        assert!(router.execute(&mut context));
-        println!("{:?}", context.result.unwrap().matches);
+        let mut mat = Match::new();
+        assert!(ast_1.unwrap().translate().execute(&mut context, &mut mat));
     }
 }
