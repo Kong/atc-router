@@ -1,8 +1,7 @@
 // cir:  compact intermediate representation
-use crate::ast::Predicate;
+use crate::ast::{Expression, LogicalExpression, Predicate};
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
-use crate::lir::{is_operator, LirInstruction, LirLogicalOperator, LirProgram, Translate};
 use crate::semantics::FieldCounter;
 use std::collections::HashMap;
 
@@ -86,7 +85,12 @@ fn is_index(cir_operand: &CirOperand) -> bool {
     }
 }
 
-impl<'a> Translate<'a> for LirProgram<'a> {
+pub trait Translate {
+    type Output;
+    fn translate(&self) -> Self::Output;
+}
+
+impl Translate for Expression {
     type Output = CirProgram;
     fn translate(&self) -> Self::Output {
         let mut cir = CirProgram::new();
@@ -96,170 +100,62 @@ impl<'a> Translate<'a> for LirProgram<'a> {
     }
 }
 
-#[inline]
-fn reduce_translation_stack(
-    cir_instructions: &mut Vec<CirInstruction>,
-    operator_stack: &mut Vec<LirLogicalOperator>,
-    operand_stack: &mut Vec<CirOperand>,
-) {
-    loop {
-        if !operator_stack.is_empty() {
-            match &operator_stack.last().unwrap() {
-                LirLogicalOperator::And => {
-                    if operand_stack.len() >= 2 {
-                        let right = operand_stack.pop().unwrap();
-                        let left = operand_stack.pop().unwrap();
-                        let and_ins = AndIns { left, right };
-                        cir_instructions.push(CirInstruction::AndIns(and_ins));
-                        operand_stack.push(CirOperand::Index(cir_instructions.len() - 1));
-                        operator_stack.pop();
-                    } else {
-                        break;
+fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
+    match exp {
+        Expression::Logical(logic_exp) => match logic_exp.as_ref() {
+            LogicalExpression::And(l, r) => {
+                let left = match l {
+                    Expression::Logical(_logic_exp) => {
+                        CirOperand::Index(cir_translate_helper(l, cir) - 1)
                     }
-                }
-                LirLogicalOperator::Or => {
-                    if operand_stack.len() >= 2 {
-                        let right = operand_stack.pop().unwrap();
-                        let left = operand_stack.pop().unwrap();
-                        let or_ins = OrIns { left, right };
-                        cir_instructions.push(CirInstruction::OrIns(or_ins));
-                        operand_stack.push(CirOperand::Index(cir_instructions.len() - 1));
-                        operator_stack.pop();
-                    } else {
-                        break;
+                    Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
+                };
+
+                let right = match r {
+                    Expression::Logical(_logic_exp) => {
+                        CirOperand::Index(cir_translate_helper(r, cir) - 1)
                     }
-                }
-                LirLogicalOperator::Not => {
-                    if !operand_stack.is_empty() {
-                        let right = operand_stack.pop().unwrap();
-                        let not_ins = NotIns { right };
-                        cir_instructions.push(CirInstruction::NotIns(not_ins));
-                        operand_stack.push(CirOperand::Index(cir_instructions.len() - 1));
-                        operator_stack.pop();
-                    } else {
-                        break;
-                    }
-                }
+                    Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
+                };
+                let and_ins = AndIns { left, right };
+                cir.instructions.push(CirInstruction::AndIns(and_ins));
+                cir.instructions.len()
             }
-        } else {
-            // operator stack drained
-            break;
+            LogicalExpression::Or(l, r) => {
+                let left = match l {
+                    Expression::Logical(_logic_exp) => {
+                        CirOperand::Index(cir_translate_helper(l, cir) - 1)
+                    }
+                    Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
+                };
+
+                let right = match r {
+                    Expression::Logical(_logic_exp) => {
+                        CirOperand::Index(cir_translate_helper(r, cir) - 1)
+                    }
+                    Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
+                };
+                let or_ins = OrIns { left, right };
+                cir.instructions.push(CirInstruction::OrIns(or_ins));
+                cir.instructions.len()
+            }
+            LogicalExpression::Not(r) => {
+                let right: CirOperand = match r {
+                    Expression::Logical(_logic_exp) => {
+                        CirOperand::Index(cir_translate_helper(r, cir) - 1)
+                    }
+                    Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
+                };
+                let not_ins = NotIns { right };
+                cir.instructions.push(CirInstruction::NotIns(not_ins));
+                cir.instructions.len()
+            }
+        },
+        Expression::Predicate(p) => {
+            cir.instructions.push(CirInstruction::Predicate(p.clone()));
+            cir.instructions.len()
         }
     }
-}
-
-#[inline]
-fn cir_translate_helper(lir: &LirProgram, cir: &mut CirProgram) {
-    let mut operand_stack: Vec<CirOperand> = Vec::new();
-    let mut operator_stack: Vec<LirLogicalOperator> = Vec::new();
-    let mut index = 0;
-
-    if lir.instructions.len() == 1 {
-        // this should be predicate only
-        match &lir.instructions[0] {
-            LirInstruction::LogicalOperator(_op) => panic!(
-                "wrong input for Cir, {:?}, it should be predicate only!",
-                lir
-            ),
-            LirInstruction::Predicate(p) => {
-                cir.instructions
-                    .push(CirInstruction::Predicate((*p).clone()));
-            }
-        }
-        return;
-    }
-
-    loop {
-        if index >= lir.instructions.len() {
-            // end of LirProgram
-            break;
-        }
-
-        match &lir.instructions[index] {
-            LirInstruction::LogicalOperator(op) => match op {
-                LirLogicalOperator::And => {
-                    let next_ins = &lir.instructions[index + 1];
-                    if is_operator(next_ins) {
-                        // next is operator
-                        operator_stack.push(LirLogicalOperator::And);
-                        index += 1;
-                    } else {
-                        let next_next_ins = &lir.instructions[index + 2];
-                        let and_ins = AndIns {
-                            left: CirOperand::Predicate(next_ins.as_predicate().clone()),
-                            right: CirOperand::Predicate(next_next_ins.as_predicate().clone()),
-                        };
-                        cir.instructions.push(CirInstruction::AndIns(and_ins));
-                        operand_stack.push(CirOperand::Index(cir.instructions.len() - 1));
-                        index += 3;
-
-                        reduce_translation_stack(
-                            &mut cir.instructions,
-                            &mut operator_stack,
-                            &mut operand_stack,
-                        );
-                    }
-                }
-                LirLogicalOperator::Or => {
-                    let next_ins = &lir.instructions[index + 1];
-                    if is_operator(next_ins) {
-                        // next is operator
-                        operator_stack.push(LirLogicalOperator::Or);
-                        index += 1;
-                    } else {
-                        let next_next_ins = &lir.instructions[index + 2];
-                        let or_ins = OrIns {
-                            left: CirOperand::Predicate(next_ins.as_predicate().clone()),
-                            right: CirOperand::Predicate(next_next_ins.as_predicate().clone()),
-                        };
-                        cir.instructions.push(CirInstruction::OrIns(or_ins));
-                        operand_stack.push(CirOperand::Index(cir.instructions.len() - 1));
-                        index += 3;
-
-                        reduce_translation_stack(
-                            &mut cir.instructions,
-                            &mut operator_stack,
-                            &mut operand_stack,
-                        );
-                    }
-                }
-                LirLogicalOperator::Not => {
-                    let next_ins = &lir.instructions[index + 1];
-                    if is_operator(next_ins) {
-                        // push LIR operator to ops stack
-                        // next is operator
-                        operator_stack.push(LirLogicalOperator::Not);
-                        index += 1;
-                    } else {
-                        next_ins.as_predicate(); //right
-                        let not_ins = NotIns {
-                            right: CirOperand::Predicate(next_ins.as_predicate().clone()),
-                        };
-                        cir.instructions.push(CirInstruction::NotIns(not_ins));
-                        operand_stack.push(CirOperand::Index(cir.instructions.len() - 1));
-                        index += 2;
-
-                        reduce_translation_stack(
-                            &mut cir.instructions,
-                            &mut operator_stack,
-                            &mut operand_stack,
-                        );
-                    }
-                }
-            },
-            LirInstruction::Predicate(p) => {
-                operand_stack.push(CirOperand::Predicate((*p).clone()));
-                reduce_translation_stack(
-                    &mut cir.instructions,
-                    &mut operator_stack,
-                    &mut operand_stack,
-                );
-
-                index += 1;
-            }
-        }
-    }
-    debug_assert_eq!(operator_stack.len(), 0);
 }
 
 fn execute_helper(

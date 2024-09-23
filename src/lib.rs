@@ -21,7 +21,6 @@ pub mod ast;
 pub mod cir;
 pub mod context;
 pub mod interpreter;
-pub mod lir;
 pub mod parser;
 pub mod router;
 pub mod schema;

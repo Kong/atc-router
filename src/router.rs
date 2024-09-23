@@ -1,7 +1,6 @@
-use crate::cir::CirProgram;
+use crate::cir::{CirProgram, Translate};
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
-use crate::lir::Translate;
 use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
@@ -35,7 +34,7 @@ impl<'a> Router<'a> {
 
         let ast = parse(atc).map_err(|e| e.to_string())?;
         ast.validate(self.schema)?;
-        let cir = ast.translate().translate();
+        let cir = ast.translate();
         cir.add_to_counter(&mut self.fields);
         assert!(self.matchers.insert(key, cir).is_none());
 
