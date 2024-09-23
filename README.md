@@ -6,6 +6,7 @@ ATC Router library for Kong.
 
 * [Name](#name)
 * [Semantics](#semantics)
+* [Synopsis](#synopsis)
 * [APIs](#apis)
     * [resty.router.schema](#restyrouterschema)
         * [new](#new)
@@ -41,6 +42,47 @@ Each data referred in the DSL has a type, the type can be one of the following:
 
 Please refer to the [documentation](https://docs.konghq.com/gateway/latest/reference/expressions-language/)
 on Kong website for how the language is used in practice.
+
+# Synopsis
+
+```
+lua_package_path '/path/to/atc-router/lib/?.lua;;';
+
+# run `make build` to generate dynamic library
+
+lua_package_cpath '/path/to/atc-router/target/debug/?.so;;';
+
+# A simple example creates schema, router and context, and use them to check if
+# "http.path" starts with "/foo" and if "tcp.port" equals 80.
+
+location = /simple_example {
+    content_by_lua_block {
+        local schema = require("resty.router.schema")
+        local router = require("resty.router.router")
+        local context = require("resty.router.context")
+
+        local s = schema.new()
+
+        s:add_field("http.path", "String")
+        s:add_field("tcp.port", "Int")
+
+        local r = router.new(s)
+        assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
+                             "http.path ^= \"/foo\" && tcp.port == 80"))
+
+        local c = context.new(s)
+        c:add_value("http.path", "/foo/bar")
+        c:add_value("tcp.port", 80)
+
+        local matched = r:execute(c)
+        ngx.say(matched)
+
+        local uuid, prefix = c:get_result("http.path")
+        ngx.say(uuid)
+        ngx.say(prefix)
+    }
+}
+```
 
 # APIs
 
