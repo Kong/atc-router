@@ -5,7 +5,7 @@ It is mainly used inside the [Kong Gateway](https://github.com/Kong/kong)
 for performing route matching against incoming requests and is used as a FFI binding
 for LuaJIT.
 
-Please see the [repositoty README.md](https://github.com/Kong/atc-router/blob/main/README.md)
+Please see the [repository README.md](https://github.com/Kong/atc-router/blob/main/README.md)
 for more detailed explainations of the concepts and APIs.
 
 # Crate features
