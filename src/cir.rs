@@ -312,10 +312,9 @@ impl FieldCounter for CirProgram {
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
+    use super::*;
     use crate::context::Match;
     use crate::interpreter::Execute;
-    use crate::lir::Translate;
     use crate::schema::Schema;
     #[test]
     fn verify_translate_execute() {
@@ -328,10 +327,6 @@ mod tests {
         context.add_value("http.path", crate::ast::Value::String("hello".to_string()));
         context.add_value("http.version", crate::ast::Value::String("1.1".to_string()));
         let mut mat = Match::new();
-        assert!(ast
-            .unwrap()
-            .translate()
-            .translate()
-            .execute(&mut context, &mut mat));
+        assert!(ast.unwrap().translate().execute(&mut context, &mut mat));
     }
 }
