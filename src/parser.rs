@@ -18,6 +18,7 @@ type ParseResult<T> = Result<T, ParseError<Rule>>;
 // Bug: https://github.com/eqrion/cbindgen/issues/286
 
 trait IntoParseResult<T> {
+    #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
     fn into_parse_result(self, pair: &Pair<Rule>) -> ParseResult<T>;
 }
 
@@ -59,6 +60,7 @@ impl ATCParser {
         }
     }
     // matcher = { SOI ~ expression ~ EOI }
+    #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
     fn parse_matcher(&mut self, source: &str) -> ParseResult<Expression> {
         let pairs = ATCParser::parse(Rule::matcher, source)?;
         let expr_pair = pairs.peek().unwrap().into_inner().peek().unwrap();
@@ -70,9 +72,12 @@ impl ATCParser {
     }
 }
 
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_ident(pair: Pair<Rule>) -> ParseResult<String> {
     Ok(pair.as_str().into())
 }
+
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_lhs(pair: Pair<Rule>) -> ParseResult<Lhs> {
     let pairs = pair.into_inner();
     let pair = pairs.peek().unwrap();
@@ -89,7 +94,9 @@ fn parse_lhs(pair: Pair<Rule>) -> ParseResult<Lhs> {
         _ => unreachable!(),
     })
 }
+
 // rhs = { str_literal | ip_literal | int_literal }
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_rhs(pair: Pair<Rule>) -> ParseResult<Value> {
     let pairs = pair.into_inner();
     let pair = pairs.peek().unwrap();
@@ -107,6 +114,7 @@ fn parse_rhs(pair: Pair<Rule>) -> ParseResult<Value> {
 }
 
 // str_literal = ${ "\"" ~ str_inner ~ "\"" }
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_str_literal(pair: Pair<Rule>) -> ParseResult<String> {
     let char_pairs = pair.into_inner();
     let mut s = String::new();
@@ -123,6 +131,7 @@ fn parse_str_literal(pair: Pair<Rule>) -> ParseResult<String> {
 
 // rawstr_literal = ${ "r#\"" ~ rawstr_char* ~ "\"#" }
 // rawstr_char = { !"\"#" ~ ANY }
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_rawstr_literal(pair: Pair<Rule>) -> ParseResult<String> {
     let char_pairs = pair.into_inner();
     let mut s = String::new();
@@ -150,19 +159,28 @@ fn parse_str_esc(pair: Pair<Rule>) -> char {
 fn parse_str_char(pair: Pair<Rule>) -> char {
     return pair.as_str().chars().next().unwrap();
 }
+
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_ipv4_cidr_literal(pair: Pair<Rule>) -> ParseResult<Ipv4Cidr> {
     pair.as_str().parse().into_parse_result(&pair)
 }
+
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_ipv6_cidr_literal(pair: Pair<Rule>) -> ParseResult<Ipv6Cidr> {
     pair.as_str().parse().into_parse_result(&pair)
 }
+
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_ipv4_literal(pair: Pair<Rule>) -> ParseResult<Ipv4Addr> {
     pair.as_str().parse().into_parse_result(&pair)
 }
+
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_ipv6_literal(pair: Pair<Rule>) -> ParseResult<Ipv6Addr> {
     pair.as_str().parse().into_parse_result(&pair)
 }
 
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
     let is_neg = pair.as_str().starts_with('-');
     let pairs = pair.into_inner();
@@ -185,6 +203,7 @@ fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
 }
 
 // predicate = { lhs ~ binary_operator ~ rhs }
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
     let mut pairs = pair.into_inner();
     let lhs = parse_lhs(pairs.next().unwrap())?;
@@ -220,6 +239,7 @@ fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
     })
 }
 // transform_func = { ident ~ "(" ~ lhs ~ ")" }
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_transform_func(pair: Pair<Rule>) -> ParseResult<Lhs> {
     let span = pair.as_span();
     let pairs = pair.into_inner();
@@ -241,6 +261,7 @@ fn parse_transform_func(pair: Pair<Rule>) -> ParseResult<Lhs> {
 
     Ok(lhs)
 }
+
 // binary_operator = { "==" | "!=" | "~" | "^=" | "=^" | ">=" |
 //                     ">" | "<=" | "<" | "in" | "not" ~ "in" | "contains" }
 fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
@@ -264,6 +285,7 @@ fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
 }
 
 // parenthesised_expression = { not_op? ~ "(" ~ expression ~ ")" }
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_parenthesised_expression(
     pair: Pair<Rule>,
     pratt: &PrattParser<Rule>,
@@ -281,6 +303,7 @@ fn parse_parenthesised_expression(
 }
 
 // term = { predicate | parenthesised_expression }
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
     let pairs = pair.into_inner();
     let inner_rule = pairs.peek().unwrap();
@@ -293,6 +316,7 @@ fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expres
 }
 
 // expression = { term ~ ( logical_operator ~ term )* }
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
     let pairs = pair.into_inner();
     pratt
@@ -310,6 +334,7 @@ fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<
         .parse(pairs)
 }
 
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 pub fn parse(source: &str) -> ParseResult<Expression> {
     ATCParser::new().parse_matcher(source)
 }
