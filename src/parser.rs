@@ -88,6 +88,7 @@ fn parse_lhs(pair: Pair<Rule>) -> ParseResult<Lhs> {
             let var = parse_ident(pair)?;
             Lhs {
                 var_name: var,
+                index: Default::default(),
                 transformations: Vec::new(),
             }
         }

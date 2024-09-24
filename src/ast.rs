@@ -104,6 +104,7 @@ pub enum Type {
 #[derive(Debug)]
 pub struct Lhs {
     pub var_name: String,
+    pub index: usize,
     pub transformations: Vec<LhsTransformations>,
 }
 

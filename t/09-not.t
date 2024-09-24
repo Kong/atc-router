@@ -38,7 +38,7 @@ __DATA__
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  [[!(http.path ^= "/abc")]]))
 
-            local c = context.new(s)
+            local c = context.new(r)
             c:add_value("http.path", "/abc/d")
 
             local matched = r:execute(c)
