@@ -21,11 +21,13 @@ regex = "1"
 serde = { version = "1.0", features = ["derive"], optional = true }
 serde_regex = { version = "1.1", optional = true }
 fnv = "1"
+bitflags = "2.6.0"
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [features]
-default = ["ffi"]
+default = ["ffi", "expr_validation"]
 ffi = []
 serde = ["cidr/serde", "dep:serde", "dep:serde_regex"]
+expr_validation = []
