@@ -119,7 +119,6 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
                 };
                 let and_ins = AndIns { left, right };
                 cir.instructions.push(CirInstruction::AndIns(and_ins));
-                cir.instructions.len()
             }
             LogicalExpression::Or(l, r) => {
                 let left = match l {
@@ -137,7 +136,6 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
                 };
                 let or_ins = OrIns { left, right };
                 cir.instructions.push(CirInstruction::OrIns(or_ins));
-                cir.instructions.len()
             }
             LogicalExpression::Not(r) => {
                 let right: CirOperand = match r {
@@ -148,14 +146,13 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
                 };
                 let not_ins = NotIns { right };
                 cir.instructions.push(CirInstruction::NotIns(not_ins));
-                cir.instructions.len()
             }
         },
         Expression::Predicate(p) => {
             cir.instructions.push(CirInstruction::Predicate(p.clone()));
-            cir.instructions.len()
         }
     }
+    cir.instructions.len()
 }
 
 fn execute_helper(
@@ -313,20 +310,54 @@ impl FieldCounter for CirProgram {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ast::Expression;
     use crate::context::Match;
     use crate::interpreter::Execute;
     use crate::schema::Schema;
+
+    impl Execute for Expression {
+        fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
+            use crate::ast::{Expression, LogicalExpression};
+            match self {
+                Expression::Logical(l) => match l.as_ref() {
+                    LogicalExpression::And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
+                    LogicalExpression::Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
+                    LogicalExpression::Not(r) => !r.execute(ctx, m),
+                },
+                Expression::Predicate(p) => p.execute(ctx, m),
+            }
+        }
+    }
+
     #[test]
     fn verify_translate_execute() {
         let mut schema = Schema::default();
         schema.add_field("a", crate::ast::Type::Int);
         schema.add_field("http.path", crate::ast::Type::String);
         schema.add_field("http.version", crate::ast::Type::String);
-        let ast = crate::parser::parse(r#"(http.path == "hello" && http.version == "1.1") || !(( a == 2) && ( a == 9 )) || !(a == 1) || ( a == 3 && a == 4) && !(a == 5)"#).map_err(|e| e.to_string());
+
+        let sources = vec![
+            r#"a == 5 "#,
+            r#"!(!(a == 1 && a == 2) || a == 3 && !(a == 4))"#,
+            r#"!(( a == 2) && ( a == 9 )) || !(a == 1) || (http.path == "hello" && http.version == "1.1") || ( a == 3 && a == 4) && !(a == 5)"#,
+            r#"(http.path == "hello" && http.version == "1.1") || !(( a == 2) && ( a == 9 )) || !(a == 1) || ( a == 5 && a == 4) && !(a == 3)"#,
+            r#"(http.path == "hello" && http.version == "1.1") || ( a == 3 && a == 4) && !(a == 5)"#,
+            r#"http.path == "hello" && http.version == "1.1""#,
+        ];
+
         let mut context = crate::context::Context::new(&schema);
         context.add_value("http.path", crate::ast::Value::String("hello".to_string()));
         context.add_value("http.version", crate::ast::Value::String("1.1".to_string()));
-        let mut mat = Match::new();
-        assert!(ast.unwrap().translate().execute(&mut context, &mut mat));
+
+        for source in sources {
+            let ast = crate::parser::parse(source)
+                .map_err(|e| e.to_string())
+                .unwrap();
+            let mut mat = Match::new();
+            let ast_result = ast.execute(&mut context, &mut mat);
+
+            let cir_result = ast.translate().execute(&mut context, &mut mat);
+            assert_eq!(ast_result, cir_result);
+        }
     }
 }

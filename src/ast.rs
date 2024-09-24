@@ -136,75 +136,8 @@ pub struct Predicate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::context::{Context, Match};
-    use crate::interpreter::Execute;
     use crate::parser::parse;
-    use crate::semantics::FieldCounter;
-    use std::collections::HashMap;
     use std::fmt;
-
-    impl FieldCounter for Expression {
-        fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
-            match self {
-                Expression::Logical(l) => match l.as_ref() {
-                    LogicalExpression::And(l, r) => {
-                        l.add_to_counter(map);
-                        r.add_to_counter(map);
-                    }
-                    LogicalExpression::Or(l, r) => {
-                        l.add_to_counter(map);
-                        r.add_to_counter(map);
-                    }
-                    LogicalExpression::Not(r) => {
-                        r.add_to_counter(map);
-                    }
-                },
-                Expression::Predicate(p) => {
-                    *map.entry(p.lhs.var_name.clone()).or_default() += 1;
-                }
-            }
-        }
-
-        fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
-            match self {
-                Expression::Logical(l) => match l.as_ref() {
-                    LogicalExpression::And(l, r) => {
-                        l.remove_from_counter(map);
-                        r.remove_from_counter(map);
-                    }
-                    LogicalExpression::Or(l, r) => {
-                        l.remove_from_counter(map);
-                        r.remove_from_counter(map);
-                    }
-                    LogicalExpression::Not(r) => {
-                        r.remove_from_counter(map);
-                    }
-                },
-                Expression::Predicate(p) => {
-                    let val = map.get_mut(&p.lhs.var_name).unwrap();
-                    *val -= 1;
-
-                    if *val == 0 {
-                        assert!(map.remove(&p.lhs.var_name).is_some());
-                    }
-                }
-            }
-        }
-    }
-
-    impl Execute for Expression {
-        fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
-            use crate::ast::{Expression, LogicalExpression};
-            match self {
-                Expression::Logical(l) => match l.as_ref() {
-                    LogicalExpression::And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
-                    LogicalExpression::Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
-                    LogicalExpression::Not(r) => !r.execute(ctx, m),
-                },
-                Expression::Predicate(p) => p.execute(ctx, m),
-            }
-        }
-    }
 
     impl fmt::Display for Expression {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
