@@ -311,6 +311,7 @@ impl FieldCounter for CirProgram {
 mod tests {
     use super::*;
     use crate::ast::Expression;
+    use crate::ast::Value;
     use crate::context::Match;
     use crate::interpreter::Execute;
     use crate::schema::Schema;
@@ -348,6 +349,7 @@ mod tests {
         let mut context = crate::context::Context::new(&schema);
         context.add_value("http.path", crate::ast::Value::String("hello".to_string()));
         context.add_value("http.version", crate::ast::Value::String("1.1".to_string()));
+        context.add_value("a", Value::Int(3 as i64));
 
         for source in sources {
             let ast = crate::parser::parse(source)
