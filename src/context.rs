@@ -10,6 +10,7 @@ pub struct Match {
 }
 
 impl Match {
+    #[inline]
     pub fn new() -> Self {
         Match {
             uuid: Uuid::default(),
@@ -20,6 +21,7 @@ impl Match {
 }
 
 impl Default for Match {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -32,6 +34,7 @@ pub struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
+    #[inline]
     pub fn new(schema: &'a Schema) -> Self {
         Context {
             schema,
@@ -40,6 +43,7 @@ impl<'a> Context<'a> {
         }
     }
 
+    #[inline]
     pub fn add_value(&mut self, field: &str, value: Value) {
         if &value.my_type() != self.schema.type_of(field).unwrap() {
             panic!("value provided does not match schema");
@@ -51,10 +55,12 @@ impl<'a> Context<'a> {
             .push(value);
     }
 
+    #[inline]
     pub fn value_of(&self, field: &str) -> Option<&[Value]> {
         self.values.get(field).map(|v| v.as_slice())
     }
 
+    #[inline]
     pub fn reset(&mut self) {
         self.values.clear();
         self.result = None;
