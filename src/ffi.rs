@@ -578,16 +578,6 @@ pub unsafe extern "C" fn context_get_result(
         .unwrap()
 }
 
-#[cfg(feature = "expr_validation")]
-#[derive(Debug)]
-#[repr(C)]
-pub struct ExpressionValidationResult {
-    validate: bool, // if validate is false, then none of the following fields are valid
-    fields: *mut *mut c_char,
-    fields_total: usize,
-    operators: u64,
-}
-
 /// Validate the ATC expression with the schema.
 ///
 /// # Arguments
@@ -616,6 +606,13 @@ pub struct ExpressionValidationResult {
 ///
 /// - `atc` must be a valid pointer to a C-style string, must be properly aligned,
 ///    and must not have '\0' in the middle.
+/// - `schema` must be a valid pointer returned by [`schema_new`].
+/// - `fields_buf` must be a valid to write for `fields_len * size_of::<u8>()` bytes,
+///    and it must be properly aligned.
+/// - `fields_len` must be a valid to write for `size_of::<usize>()` bytes,
+///    and it must be properly aligned.
+/// - `fields_total` must be a valid to write for `size_of::<usize>()` bytes,
+///    and it must be properly aligned.
 /// - `errbuf` must be valid to read and write for `errbuf_len * size_of::<u8>()` bytes,
 ///    and it must be properly aligned.
 /// - `errbuf_len` must be valid to read and write for `size_of::<usize>()` bytes,
@@ -625,9 +622,13 @@ pub struct ExpressionValidationResult {
 pub unsafe extern "C" fn expression_validate(
     atc: *const u8,
     schema: &Schema,
+    fields_buf: *mut u8,
+    fields_len: *mut usize,
+    fields_total: *mut usize,
+    operators: *mut u64,
     errbuf: *mut u8,
     errbuf_len: *mut usize,
-) -> *mut ExpressionValidationResult {
+) -> bool {
     use std::collections::HashMap;
 
     use crate::ast::{BinaryOperatorFlags, Expression, LogicalExpression};
@@ -637,12 +638,6 @@ pub unsafe extern "C" fn expression_validate(
 
     let atc = ffi::CStr::from_ptr(atc as *const c_char).to_str().unwrap();
     let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
-    let mut validation_result = Box::new(ExpressionValidationResult {
-        validate: false,
-        fields: std::ptr::null_mut(),
-        fields_total: 0,
-        operators: 0,
-    });
 
     // Parse the expression
     let result = parse(atc).map_err(|e| e.to_string());
@@ -650,8 +645,7 @@ pub unsafe extern "C" fn expression_validate(
         let errlen = min(e.len(), *errbuf_len);
         errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
         *errbuf_len = errlen;
-        validation_result.validate = false;
-        return Box::into_raw(validation_result);
+        return false;
     }
     // Unwrap is safe since we've already checked for error
     let ast = result.unwrap();
@@ -661,20 +655,30 @@ pub unsafe extern "C" fn expression_validate(
         let errlen = min(e.len(), *errbuf_len);
         errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
         *errbuf_len = errlen;
-        validation_result.validate = false;
-        return Box::into_raw(validation_result);
+        return false;
     }
 
     // Get used fields
     let mut expr_fields = HashMap::new();
     ast.add_to_counter(&mut expr_fields);
     let fields_count = expr_fields.len();
-    let mut fields = Vec::<*const c_char>::with_capacity(fields_count);
+    let mut fields = Vec::with_capacity(fields_count);
+    let mut total_fields_length = 0;
 
     for k in expr_fields.into_keys() {
-        let ffi_string = ffi::CString::new(k).unwrap();
-        let ptr = ffi_string.into_raw(); // Leak the CString
-        fields.push(ptr);
+        total_fields_length += k.as_bytes().len() + 1; // +1 for trailing \0
+        fields.push(k);
+    }
+
+    if *fields_len < total_fields_length {
+        let err_msg = format!(
+            "Fields buffer too small, provided {} bytes but required at least {} bytes.",
+            *fields_len, total_fields_length
+        );
+        let errlen = min(err_msg.len(), *errbuf_len);
+        errbuf[..errlen].copy_from_slice(&err_msg.as_bytes()[..errlen]);
+        *errbuf_len = errlen;
+        return false;
     }
 
     // Get used operators
@@ -702,38 +706,21 @@ pub unsafe extern "C" fn expression_validate(
     }
     visit(&ast, &mut ops);
 
-    validation_result.validate = true;
-    validation_result.operators = ops.bits();
-    let boxed_fields = fields.into_boxed_slice();
-    let raw_boxed_fields = Box::into_raw(boxed_fields); // Leak the Box
+    // fulfill the output parameters,
+    let mut fields_buf_ptr = fields_buf;
+    for field in fields {
+        let field = ffi::CString::new(field).unwrap();
+        let field_slice = field.as_bytes_with_nul();
+        let field_len = field_slice.len();
+        let fields_buf = from_raw_parts_mut(fields_buf_ptr, field_len);
+        fields_buf.copy_from_slice(field_slice);
+        fields_buf_ptr = fields_buf_ptr.add(field_len);
+    }
+    *fields_total = fields_count;
+    *fields_len = total_fields_length;
+    *operators = ops.bits();
 
-    validation_result.fields = raw_boxed_fields.cast();
-    validation_result.fields_total = raw_boxed_fields.len();
-
-    Box::into_raw(validation_result) // Leak the Box
-}
-
-/// Deallocate the ExpressionValidationResult object.
-///
-/// # Errors
-///
-/// This function never fails.
-///
-/// # Safety
-///
-/// Violating any of the following constraints will result in undefined behavior:
-///
-/// - `result` must be a valid pointer returned by [`expression_validate`].
-#[cfg(feature = "expr_validation")]
-#[no_mangle]
-pub unsafe extern "C" fn expression_validate_free_result(result: *mut ExpressionValidationResult) {
-    let result = Box::from_raw(result);
-    let slice = std::slice::from_raw_parts_mut(result.fields, result.fields_total);
-    let boxed_fields = Box::from_raw(slice);
-    for ptr in boxed_fields.into_vec() {
-        let _ = ffi::CString::from_raw(ptr); // Drop the leaked CString
-    } // Drop the Box
-    drop(result); // Drop the Box
+    true
 }
 
 #[cfg(test)]
@@ -802,17 +789,26 @@ mod tests {
             schema.add_field("net.src.ip", Type::IpAddr);
             schema.add_field("http.path", Type::String);
 
+            let mut fields_buf = vec![0u8; 1024];
+            let mut fields_len = fields_buf.len();
+            let mut fields_total = 0;
+            let mut operators = 0u64;
+
             let result = expression_validate(
                 atc.as_bytes().as_ptr(),
                 &schema,
+                fields_buf.as_mut_ptr(),
+                &mut fields_len,
+                &mut fields_total,
+                &mut operators,
                 errbuf.as_mut_ptr(),
                 &mut errbuf_len,
             );
 
-            assert!((*result).validate, "Validation failed");
-            assert_eq!((*result).fields_total, 4, "Fields count mismatch");
+            assert!(result, "Validation failed");
+            assert_eq!(fields_total, 4, "Fields count mismatch");
             assert_eq!(
-                (*result).operators,
+                operators,
                 (BinaryOperatorFlags::EQUALS
                     | BinaryOperatorFlags::REGEX
                     | BinaryOperatorFlags::IN
@@ -821,11 +817,13 @@ mod tests {
                     .bits(),
                 "Operators mismatch"
             );
-            let mut fields = Vec::<String>::with_capacity((*result).fields_total);
-            for i in 0..(*result).fields_total {
-                let field = (*result).fields.add(i);
-                let field = ffi::CStr::from_ptr(*field).to_str().unwrap();
-                fields.push(field.to_string());
+            let mut fields = Vec::<String>::with_capacity(fields_total);
+            let mut p = 0;
+            for _ in 0..fields_total {
+                let field = ffi::CStr::from_ptr(fields_buf[p..].as_ptr().cast());
+                let len = field.to_bytes().len() + 1;
+                fields.push(field.to_string_lossy().to_string());
+                p += len;
             }
             fields.sort();
             assert_eq!(
@@ -838,8 +836,6 @@ mod tests {
                 ],
                 "Fields mismatch"
             );
-
-            expression_validate_free_result(result);
         }
     }
 }
