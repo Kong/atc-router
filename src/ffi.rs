@@ -584,21 +584,35 @@ pub unsafe extern "C" fn context_get_result(
 ///
 /// - `atc`: the C-style string representing the ATC expression.
 /// - `schema`: a valid pointer to the [`Schema`] object returned by [`schema_new`].
+/// - `fields_buf`: a buffer to store the used fields.
+/// - `fields_len`: a pointer to the length of the fields buffer.
+/// - `fields_total`: a pointer for saving the total number of the fields.
+/// - `operators`: a pointer for saving the used operators with bitflags.
 /// - `errbuf`: a buffer to store the error message.
 /// - `errbuf_len`: a pointer to the length of the error message buffer.
 ///
 /// # Returns
 ///
-/// Returns a pointer of `ExpressionValidationResult`.
-/// If the expression is not valid, the `validate` field will be `false`,
-/// and the error message will be stored in the `errbuf`,
-/// and the length of the error message will be stored in `errbuf_len`.
+/// Returns the boolean value indicating the validation result.
+///
+/// If `fields_buf` is null and `fields_len` or `fields_total` is non-null, it will write
+/// the required buffer length and the total number of fields to the provided pointers.
+/// If `fields_buf` is non-null, and `fields_len` is enough for the required buffer length,
+/// it will write the used fields to the buffer separated by '\0' and the total number of fields
+/// to the `fields_total`, and `fields_len` will be updated with the total buffer length.
+/// If `fields_buf` is non-null, and `fields_len` is not enough for the required buffer length,
+/// it will write the required buffer length to the `fields_len`, and the total number of fields
+/// to the `fields_total`, then error message will be written to the `errbuf` with the length
+/// updated to `errbuf_len` and return `false`.
+/// If `operators` is non-null, it will write the used operators with bitflags to the provided pointer.
+///
 ///
 /// # Panics
 ///
 /// This function will panic when:
 ///
 /// - `atc` doesn't point to a valid C-style string.
+/// - `fields_len` and `fields_total` are null when `fields_buf` is non-null.
 ///
 /// # Safety
 ///
@@ -608,15 +622,20 @@ pub unsafe extern "C" fn context_get_result(
 ///    and must not have '\0' in the middle.
 /// - `schema` must be a valid pointer returned by [`schema_new`].
 /// - `fields_buf` must be a valid to write for `fields_len * size_of::<u8>()` bytes,
-///    and it must be properly aligned.
+///    and it must be properly aligned if non-null.
 /// - `fields_len` must be a valid to write for `size_of::<usize>()` bytes,
-///    and it must be properly aligned.
+///    and it must be properly aligned if non-null.
 /// - `fields_total` must be a valid to write for `size_of::<usize>()` bytes,
-///    and it must be properly aligned.
+///    and it must be properly aligned if non-null.
+/// - `operators` must be a valid to write for `size_of::<u64>()` bytes,
+///    and it must be properly aligned if non-null.
 /// - `errbuf` must be valid to read and write for `errbuf_len * size_of::<u8>()` bytes,
 ///    and it must be properly aligned.
 /// - `errbuf_len` must be valid to read and write for `size_of::<usize>()` bytes,
 ///    and it must be properly aligned.
+/// - If `fields_buf` is non-null, `fields_len` and `fields_total` must be non-null.
+/// - If `fields_buf` is null, `fields_len` and `fields_total` can be non-null
+///   for writing required buffer length and total number of fields.
 #[cfg(feature = "expr_validation")]
 #[no_mangle]
 pub unsafe extern "C" fn expression_validate(
@@ -659,66 +678,85 @@ pub unsafe extern "C" fn expression_validate(
     }
 
     // Get used fields
-    let mut expr_fields = HashMap::new();
-    ast.add_to_counter(&mut expr_fields);
-    let fields_count = expr_fields.len();
-    let mut fields = Vec::with_capacity(fields_count);
-    let mut total_fields_length = 0;
+    if !(fields_buf.is_null() && fields_len.is_null() && fields_total.is_null()) {
+        if !fields_buf.is_null() {
+            assert!(
+                !fields_len.is_null() && !fields_total.is_null(),
+                "fields_len and fields_total must be non-null when fields_buf is non-null"
+            );
+        }
 
-    for k in expr_fields.into_keys() {
-        total_fields_length += k.as_bytes().len() + 1; // +1 for trailing \0
-        fields.push(k);
-    }
+        let mut expr_fields: HashMap<String, usize> = HashMap::new();
+        ast.add_to_counter(&mut expr_fields);
+        let fields_count = expr_fields.len();
+        let mut fields = Vec::with_capacity(fields_count);
+        let mut total_fields_length = 0;
 
-    if *fields_len < total_fields_length {
-        let err_msg = format!(
-            "Fields buffer too small, provided {} bytes but required at least {} bytes.",
-            *fields_len, total_fields_length
-        );
-        let errlen = min(err_msg.len(), *errbuf_len);
-        errbuf[..errlen].copy_from_slice(&err_msg.as_bytes()[..errlen]);
-        *errbuf_len = errlen;
-        return false;
+        for k in expr_fields.into_keys() {
+            total_fields_length += k.as_bytes().len() + 1; // +1 for trailing \0
+            fields.push(k);
+        }
+
+        if !fields_buf.is_null() {
+            if *fields_len < total_fields_length {
+                let err_msg = format!(
+                    "Fields buffer too small, provided {} bytes but required at least {} bytes.",
+                    *fields_len, total_fields_length
+                );
+                let errlen = min(err_msg.len(), *errbuf_len);
+                errbuf[..errlen].copy_from_slice(&err_msg.as_bytes()[..errlen]);
+                *errbuf_len = errlen;
+                *fields_len = total_fields_length;
+                *fields_total = fields_count;
+                return false;
+            }
+
+            let mut fields_buf_ptr = fields_buf;
+            for field in fields {
+                let field = ffi::CString::new(field).unwrap();
+                let field_slice = field.as_bytes_with_nul();
+                let field_len = field_slice.len();
+                let fields_buf = from_raw_parts_mut(fields_buf_ptr, field_len);
+                fields_buf.copy_from_slice(field_slice);
+                fields_buf_ptr = fields_buf_ptr.add(field_len);
+            }
+        }
+
+        if !fields_len.is_null() {
+            *fields_len = total_fields_length;
+        }
+        if !fields_total.is_null() {
+            *fields_total = fields_count;
+        }
     }
 
     // Get used operators
-    let mut ops = BinaryOperatorFlags::empty();
-    fn visit(expr: &Expression, ops: &mut BinaryOperatorFlags) {
-        match expr {
-            Expression::Logical(logic_expression) => match logic_expression.as_ref() {
-                LogicalExpression::And(lhs, rhs) => {
-                    visit(lhs, ops);
-                    visit(rhs, ops);
+    if !operators.is_null() {
+        let mut ops = BinaryOperatorFlags::empty();
+        fn visit(expr: &Expression, ops: &mut BinaryOperatorFlags) {
+            match expr {
+                Expression::Logical(logic_expression) => match logic_expression.as_ref() {
+                    LogicalExpression::And(lhs, rhs) => {
+                        visit(lhs, ops);
+                        visit(rhs, ops);
+                    }
+                    LogicalExpression::Or(lhs, rhs) => {
+                        visit(lhs, ops);
+                        visit(rhs, ops);
+                    }
+                    LogicalExpression::Not(rhs) => {
+                        visit(rhs, ops);
+                    }
+                },
+                Expression::Predicate(predict) => {
+                    let op = BinaryOperatorFlags::from(&predict.op);
+                    ops.insert(op);
                 }
-                LogicalExpression::Or(lhs, rhs) => {
-                    visit(lhs, ops);
-                    visit(rhs, ops);
-                }
-                LogicalExpression::Not(rhs) => {
-                    visit(rhs, ops);
-                }
-            },
-            Expression::Predicate(predict) => {
-                let op = BinaryOperatorFlags::from(&predict.op);
-                ops.insert(op);
             }
         }
+        visit(&ast, &mut ops);
+        *operators = ops.bits();
     }
-    visit(&ast, &mut ops);
-
-    // fulfill the output parameters,
-    let mut fields_buf_ptr = fields_buf;
-    for field in fields {
-        let field = ffi::CString::new(field).unwrap();
-        let field_slice = field.as_bytes_with_nul();
-        let field_len = field_slice.len();
-        let fields_buf = from_raw_parts_mut(fields_buf_ptr, field_len);
-        fields_buf.copy_from_slice(field_slice);
-        fields_buf_ptr = fields_buf_ptr.add(field_len);
-    }
-    *fields_total = fields_count;
-    *fields_len = total_fields_length;
-    *operators = ops.bits();
 
     true
 }
@@ -807,6 +845,7 @@ mod tests {
 
             assert!(result, "Validation failed");
             assert_eq!(fields_total, 4, "Fields count mismatch");
+            assert_eq!(fields_len, 47, "Fields buffer length mismatch");
             assert_eq!(
                 operators,
                 (BinaryOperatorFlags::EQUALS
