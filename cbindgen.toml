@@ -12,4 +12,4 @@ prefix_with_name = true
 bitflags = true
 
 [export]
-include = ["BinaryOperatorFlags"]
+include = ["BinaryOperatorFlags", "EXPRESSION_VALIDATE_OK", "EXPRESSION_VALIDATE_FAILED","EXPRESSION_VALIDATE_BUF_TOO_SMALL"]

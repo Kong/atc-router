@@ -62,6 +62,19 @@ bitflags::bitflags! {
         const IN = 1 << 9;
         const NOT_IN = 1 << 10;
         const CONTAINS = 1 << 11;
+
+        const UNUSED = !(Self::EQUALS.bits()
+            | Self::NOT_EQUALS.bits()
+            | Self::REGEX.bits()
+            | Self::PREFIX.bits()
+            | Self::POSTFIX.bits()
+            | Self::GREATER.bits()
+            | Self::GREATER_OR_EQUAL.bits()
+            | Self::LESS.bits()
+            | Self::LESS_OR_EQUAL.bits()
+            | Self::IN.bits()
+            | Self::NOT_IN.bits()
+            | Self::CONTAINS.bits());
     }
 }
 

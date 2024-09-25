@@ -578,6 +578,13 @@ pub unsafe extern "C" fn context_get_result(
         .unwrap()
 }
 
+#[cfg(feature = "expr_validation")]
+pub const EXPRESSION_VALIDATE_OK: i64 = 0;
+#[cfg(feature = "expr_validation")]
+pub const EXPRESSION_VALIDATE_FAILED: i64 = 1;
+#[cfg(feature = "expr_validation")]
+pub const EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
+
 /// Validate the ATC expression with the schema.
 ///
 /// # Arguments
@@ -593,7 +600,10 @@ pub unsafe extern "C" fn context_get_result(
 ///
 /// # Returns
 ///
-/// Returns the boolean value indicating the validation result.
+/// Returns an integer value indicating the validation result:
+/// - EXPRESSION_VALIDATE_OK(0) if validation is passed.
+/// - EXPRESSION_VALIDATE_FAILED(1) if validation is failed.
+/// - EXPRESSION_VALIDATE_BUF_TOO_SMALL(2) if the provided fields buffer is not enough.
 ///
 /// If `fields_buf` is null and `fields_len` or `fields_total` is non-null, it will write
 /// the required buffer length and the total number of fields to the provided pointers.
@@ -602,9 +612,9 @@ pub unsafe extern "C" fn context_get_result(
 /// to the `fields_total`, and `fields_len` will be updated with the total buffer length.
 /// If `fields_buf` is non-null, and `fields_len` is not enough for the required buffer length,
 /// it will write the required buffer length to the `fields_len`, and the total number of fields
-/// to the `fields_total`, then error message will be written to the `errbuf` with the length
-/// updated to `errbuf_len` and return `false`.
+/// to the `fields_total`, and return `2`.
 /// If `operators` is non-null, it will write the used operators with bitflags to the provided pointer.
+/// The bitflags is defined by `BinaryOperatorFlags` and it must not contain any bits from `BinaryOperatorFlags::UNUSED`.
 ///
 ///
 /// # Panics
@@ -647,7 +657,7 @@ pub unsafe extern "C" fn expression_validate(
     operators: *mut u64,
     errbuf: *mut u8,
     errbuf_len: *mut usize,
-) -> bool {
+) -> i64 {
     use std::collections::HashMap;
 
     use crate::ast::{BinaryOperatorFlags, Expression, LogicalExpression};
@@ -664,7 +674,7 @@ pub unsafe extern "C" fn expression_validate(
         let errlen = min(e.len(), *errbuf_len);
         errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
         *errbuf_len = errlen;
-        return false;
+        return EXPRESSION_VALIDATE_FAILED;
     }
     // Unwrap is safe since we've already checked for error
     let ast = result.unwrap();
@@ -674,7 +684,7 @@ pub unsafe extern "C" fn expression_validate(
         let errlen = min(e.len(), *errbuf_len);
         errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
         *errbuf_len = errlen;
-        return false;
+        return EXPRESSION_VALIDATE_FAILED;
     }
 
     // Get used fields
@@ -708,7 +718,7 @@ pub unsafe extern "C" fn expression_validate(
                 *errbuf_len = errlen;
                 *fields_len = total_fields_length;
                 *fields_total = fields_count;
-                return false;
+                return EXPRESSION_VALIDATE_BUF_TOO_SMALL;
             }
 
             let mut fields_buf_ptr = fields_buf;
@@ -758,7 +768,7 @@ pub unsafe extern "C" fn expression_validate(
         *operators = ops.bits();
     }
 
-    true
+    EXPRESSION_VALIDATE_OK
 }
 
 #[cfg(test)]
@@ -843,7 +853,7 @@ mod tests {
                 &mut errbuf_len,
             );
 
-            assert!(result, "Validation failed");
+            assert_eq!(result, EXPRESSION_VALIDATE_OK, "Validation failed");
             assert_eq!(fields_total, 4, "Fields count mismatch");
             assert_eq!(fields_len, 47, "Fields buffer length mismatch");
             assert_eq!(
