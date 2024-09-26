@@ -225,7 +225,7 @@ fn parse_predicate(
             if let Value::String(s) = rhs {
                 let regex_rc = match regex_cache.get(&s) {
                     Some(stored_regex_rc) => stored_regex_rc.clone(),
-                    _ => {
+                    None => {
                         let r = Regex::new(&s).into_parse_result(&rhs_pair)?;
 
                         let rc = Rc::new(r);
