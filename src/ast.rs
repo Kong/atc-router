@@ -22,7 +22,7 @@ pub enum LogicalExpression {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LhsTransformations {
     Lower,
     Any,

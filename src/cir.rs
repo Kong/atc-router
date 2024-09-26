@@ -100,20 +100,26 @@ impl Translate for Expression {
     }
 }
 
+/// Helper function for translation from AST to CIR.
+/// Parameters:
+///   * reference to AST
+///   * reference to translated CIR
+/// This function returns:
+///   * index of translated IR
 fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
     match exp {
         Expression::Logical(logic_exp) => match logic_exp.as_ref() {
             LogicalExpression::And(l, r) => {
                 let left = match l {
                     Expression::Logical(_logic_exp) => {
-                        CirOperand::Index(cir_translate_helper(l, cir) - 1)
+                        CirOperand::Index(cir_translate_helper(l, cir))
                     }
                     Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
 
                 let right = match r {
                     Expression::Logical(_logic_exp) => {
-                        CirOperand::Index(cir_translate_helper(r, cir) - 1)
+                        CirOperand::Index(cir_translate_helper(r, cir))
                     }
                     Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
@@ -123,14 +129,14 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
             LogicalExpression::Or(l, r) => {
                 let left = match l {
                     Expression::Logical(_logic_exp) => {
-                        CirOperand::Index(cir_translate_helper(l, cir) - 1)
+                        CirOperand::Index(cir_translate_helper(l, cir))
                     }
                     Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
 
                 let right = match r {
                     Expression::Logical(_logic_exp) => {
-                        CirOperand::Index(cir_translate_helper(r, cir) - 1)
+                        CirOperand::Index(cir_translate_helper(r, cir))
                     }
                     Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
@@ -140,7 +146,7 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
             LogicalExpression::Not(r) => {
                 let right: CirOperand = match r {
                     Expression::Logical(_logic_exp) => {
-                        CirOperand::Index(cir_translate_helper(r, cir) - 1)
+                        CirOperand::Index(cir_translate_helper(r, cir))
                     }
                     Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
@@ -152,7 +158,7 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
             cir.instructions.push(CirInstruction::Predicate(p.clone()));
         }
     }
-    cir.instructions.len()
+    cir.instructions.len() - 1
 }
 
 fn execute_helper(
