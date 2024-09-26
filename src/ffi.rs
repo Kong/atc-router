@@ -579,11 +579,11 @@ pub unsafe extern "C" fn context_get_result(
 }
 
 #[cfg(feature = "expr_validation")]
-pub const EXPRESSION_VALIDATE_OK: i64 = 0;
+pub const ATC_ROUTER_EXPRESSION_VALIDATE_OK: i64 = 0;
 #[cfg(feature = "expr_validation")]
-pub const EXPRESSION_VALIDATE_FAILED: i64 = 1;
+pub const ATC_ROUTER_EXPRESSION_VALIDATE_FAILED: i64 = 1;
 #[cfg(feature = "expr_validation")]
-pub const EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
+pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 
 /// Validate the ATC expression with the schema.
 ///
@@ -601,9 +601,9 @@ pub const EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// # Returns
 ///
 /// Returns an integer value indicating the validation result:
-/// - EXPRESSION_VALIDATE_OK(0) if validation is passed.
-/// - EXPRESSION_VALIDATE_FAILED(1) if validation is failed.
-/// - EXPRESSION_VALIDATE_BUF_TOO_SMALL(2) if the provided fields buffer is not enough.
+/// - ATC_ROUTER_EXPRESSION_VALIDATE_OK(0) if validation is passed.
+/// - ATC_ROUTER_EXPRESSION_VALIDATE_FAILED(1) if validation is failed.
+/// - ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL(2) if the provided fields buffer is not enough.
 ///
 /// If `fields_buf` is null and `fields_len` or `fields_total` is non-null, it will write
 /// the required buffer length and the total number of fields to the provided pointers.
@@ -674,7 +674,7 @@ pub unsafe extern "C" fn expression_validate(
         let errlen = min(e.len(), *errbuf_len);
         errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
         *errbuf_len = errlen;
-        return EXPRESSION_VALIDATE_FAILED;
+        return ATC_ROUTER_EXPRESSION_VALIDATE_FAILED;
     }
     // Unwrap is safe since we've already checked for error
     let ast = result.unwrap();
@@ -684,7 +684,7 @@ pub unsafe extern "C" fn expression_validate(
         let errlen = min(e.len(), *errbuf_len);
         errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
         *errbuf_len = errlen;
-        return EXPRESSION_VALIDATE_FAILED;
+        return ATC_ROUTER_EXPRESSION_VALIDATE_FAILED;
     }
 
     // Get used fields
@@ -718,7 +718,7 @@ pub unsafe extern "C" fn expression_validate(
                 *errbuf_len = errlen;
                 *fields_len = total_fields_length;
                 *fields_total = fields_count;
-                return EXPRESSION_VALIDATE_BUF_TOO_SMALL;
+                return ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL;
             }
 
             let mut fields_buf_ptr = fields_buf;
@@ -768,7 +768,7 @@ pub unsafe extern "C" fn expression_validate(
         *operators = ops.bits();
     }
 
-    EXPRESSION_VALIDATE_OK
+    ATC_ROUTER_EXPRESSION_VALIDATE_OK
 }
 
 #[cfg(test)]
@@ -853,7 +853,10 @@ mod tests {
                 &mut errbuf_len,
             );
 
-            assert_eq!(result, EXPRESSION_VALIDATE_OK, "Validation failed");
+            assert_eq!(
+                result, ATC_ROUTER_EXPRESSION_VALIDATE_OK,
+                "Validation failed"
+            );
             assert_eq!(fields_total, 4, "Fields count mismatch");
             assert_eq!(fields_len, 47, "Fields buffer length mismatch");
             assert_eq!(
