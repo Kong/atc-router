@@ -1,4 +1,4 @@
-use crate::ast::Expression;
+use crate::ast::{Expression, LogicalExpression, Value};
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
 use crate::parser::parse;
@@ -17,6 +17,26 @@ pub struct Router<'a> {
     matchers: BTreeMap<MatcherKey, Expression>,
     pub fields: HashMap<String, usize>,
     regex_cache: HashMap<String, Rc<Regex>>,
+}
+
+fn release_cache(expr: &Expression, router: &mut Router) {
+    match expr {
+        Expression::Logical(l) => match l.as_ref() {
+            LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
+                release_cache(l, router);
+                release_cache(r, router);
+            }
+            LogicalExpression::Not(r) => release_cache(r, router),
+        },
+        Expression::Predicate(p) => {
+            if let Value::Regex(rc) = &p.rhs {
+                if Rc::strong_count(&rc) == 2 {
+                    // about to be dropped and the only Rc left is in the map
+                    router.regex_cache.remove(rc.as_str());
+                }
+            }
+        }
+    };
 }
 
 impl<'a> Router<'a> {
@@ -50,6 +70,7 @@ impl<'a> Router<'a> {
         let key = MatcherKey(priority, uuid);
 
         if let Some(ast) = self.matchers.remove(&key) {
+            release_cache(&ast, self);
             ast.remove_from_counter(&mut self.fields);
             return true;
         }
