@@ -65,16 +65,6 @@ impl CirOperand {
             CirOperand::Predicate(p) => p,
         }
     }
-
-    #[inline]
-    pub fn as_index(&self) -> usize {
-        match &self {
-            CirOperand::Index(index) => *index,
-            CirOperand::Predicate(_p) => {
-                panic!("unexpected call to as_index with predicate operand.")
-            }
-        }
-    }
 }
 
 #[inline]
