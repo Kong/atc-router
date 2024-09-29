@@ -822,27 +822,22 @@ mod tests {
     }
 
     #[cfg(feature = "expr_validation")]
-    #[test]
-    fn test_expression_validate() {
-        use crate::ast::BinaryOperatorFlags;
-        unsafe {
-            let mut schema = Schema::default();
-            let atc = r##"net.protocol ~ "^https?$" && net.dst.port == 80 && (net.src.ip not in 10.0.0.0/16 || net.src.ip in 10.0.1.0/24) && http.path contains "hello""##;
-            let atc = ffi::CString::new(atc).unwrap();
-            let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
-            let mut errbuf_len = ERR_BUF_MAX_LEN;
+    fn expr_validate_on(
+        schema: &Schema,
+        atc: &str,
+        fields_buf_size: usize,
+    ) -> Result<(Vec<String>, u64), (i64, String)> {
+        let atc = ffi::CString::new(atc).unwrap();
+        let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
+        let mut errbuf_len = ERR_BUF_MAX_LEN;
 
-            schema.add_field("net.protocol", Type::String);
-            schema.add_field("net.dst.port", Type::Int);
-            schema.add_field("net.src.ip", Type::IpAddr);
-            schema.add_field("http.path", Type::String);
+        let mut fields_buf = vec![0u8; fields_buf_size];
+        let mut fields_len = fields_buf.len();
+        let mut fields_total = 0;
+        let mut operators = 0u64;
 
-            let mut fields_buf = vec![0u8; 1024];
-            let mut fields_len = fields_buf.len();
-            let mut fields_total = 0;
-            let mut operators = 0u64;
-
-            let result = expression_validate(
+        let result = unsafe {
+            expression_validate(
                 atc.as_bytes().as_ptr(),
                 &schema,
                 fields_buf.as_mut_ptr(),
@@ -851,43 +846,140 @@ mod tests {
                 &mut operators,
                 errbuf.as_mut_ptr(),
                 &mut errbuf_len,
-            );
+            )
+        };
 
-            assert_eq!(
-                result, ATC_ROUTER_EXPRESSION_VALIDATE_OK,
-                "Validation failed"
-            );
-            assert_eq!(fields_total, 4, "Fields count mismatch");
-            assert_eq!(fields_len, 47, "Fields buffer length mismatch");
-            assert_eq!(
-                operators,
-                (BinaryOperatorFlags::EQUALS
-                    | BinaryOperatorFlags::REGEX
-                    | BinaryOperatorFlags::IN
-                    | BinaryOperatorFlags::NOT_IN
-                    | BinaryOperatorFlags::CONTAINS)
-                    .bits(),
-                "Operators mismatch"
-            );
+        if result == ATC_ROUTER_EXPRESSION_VALIDATE_OK {
             let mut fields = Vec::<String>::with_capacity(fields_total);
             let mut p = 0;
             for _ in 0..fields_total {
-                let field = ffi::CStr::from_ptr(fields_buf[p..].as_ptr().cast());
+                let field = unsafe { ffi::CStr::from_ptr(fields_buf[p..].as_ptr().cast()) };
                 let len = field.to_bytes().len() + 1;
                 fields.push(field.to_string_lossy().to_string());
                 p += len;
             }
+            assert_eq!(fields_len, p, "Fields buffer length mismatch");
             fields.sort();
-            assert_eq!(
-                fields,
-                vec![
-                    "http.path".to_string(),
-                    "net.dst.port".to_string(),
-                    "net.protocol".to_string(),
-                    "net.src.ip".to_string()
-                ],
-                "Fields mismatch"
-            );
+            Ok((fields, operators))
+        } else {
+            let err = String::from_utf8(errbuf[..errbuf_len].to_vec()).unwrap();
+            Err((result, err))
         }
+    }
+
+    #[cfg(feature = "expr_validation")]
+    #[test]
+    fn test_expression_validate_success() {
+        use crate::ast::BinaryOperatorFlags;
+        let atc = r##"net.protocol ~ "^https?$" && net.dst.port == 80 && (net.src.ip not in 10.0.0.0/16 || net.src.ip in 10.0.1.0/24) && http.path contains "hello""##;
+
+        let mut schema = Schema::default();
+        schema.add_field("net.protocol", Type::String);
+        schema.add_field("net.dst.port", Type::Int);
+        schema.add_field("net.src.ip", Type::IpAddr);
+        schema.add_field("http.path", Type::String);
+
+        let result = expr_validate_on(&schema, atc, 1024);
+
+        assert!(result.is_ok(), "Validation failed");
+        let (fields, ops) = result.unwrap(); // Unwrap is safe since we've already asserted it
+        assert_eq!(
+            ops,
+            (BinaryOperatorFlags::EQUALS
+                | BinaryOperatorFlags::REGEX
+                | BinaryOperatorFlags::IN
+                | BinaryOperatorFlags::NOT_IN
+                | BinaryOperatorFlags::CONTAINS)
+                .bits(),
+            "Operators mismatch"
+        );
+        assert_eq!(
+            fields,
+            vec![
+                "http.path".to_string(),
+                "net.dst.port".to_string(),
+                "net.protocol".to_string(),
+                "net.src.ip".to_string()
+            ],
+            "Fields mismatch"
+        );
+    }
+
+    #[cfg(feature = "expr_validation")]
+    #[test]
+    fn test_expression_validate_failed_parse() {
+        let atc = r##"net.protocol ~ "^https?$" && net.dst.port == 80 && (net.src.ip not in 10.0.0.0/16 || net.src.ip in 10.0.1.0) && http.path contains "hello""##;
+
+        let mut schema = Schema::default();
+        schema.add_field("net.protocol", Type::String);
+        schema.add_field("net.dst.port", Type::Int);
+        schema.add_field("net.src.ip", Type::IpAddr);
+        schema.add_field("http.path", Type::String);
+
+        let result = expr_validate_on(&schema, atc, 1024);
+
+        assert!(result.is_err(), "Validation unexcepted success");
+        let (err_code, err_message) = result.unwrap_err(); // Unwrap is safe since we've already asserted it
+        assert_eq!(
+            err_code, ATC_ROUTER_EXPRESSION_VALIDATE_FAILED,
+            "Error code mismatch"
+        );
+        assert_eq!(
+            err_message,
+            "In/NotIn operators only supports IP in CIDR".to_string(),
+            "Error message mismatch"
+        );
+    }
+
+    #[cfg(feature = "expr_validation")]
+    #[test]
+    fn test_expression_validate_failed_validate() {
+        let atc = r##"net.protocol ~ "^https?$" && net.dst.port == 80 && (net.src.ip not in 10.0.0.0/16 || net.src.ip in 10.0.1.0/24) && http.path contains "hello""##;
+
+        let mut schema = Schema::default();
+        schema.add_field("net.protocol", Type::String);
+        schema.add_field("net.dst.port", Type::Int);
+        schema.add_field("net.src.ip", Type::IpAddr);
+
+        let result = expr_validate_on(&schema, atc, 1024);
+
+        assert!(result.is_err(), "Validation unexcepted success");
+        let (err_code, err_message) = result.unwrap_err(); // Unwrap is safe since we've already asserted it
+        assert_eq!(
+            err_code, ATC_ROUTER_EXPRESSION_VALIDATE_FAILED,
+            "Error code mismatch"
+        );
+        assert_eq!(
+            err_message,
+            "Unknown LHS field".to_string(),
+            "Error message mismatch"
+        );
+    }
+
+    #[cfg(feature = "expr_validation")]
+    #[test]
+    fn test_expression_validate_buf_too_small() {
+        let atc = r##"net.protocol ~ "^https?$" && net.dst.port == 80 && (net.src.ip not in 10.0.0.0/16 || net.src.ip in 10.0.1.0/24) && http.path contains "hello""##;
+
+        let mut schema = Schema::default();
+        schema.add_field("net.protocol", Type::String);
+        schema.add_field("net.dst.port", Type::Int);
+        schema.add_field("net.src.ip", Type::IpAddr);
+        schema.add_field("http.path", Type::String);
+
+        let result = expr_validate_on(&schema, atc, 10);
+
+        assert!(result.is_err(), "Validation failed");
+        let (err_code, err_message) = result.unwrap_err(); // Unwrap is safe since we've already asserted it
+        assert_eq!(
+            err_code, ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL,
+            "Error code mismatch"
+        );
+        assert_eq!(
+            err_message,
+            "Fields buffer too small, provided 10 bytes but required at least 47 bytes."
+                .to_string(),
+            "Error message mismatch"
+        );
     }
 }
