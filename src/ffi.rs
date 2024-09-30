@@ -686,7 +686,7 @@ pub unsafe extern "C" fn expression_validate(
         return ATC_ROUTER_EXPRESSION_VALIDATE_FAILED;
     }
 
-    // Direct use GetPredicates trait to avoid unnecessary access
+    // Direct use GetPredicates trait to avoid unnecessary accesses
     let predicates = ast.get_predicates();
 
     // Get used fields
@@ -698,19 +698,14 @@ pub unsafe extern "C" fn expression_validate(
             );
         }
 
-        let mut expr_fields: HashSet<String> = HashSet::new();
-        for pred in &predicates {
-            expr_fields.insert(pred.lhs.var_name.clone());
-        }
-
-        let fields_count = expr_fields.len();
-        let mut fields = Vec::with_capacity(fields_count);
-        let mut total_fields_length = 0;
-
-        for k in expr_fields {
-            total_fields_length += k.as_bytes().len() + 1; // +1 for trailing \0
-            fields.push(k);
-        }
+        let expr_fields = predicates
+            .iter()
+            .map(|p| p.get_field())
+            .collect::<HashSet<_>>();
+        let total_fields_length = expr_fields
+            .iter()
+            .map(|k| k.as_bytes().len() + 1)
+            .sum::<usize>();
 
         if !fields_buf.is_null() {
             if *fields_len < total_fields_length {
@@ -722,13 +717,13 @@ pub unsafe extern "C" fn expression_validate(
                 errbuf[..errlen].copy_from_slice(&err_msg.as_bytes()[..errlen]);
                 *errbuf_len = errlen;
                 *fields_len = total_fields_length;
-                *fields_total = fields_count;
+                *fields_total = expr_fields.len();
                 return ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL;
             }
 
             let mut fields_buf_ptr = fields_buf;
-            for field in fields {
-                let field = ffi::CString::new(field).unwrap();
+            for field in &expr_fields {
+                let field = ffi::CString::new(*field).unwrap();
                 let field_slice = field.as_bytes_with_nul();
                 let field_len = field_slice.len();
                 let fields_buf = from_raw_parts_mut(fields_buf_ptr, field_len);
@@ -741,7 +736,7 @@ pub unsafe extern "C" fn expression_validate(
             *fields_len = total_fields_length;
         }
         if !fields_total.is_null() {
-            *fields_total = fields_count;
+            *fields_total = expr_fields.len();
         }
     }
 
@@ -749,7 +744,7 @@ pub unsafe extern "C" fn expression_validate(
     if !operators.is_null() {
         let mut ops = BinaryOperatorFlags::empty();
         for pred in &predicates {
-            ops |= BinaryOperatorFlags::from(&pred.op);
+            ops |= BinaryOperatorFlags::from(pred.get_operator());
         }
         *operators = ops.bits();
     }
