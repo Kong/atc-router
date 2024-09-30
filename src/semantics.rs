@@ -1,6 +1,6 @@
-use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Type, Value};
 use crate::schema::Schema;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 type ValidationResult = Result<(), String>;
 
@@ -11,6 +11,21 @@ pub trait Validate {
 pub trait FieldCounter {
     fn add_to_counter(&self, map: &mut HashMap<String, usize>);
     fn remove_from_counter(&self, map: &mut HashMap<String, usize>);
+}
+
+#[cfg(feature = "expr_validation")]
+pub trait GetFields {
+    fn get_fields(&self) -> HashSet<String>;
+}
+
+#[cfg(feature = "expr_validation")]
+pub trait GetOperators {
+    fn get_operators(&self) -> crate::ast::BinaryOperatorFlags;
+}
+
+#[cfg(feature = "expr_validation")]
+pub trait GetPredicates {
+    fn get_predicates(&self) -> Vec<&Predicate>;
 }
 
 impl Validate for Expression {
@@ -107,6 +122,74 @@ impl Validate for Expression {
                 }
             }
         }
+    }
+}
+
+#[cfg(feature = "expr_validation")]
+impl GetPredicates for Expression {
+    fn get_predicates(&self) -> Vec<&Predicate> {
+        let mut predicates = Vec::new();
+
+        fn visit<'a, 'b>(expr: &'a Expression, predicates: &mut Vec<&'b Predicate>)
+        where
+            'a: 'b,
+        {
+            match expr {
+                Expression::Logical(l) => match l.as_ref() {
+                    LogicalExpression::And(l, r) => {
+                        visit(l, predicates);
+                        visit(r, predicates);
+                    }
+                    LogicalExpression::Or(l, r) => {
+                        visit(l, predicates);
+                        visit(r, predicates);
+                    }
+                    LogicalExpression::Not(r) => {
+                        visit(r, predicates);
+                    }
+                },
+                Expression::Predicate(p) => {
+                    predicates.push(p);
+                }
+            }
+        }
+
+        visit(self, &mut predicates);
+
+        predicates
+    }
+}
+
+#[cfg(feature = "expr_validation")]
+impl<T> GetFields for T
+where
+    T: GetPredicates,
+{
+    fn get_fields(&self) -> HashSet<String> {
+        let mut fields = HashSet::new();
+
+        for predicate in self.get_predicates() {
+            fields.insert(predicate.lhs.var_name.clone());
+        }
+
+        fields
+    }
+}
+
+#[cfg(feature = "expr_validation")]
+impl<T> GetOperators for T
+where
+    T: GetPredicates,
+{
+    fn get_operators(&self) -> crate::ast::BinaryOperatorFlags {
+        use crate::ast::BinaryOperatorFlags;
+        let mut ops = BinaryOperatorFlags::empty();
+
+        for predicate in self.get_predicates() {
+            ops |= BinaryOperatorFlags::from(&predicate.op);
+        }
+
+        ops
     }
 }
 

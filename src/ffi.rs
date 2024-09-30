@@ -658,12 +658,11 @@ pub unsafe extern "C" fn expression_validate(
     errbuf: *mut u8,
     errbuf_len: *mut usize,
 ) -> i64 {
-    use std::collections::HashMap;
+    use std::collections::HashSet;
 
-    use crate::ast::{BinaryOperatorFlags, Expression, LogicalExpression};
+    use crate::ast::BinaryOperatorFlags;
     use crate::parser::parse;
-    use crate::semantics::FieldCounter;
-    use crate::semantics::Validate;
+    use crate::semantics::{GetPredicates, Validate};
 
     let atc = ffi::CStr::from_ptr(atc as *const c_char).to_str().unwrap();
     let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
@@ -687,6 +686,9 @@ pub unsafe extern "C" fn expression_validate(
         return ATC_ROUTER_EXPRESSION_VALIDATE_FAILED;
     }
 
+    // Direct use GetPredicates trait to avoid unnecessary access
+    let predicates = ast.get_predicates();
+
     // Get used fields
     if !(fields_buf.is_null() && fields_len.is_null() && fields_total.is_null()) {
         if !fields_buf.is_null() {
@@ -696,13 +698,16 @@ pub unsafe extern "C" fn expression_validate(
             );
         }
 
-        let mut expr_fields: HashMap<String, usize> = HashMap::new();
-        ast.add_to_counter(&mut expr_fields);
+        let mut expr_fields: HashSet<String> = HashSet::new();
+        for pred in &predicates {
+            expr_fields.insert(pred.lhs.var_name.clone());
+        }
+
         let fields_count = expr_fields.len();
         let mut fields = Vec::with_capacity(fields_count);
         let mut total_fields_length = 0;
 
-        for k in expr_fields.into_keys() {
+        for k in expr_fields {
             total_fields_length += k.as_bytes().len() + 1; // +1 for trailing \0
             fields.push(k);
         }
@@ -743,28 +748,9 @@ pub unsafe extern "C" fn expression_validate(
     // Get used operators
     if !operators.is_null() {
         let mut ops = BinaryOperatorFlags::empty();
-        fn visit(expr: &Expression, ops: &mut BinaryOperatorFlags) {
-            match expr {
-                Expression::Logical(logic_expression) => match logic_expression.as_ref() {
-                    LogicalExpression::And(lhs, rhs) => {
-                        visit(lhs, ops);
-                        visit(rhs, ops);
-                    }
-                    LogicalExpression::Or(lhs, rhs) => {
-                        visit(lhs, ops);
-                        visit(rhs, ops);
-                    }
-                    LogicalExpression::Not(rhs) => {
-                        visit(rhs, ops);
-                    }
-                },
-                Expression::Predicate(predict) => {
-                    let op = BinaryOperatorFlags::from(&predict.op);
-                    ops.insert(op);
-                }
-            }
+        for pred in &predicates {
+            ops |= BinaryOperatorFlags::from(&pred.op);
         }
-        visit(&ast, &mut ops);
         *operators = ops.bits();
     }
 
