@@ -186,6 +186,17 @@ pub struct Predicate {
     pub op: BinaryOperator,
 }
 
+#[cfg(feature = "expr_validation")]
+impl Predicate {
+    pub fn get_field(&self) -> &str {
+        &self.lhs.var_name
+    }
+
+    pub fn get_operator(&self) -> &BinaryOperator {
+        &self.op
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
