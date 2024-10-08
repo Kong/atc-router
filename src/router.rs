@@ -30,7 +30,7 @@ fn release_cache(expr: &Expression, router: &mut Router) {
         },
         Expression::Predicate(p) => {
             if let Value::Regex(rc) = &p.rhs {
-                if Rc::strong_count(&rc) == 2 {
+                if Rc::strong_count(rc) == 2 {
                     // about to be dropped and the only Rc left is in the map
                     router.regex_cache.remove(rc.as_str());
                 }
