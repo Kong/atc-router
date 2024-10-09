@@ -608,7 +608,7 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// If `fields_buf` is null and `fields_len` or `fields_total` is non-null, it will write
 /// the required buffer length and the total number of fields to the provided pointers.
 /// If `fields_buf` is non-null, and `fields_len` is enough for the required buffer length,
-/// it will write the used fields to the buffer separated by '\0' and the total number of fields
+/// it will write the used fields to the buffer, each terminated by '\0' and the total number of fields
 /// to the `fields_total`, and `fields_len` will be updated with the total buffer length.
 /// If `fields_buf` is non-null, and `fields_len` is not enough for the required buffer length,
 /// it will write the required buffer length to the `fields_len`, and the total number of fields
