@@ -195,51 +195,60 @@ impl FieldCounter for CirOperand {
     }
 }
 
+impl FieldCounter for CirInstruction {
+    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
+        match self {
+            CirInstruction::AndIns(and) => {
+                and.left.add_to_counter(map);
+                and.right.add_to_counter(map);
+            }
+            CirInstruction::OrIns(or) => {
+                or.left.add_to_counter(map);
+                or.right.add_to_counter(map);
+            }
+            CirInstruction::NotIns(not) => {
+                not.right.add_to_counter(map);
+            }
+            CirInstruction::Predicate(p) => {
+                *map.entry(p.lhs.var_name.clone()).or_default() += 1;
+            }
+        }
+    }
+    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
+        match self {
+            CirInstruction::AndIns(and) => {
+                and.left.remove_from_counter(map);
+                and.right.remove_from_counter(map);
+            }
+            CirInstruction::OrIns(or) => {
+                or.left.remove_from_counter(map);
+                or.right.remove_from_counter(map);
+            }
+            CirInstruction::NotIns(not) => {
+                not.right.remove_from_counter(map);
+            }
+            CirInstruction::Predicate(p) => {
+                let val = map.get_mut(&p.lhs.var_name).unwrap();
+                *val -= 1;
+
+                if *val == 0 {
+                    assert!(map.remove(&p.lhs.var_name).is_some());
+                }
+            }
+        }
+    }
+}
+
 impl FieldCounter for CirProgram {
     fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
         for instruction in &self.instructions {
-            match &instruction {
-                CirInstruction::AndIns(and) => {
-                    and.left.add_to_counter(map);
-                    and.right.add_to_counter(map);
-                }
-                CirInstruction::OrIns(or) => {
-                    or.left.add_to_counter(map);
-                    or.right.add_to_counter(map);
-                }
-                CirInstruction::NotIns(not) => {
-                    not.right.add_to_counter(map);
-                }
-                CirInstruction::Predicate(p) => {
-                    *map.entry(p.lhs.var_name.clone()).or_default() += 1;
-                }
-            }
+            instruction.add_to_counter(map);
         }
     }
 
     fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
         for instruction in &self.instructions {
-            match &instruction {
-                CirInstruction::AndIns(and) => {
-                    and.left.remove_from_counter(map);
-                    and.right.remove_from_counter(map);
-                }
-                CirInstruction::OrIns(or) => {
-                    or.left.remove_from_counter(map);
-                    or.right.remove_from_counter(map);
-                }
-                CirInstruction::NotIns(not) => {
-                    not.right.remove_from_counter(map);
-                }
-                CirInstruction::Predicate(p) => {
-                    let val = map.get_mut(&p.lhs.var_name).unwrap();
-                    *val -= 1;
-
-                    if *val == 0 {
-                        assert!(map.remove(&p.lhs.var_name).is_some());
-                    }
-                }
-            }
+            instruction.remove_from_counter(map);
         }
     }
 }
