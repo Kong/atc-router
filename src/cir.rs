@@ -241,15 +241,15 @@ impl FieldCounter for CirInstruction {
 
 impl FieldCounter for CirProgram {
     fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
-        for instruction in &self.instructions {
-            instruction.add_to_counter(map);
-        }
+        self.instructions
+            .iter()
+            .for_each(|instruction: &CirInstruction| instruction.add_to_counter(map));
     }
 
     fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
-        for instruction in &self.instructions {
-            instruction.remove_from_counter(map);
-        }
+        self.instructions
+            .iter()
+            .for_each(|instruction: &CirInstruction| instruction.remove_from_counter(map));
     }
 }
 
