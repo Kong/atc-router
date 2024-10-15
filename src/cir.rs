@@ -74,7 +74,7 @@ impl Translate for Expression {
 /// Parameters:
 ///   * reference to AST
 ///   * reference to translated CIR
-/// This function returns:
+///     This function returns:
 ///   * index of translated IR
 fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
     match exp {
