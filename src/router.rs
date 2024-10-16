@@ -17,6 +17,7 @@ pub struct Router<'a> {
 }
 
 impl<'a> Router<'a> {
+    #[inline]
     pub fn new(schema: &'a Schema) -> Self {
         Self {
             schema,
