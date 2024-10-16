@@ -1,6 +1,7 @@
-OS=$(shell uname -s)
+OS := $(shell uname | awk '{print tolower($$0)}')
+MACHINE := $(shell uname -m)
 
-ifeq ($(OS), Darwin)
+ifeq ($(OS), darwin)
 SHLIB_EXT=dylib
 else
 SHLIB_EXT=so
@@ -15,6 +16,14 @@ LUA_LIB_DIR ?=     $(PREFIX)/lib/lua/$(LUA_VERSION)
 INSTALL ?= install
 RELEASE_FOLDER = target/$(CARGO_BUILD_TARGET)/release
 DEBUG_RELEASE_FOLDER = target/$(CARGO_BUILD_TARGET)/debug
+BAZEL_VERSION ?= 7.3.2
+ifeq ($(MACHINE), aarch64)
+BAZEL_MACHINE ?= arm64
+else ifeq ($(MACHINE), x86_64)
+BAZEL_MACHINE ?= amd64
+else
+BAZEL_MACHINE ?= $(MACHINE)
+endif
 
 .PHONY: all test install build clean
 
@@ -51,4 +60,14 @@ valgrind: $(DEBUG_RELEASE_FOLDER)/libatc_router.%
 	prove -r t/) 2>&1 | tee /dev/stderr | grep -q "match-leak-kinds: definite" && exit 1 || exit 0
 
 clean:
-	rm -rf target
+	./bin/bazel clean
+	rm -rf target bin
+
+bin/bazel:
+	@test -d bin || mkdir bin
+	@curl -s -S -L \
+                https://github.com/bazelbuild/bazel/releases/download/$(BAZEL_VERSION)/bazel-$(BAZEL_VERSION)-$(OS)-$(BAZEL_MACHINE) -o bin/bazel
+	@chmod +x bin/bazel
+
+dev: bin/bazel
+	./bin/bazel build :atc_router --verbose_failures
