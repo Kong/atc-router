@@ -29,7 +29,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Build
-      run: bazel build :atc_router --verbose_failures
+      run: make dev
 
     - name: Ensure `ffi` feature is present (Linux)
       if: ${{ matrix.os == 'ubuntu-latest' }}
