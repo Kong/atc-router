@@ -14,7 +14,7 @@ categories = ["Compilers", "Parser implementations"]
 [dependencies]
 pest = "2.7"
 pest_derive = "2.7"
-cidr = "0.2"
+cidr = "0.3"
 lazy_static = "1.5"
 uuid = "1.8"
 regex = "1"
