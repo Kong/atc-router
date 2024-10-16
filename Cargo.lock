@@ -101,9 +101,9 @@ dependencies = [
 
 [[package]]
 name = "cidr"
-version = "0.2.3"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bdf600c45bd958cf2945c445264471cca8b6c8e67bc87b71affd6d7e5682621"
+checksum = "bfc95a0c21d5409adc146dbbb152b5c65aaea32bc2d2f57cf12f850bffdd7ab8"
 dependencies = [
  "serde",
 ]
