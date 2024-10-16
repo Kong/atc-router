@@ -19,8 +19,6 @@ DEBUG_RELEASE_FOLDER = target/$(CARGO_BUILD_TARGET)/debug
 BAZEL_VERSION ?= 7.3.2
 ifeq ($(MACHINE), aarch64)
 BAZEL_MACHINE ?= arm64
-else ifeq ($(MACHINE), x86_64)
-BAZEL_MACHINE ?= amd64
 else
 BAZEL_MACHINE ?= $(MACHINE)
 endif
@@ -64,10 +62,10 @@ clean:
 	rm -rf target bin
 
 bin/bazel:
-	@test -d bin || mkdir bin
-	@curl -s -S -L \
-                https://github.com/bazelbuild/bazel/releases/download/$(BAZEL_VERSION)/bazel-$(BAZEL_VERSION)-$(OS)-$(BAZEL_MACHINE) -o bin/bazel
-	@chmod +x bin/bazel
+	test -d bin || mkdir bin
+	curl -s -S -L \
+               https://github.com/bazelbuild/bazel/releases/download/$(BAZEL_VERSION)/bazel-$(BAZEL_VERSION)-$(OS)-$(BAZEL_MACHINE) -o bin/bazel
+	chmod +x bin/bazel
 
 dev: bin/bazel
 	./bin/bazel build :atc_router --verbose_failures
