@@ -2,6 +2,9 @@ use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
 use crate::schema::Schema;
 use std::collections::HashMap;
 
+#[cfg(feature = "expr_validation")]
+use crate::ast::Predicate;
+
 type ValidationResult = Result<(), String>;
 
 pub trait Validate {
@@ -11,6 +14,11 @@ pub trait Validate {
 pub trait FieldCounter {
     fn add_to_counter(&self, map: &mut HashMap<String, usize>);
     fn remove_from_counter(&self, map: &mut HashMap<String, usize>);
+}
+
+#[cfg(feature = "expr_validation")]
+pub trait GetPredicates {
+    fn get_predicates(&self) -> Vec<&Predicate>;
 }
 
 impl Validate for Expression {
@@ -107,6 +115,41 @@ impl Validate for Expression {
                 }
             }
         }
+    }
+}
+
+#[cfg(feature = "expr_validation")]
+impl GetPredicates for Expression {
+    fn get_predicates(&self) -> Vec<&Predicate> {
+        let mut predicates = Vec::new();
+
+        fn visit<'a, 'b>(expr: &'a Expression, predicates: &mut Vec<&'b Predicate>)
+        where
+            'a: 'b,
+        {
+            match expr {
+                Expression::Logical(l) => match l.as_ref() {
+                    LogicalExpression::And(l, r) => {
+                        visit(l, predicates);
+                        visit(r, predicates);
+                    }
+                    LogicalExpression::Or(l, r) => {
+                        visit(l, predicates);
+                        visit(r, predicates);
+                    }
+                    LogicalExpression::Not(r) => {
+                        visit(r, predicates);
+                    }
+                },
+                Expression::Predicate(p) => {
+                    predicates.push(p);
+                }
+            }
+        }
+
+        visit(self, &mut predicates);
+
+        predicates
     }
 }
 
