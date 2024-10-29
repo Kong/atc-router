@@ -18,7 +18,7 @@ pub struct Fields {
 
 pub struct Router<'a> {
     schema: &'a Schema,
-    matchers: BTreeMap<MatcherKey, Expression>,
+    matchers: BTreeMap<MatcherKey, CirProgram>,
     pub fields: Fields,
 }
 
@@ -42,12 +42,11 @@ impl<'a> Router<'a> {
             return Err("UUID already exists".to_string());
         }
         // lhs's index maybe changed in `ast.add_to_counter`
-        let mut ast = parse(atc).map_err(|e| e.to_string())?;
-
+        let ast = parse(atc).map_err(|e| e.to_string())?;
         ast.validate(self.schema)?;
-        ast.add_to_counter(&mut self.fields);
-
-        assert!(self.matchers.insert(key, ast).is_none());
+        let mut cir = ast.translate();
+        cir.add_to_counter(&mut self.fields);
+        assert!(self.matchers.insert(key, cir).is_none());
 
         Ok(())
     }
@@ -93,7 +92,8 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        ast::{Expression, LogicalExpression, Type, Value},
+        ast::{Type, Value},
+        cir::{get_predicates, CirProgram},
         context::Context,
         router::Router,
         schema::Schema,
@@ -123,19 +123,17 @@ mod tests {
         ctx
     }
 
-    fn is_index_match(e: &Expression, rt: &Router) -> bool {
-        match e {
-            Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
-                    is_index_match(l, rt) && is_index_match(r, rt)
-                }
-                LogicalExpression::Not(r) => is_index_match(r, rt),
-            },
-            Expression::Predicate(p) => {
-                rt.fields.list[p.lhs.index].as_ref().unwrap().0 == p.lhs.var_name
-                    && *rt.fields.map.get(&p.lhs.var_name).unwrap() == p.lhs.index
+    fn is_index_match(cir: &CirProgram, rt: &Router) -> bool {
+        let predicates = get_predicates(cir);
+        for p in predicates {
+            if rt.fields.list[p.lhs.index].as_ref().unwrap().0 == p.lhs.var_name
+                && *rt.fields.map.get(&p.lhs.var_name).unwrap() == p.lhs.index
+            {
+                continue;
             }
+            return false;
         }
+        true
     }
 
     fn validate_index(r: &Router) -> bool {

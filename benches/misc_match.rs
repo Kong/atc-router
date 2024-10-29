@@ -14,6 +14,11 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::{hint::black_box, str::FromStr};
 use uuid::Uuid;
 
+// To run this benchmark, execute the following command:
+// ```shell
+// cargo bench --bench misc_match
+// ```
+
 #[derive(Serialize, Deserialize)]
 struct TestData {
     rules: Vec<serde_json::Value>,

@@ -34,7 +34,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         router.add_matcher(N_MATCHER - i, uuid, &expr).unwrap();
     }
 
-    let mut context = Context::new(&schema);
+    let mut context = Context::new(&router);
     context.add_value("http.path.segments.0_1", "test/run".to_string().into());
     context.add_value("http.path.segments.3", "bar".to_string().into());
     context.add_value("http.path.segments.len", Value::Int(3 as i64));

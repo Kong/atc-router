@@ -29,7 +29,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         router.add_matcher(N - i, uuid, &expr).unwrap();
     }
 
-    let mut context = Context::new(&schema);
+    let mut context = Context::new(&router);
     context.add_value("a", Value::Int(N as i64));
 
     c.bench_function("Doesn't Match", |b| {
