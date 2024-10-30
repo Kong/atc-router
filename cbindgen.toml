@@ -6,7 +6,6 @@ prefix_with_name = true
 
 [defines]
 "feature = ffi" = "DEFINE_ATC_ROUTER_FFI"
-"feature = expr_validation" = "DEFINE_ATC_ROUTER_EXPR_VALIDATION"
 
 [macro_expansion]
 bitflags = true

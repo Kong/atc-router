@@ -31,9 +31,8 @@ crate-type = ["lib", "cdylib", "staticlib"]
 
 [features]
 default = ["ffi"]
-ffi = []
+ffi = ["dep:bitflags"]
 serde = ["cidr/serde", "dep:serde", "dep:serde_regex"]
-expr_validation = ["dep:bitflags"]
 
 [[bench]]
 name = "test"

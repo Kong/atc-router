@@ -45,59 +45,6 @@ pub enum BinaryOperator {
     Contains,       // contains
 }
 
-#[cfg(feature = "expr_validation")]
-bitflags::bitflags! {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-    #[repr(C)]
-    pub struct BinaryOperatorFlags: u64 /* We can only have no more than 64 BinaryOperators */ {
-        const EQUALS = 1 << 0;
-        const NOT_EQUALS = 1 << 1;
-        const REGEX = 1 << 2;
-        const PREFIX = 1 << 3;
-        const POSTFIX = 1 << 4;
-        const GREATER = 1 << 5;
-        const GREATER_OR_EQUAL = 1 << 6;
-        const LESS = 1 << 7;
-        const LESS_OR_EQUAL = 1 << 8;
-        const IN = 1 << 9;
-        const NOT_IN = 1 << 10;
-        const CONTAINS = 1 << 11;
-
-        const UNUSED = !(Self::EQUALS.bits()
-            | Self::NOT_EQUALS.bits()
-            | Self::REGEX.bits()
-            | Self::PREFIX.bits()
-            | Self::POSTFIX.bits()
-            | Self::GREATER.bits()
-            | Self::GREATER_OR_EQUAL.bits()
-            | Self::LESS.bits()
-            | Self::LESS_OR_EQUAL.bits()
-            | Self::IN.bits()
-            | Self::NOT_IN.bits()
-            | Self::CONTAINS.bits());
-    }
-}
-
-#[cfg(feature = "expr_validation")]
-impl From<&BinaryOperator> for BinaryOperatorFlags {
-    fn from(op: &BinaryOperator) -> Self {
-        match op {
-            BinaryOperator::Equals => Self::EQUALS,
-            BinaryOperator::NotEquals => Self::NOT_EQUALS,
-            BinaryOperator::Regex => Self::REGEX,
-            BinaryOperator::Prefix => Self::PREFIX,
-            BinaryOperator::Postfix => Self::POSTFIX,
-            BinaryOperator::Greater => Self::GREATER,
-            BinaryOperator::GreaterOrEqual => Self::GREATER_OR_EQUAL,
-            BinaryOperator::Less => Self::LESS,
-            BinaryOperator::LessOrEqual => Self::LESS_OR_EQUAL,
-            BinaryOperator::In => Self::IN,
-            BinaryOperator::NotIn => Self::NOT_IN,
-            BinaryOperator::Contains => Self::CONTAINS,
-        }
-    }
-}
-
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -184,17 +131,6 @@ pub struct Predicate {
     pub lhs: Lhs,
     pub rhs: Value,
     pub op: BinaryOperator,
-}
-
-#[cfg(feature = "expr_validation")]
-impl Predicate {
-    pub fn get_field(&self) -> &str {
-        &self.lhs.var_name
-    }
-
-    pub fn get_operator(&self) -> &BinaryOperator {
-        &self.op
-    }
 }
 
 #[cfg(test)]

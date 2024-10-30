@@ -1,7 +1,8 @@
-use crate::ast::{Type, Value};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Type, Value};
 use crate::context::Context;
 use crate::router::Router;
 use crate::schema::Schema;
+use bitflags::bitflags;
 use cidr::IpCidr;
 use std::cmp::min;
 use std::convert::TryFrom;
@@ -578,11 +579,93 @@ pub unsafe extern "C" fn context_get_result(
         .unwrap()
 }
 
-#[cfg(feature = "expr_validation")]
+impl Expression {
+    fn get_predicates(&self) -> Vec<&Predicate> {
+        let mut predicates = Vec::new();
+
+        fn visit<'a, 'b>(expr: &'a Expression, predicates: &mut Vec<&'b Predicate>)
+        where
+            'a: 'b,
+        {
+            match expr {
+                Expression::Logical(l) => match l.as_ref() {
+                    LogicalExpression::And(l, r) => {
+                        visit(l, predicates);
+                        visit(r, predicates);
+                    }
+                    LogicalExpression::Or(l, r) => {
+                        visit(l, predicates);
+                        visit(r, predicates);
+                    }
+                    LogicalExpression::Not(r) => {
+                        visit(r, predicates);
+                    }
+                },
+                Expression::Predicate(p) => {
+                    predicates.push(p);
+                }
+            }
+        }
+
+        visit(self, &mut predicates);
+
+        predicates
+    }
+}
+
+bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+    #[repr(C)]
+    pub struct BinaryOperatorFlags: u64 /* We can only have no more than 64 BinaryOperators */ {
+        const EQUALS = 1 << 0;
+        const NOT_EQUALS = 1 << 1;
+        const REGEX = 1 << 2;
+        const PREFIX = 1 << 3;
+        const POSTFIX = 1 << 4;
+        const GREATER = 1 << 5;
+        const GREATER_OR_EQUAL = 1 << 6;
+        const LESS = 1 << 7;
+        const LESS_OR_EQUAL = 1 << 8;
+        const IN = 1 << 9;
+        const NOT_IN = 1 << 10;
+        const CONTAINS = 1 << 11;
+
+        const UNUSED = !(Self::EQUALS.bits()
+            | Self::NOT_EQUALS.bits()
+            | Self::REGEX.bits()
+            | Self::PREFIX.bits()
+            | Self::POSTFIX.bits()
+            | Self::GREATER.bits()
+            | Self::GREATER_OR_EQUAL.bits()
+            | Self::LESS.bits()
+            | Self::LESS_OR_EQUAL.bits()
+            | Self::IN.bits()
+            | Self::NOT_IN.bits()
+            | Self::CONTAINS.bits());
+    }
+}
+
+impl From<&BinaryOperator> for BinaryOperatorFlags {
+    fn from(op: &BinaryOperator) -> Self {
+        match op {
+            BinaryOperator::Equals => Self::EQUALS,
+            BinaryOperator::NotEquals => Self::NOT_EQUALS,
+            BinaryOperator::Regex => Self::REGEX,
+            BinaryOperator::Prefix => Self::PREFIX,
+            BinaryOperator::Postfix => Self::POSTFIX,
+            BinaryOperator::Greater => Self::GREATER,
+            BinaryOperator::GreaterOrEqual => Self::GREATER_OR_EQUAL,
+            BinaryOperator::Less => Self::LESS,
+            BinaryOperator::LessOrEqual => Self::LESS_OR_EQUAL,
+            BinaryOperator::In => Self::IN,
+            BinaryOperator::NotIn => Self::NOT_IN,
+            BinaryOperator::Contains => Self::CONTAINS,
+        }
+    }
+}
+
 pub const ATC_ROUTER_EXPRESSION_VALIDATE_OK: i64 = 0;
-#[cfg(feature = "expr_validation")]
 pub const ATC_ROUTER_EXPRESSION_VALIDATE_FAILED: i64 = 1;
-#[cfg(feature = "expr_validation")]
 pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 
 /// Validate the ATC expression with the schema.
@@ -646,7 +729,6 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// - If `fields_buf` is non-null, `fields_len` and `fields_total` must be non-null.
 /// - If `fields_buf` is null, `fields_len` and `fields_total` can be non-null
 ///   for writing required buffer length and total number of fields.
-#[cfg(feature = "expr_validation")]
 #[no_mangle]
 pub unsafe extern "C" fn expression_validate(
     atc: *const u8,
@@ -660,9 +742,8 @@ pub unsafe extern "C" fn expression_validate(
 ) -> i64 {
     use std::collections::HashSet;
 
-    use crate::ast::BinaryOperatorFlags;
     use crate::parser::parse;
-    use crate::semantics::{GetPredicates, Validate};
+    use crate::semantics::Validate;
 
     let atc = ffi::CStr::from_ptr(atc as *const c_char).to_str().unwrap();
     let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
@@ -700,7 +781,7 @@ pub unsafe extern "C" fn expression_validate(
 
         let expr_fields = predicates
             .iter()
-            .map(|p| p.get_field())
+            .map(|p| p.lhs.var_name.as_str())
             .collect::<HashSet<_>>();
         let total_fields_length = expr_fields
             .iter()
@@ -744,7 +825,7 @@ pub unsafe extern "C" fn expression_validate(
     if !operators.is_null() {
         let mut ops = BinaryOperatorFlags::empty();
         for pred in &predicates {
-            ops |= BinaryOperatorFlags::from(pred.get_operator());
+            ops |= BinaryOperatorFlags::from(&pred.op);
         }
         *operators = ops.bits();
     }
@@ -802,7 +883,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "expr_validation")]
     fn expr_validate_on(
         schema: &Schema,
         atc: &str,
@@ -848,10 +928,8 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "expr_validation")]
     #[test]
     fn test_expression_validate_success() {
-        use crate::ast::BinaryOperatorFlags;
         let atc = r##"net.protocol ~ "^https?$" && net.dst.port == 80 && (net.src.ip not in 10.0.0.0/16 || net.src.ip in 10.0.1.0/24) && http.path contains "hello""##;
 
         let mut schema = Schema::default();
@@ -886,7 +964,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "expr_validation")]
     #[test]
     fn test_expression_validate_failed_parse() {
         let atc = r##"net.protocol ~ "^https?$" && net.dst.port == 80 && (net.src.ip not in 10.0.0.0/16 || net.src.ip in 10.0.1.0) && http.path contains "hello""##;
@@ -912,7 +989,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "expr_validation")]
     #[test]
     fn test_expression_validate_failed_validate() {
         let atc = r##"net.protocol ~ "^https?$" && net.dst.port == 80 && (net.src.ip not in 10.0.0.0/16 || net.src.ip in 10.0.1.0/24) && http.path contains "hello""##;
@@ -937,7 +1013,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "expr_validation")]
     #[test]
     fn test_expression_validate_buf_too_small() {
         let atc = r##"net.protocol ~ "^https?$" && net.dst.port == 80 && (net.src.ip not in 10.0.0.0/16 || net.src.ip in 10.0.1.0/24) && http.path contains "hello""##;
