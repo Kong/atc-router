@@ -2,8 +2,8 @@
 use crate::ast::{Expression, LogicalExpression, Predicate};
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
+use crate::router::Fields;
 use crate::semantics::FieldCounter;
-use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct CirProgram {
@@ -178,61 +178,103 @@ impl Execute for CirProgram {
 }
 
 impl FieldCounter for CirOperand {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
-        if let CirOperand::Predicate(p) = &self {
-            *map.entry(p.lhs.var_name.clone()).or_default() += 1
+    fn add_to_counter(&mut self, fields: &mut Fields) {
+        if let CirOperand::Predicate(p) = self {
+            // 1. fields: increment counter for field
+            // 2. lhs: assign field index to the LHS
+            // 3. map: maintain the fields map: {field_name : field_index}
+            if let Some(index) = fields.map.get(&p.lhs.var_name) {
+                fields.list[*index].as_mut().unwrap().1 += 1;
+                p.lhs.index = *index;
+            } else {
+                // reuse slots in queue if possible
+                let new_idx: usize;
+                if fields.slots.is_empty() {
+                    fields.list.push(Some((p.lhs.var_name.clone(), 1)));
+                    new_idx = fields.list.len() - 1;
+                } else {
+                    new_idx = fields.slots.pop().unwrap();
+                    fields.list[new_idx] = Some((p.lhs.var_name.clone(), 1));
+                }
+                fields.map.insert(p.lhs.var_name.clone(), new_idx);
+                p.lhs.index = new_idx;
+            }
         }
     }
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
+    fn remove_from_counter(&mut self, fields: &mut Fields) {
         if let CirOperand::Predicate(p) = &self {
-            let val = map.get_mut(&p.lhs.var_name).unwrap();
-            *val -= 1;
-
-            if *val == 0 {
-                assert!(map.remove(&p.lhs.var_name).is_some());
+            let index: usize = p.lhs.index;
+            // decrement counter of field
+            fields.list[index].as_mut().unwrap().1 -= 1;
+            // for field removing, reserve the slot for resue and remove it in map
+            if fields.list[index].as_mut().unwrap().1 == 0 {
+                fields.list[index] = None;
+                fields.slots.push(index);
+                assert!(fields.map.remove(&p.lhs.var_name).is_some());
             }
         }
     }
 }
 
 impl FieldCounter for CirInstruction {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
+    fn add_to_counter(&mut self, fields: &mut Fields) {
         match self {
             CirInstruction::AndIns(and) => {
-                and.left.add_to_counter(map);
-                and.right.add_to_counter(map);
+                and.left.add_to_counter(fields);
+                and.right.add_to_counter(fields);
             }
             CirInstruction::OrIns(or) => {
-                or.left.add_to_counter(map);
-                or.right.add_to_counter(map);
+                or.left.add_to_counter(fields);
+                or.right.add_to_counter(fields);
             }
             CirInstruction::NotIns(not) => {
-                not.right.add_to_counter(map);
+                not.right.add_to_counter(fields);
             }
             CirInstruction::Predicate(p) => {
-                *map.entry(p.lhs.var_name.clone()).or_default() += 1;
+                // 1. fields: increment counter for field
+                // 2. lhs: assign field index to the LHS
+                // 3. map: maintain the fields map: {field_name : field_index}
+                if let Some(index) = fields.map.get(&p.lhs.var_name) {
+                    fields.list[*index].as_mut().unwrap().1 += 1;
+                    p.lhs.index = *index;
+                } else {
+                    // reuse slots in queue if possible
+                    let new_idx: usize;
+                    if fields.slots.is_empty() {
+                        fields.list.push(Some((p.lhs.var_name.clone(), 1)));
+                        new_idx = fields.list.len() - 1;
+                    } else {
+                        new_idx = fields.slots.pop().unwrap();
+                        fields.list[new_idx] = Some((p.lhs.var_name.clone(), 1));
+                    }
+                    fields.map.insert(p.lhs.var_name.clone(), new_idx);
+                    p.lhs.index = new_idx;
+                }
             }
         }
     }
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
+    fn remove_from_counter(&mut self, fields: &mut Fields) {
         match self {
             CirInstruction::AndIns(and) => {
-                and.left.remove_from_counter(map);
-                and.right.remove_from_counter(map);
+                and.left.remove_from_counter(fields);
+                and.right.remove_from_counter(fields);
             }
             CirInstruction::OrIns(or) => {
-                or.left.remove_from_counter(map);
-                or.right.remove_from_counter(map);
+                or.left.remove_from_counter(fields);
+                or.right.remove_from_counter(fields);
             }
             CirInstruction::NotIns(not) => {
-                not.right.remove_from_counter(map);
+                not.right.remove_from_counter(fields);
             }
             CirInstruction::Predicate(p) => {
-                let val = map.get_mut(&p.lhs.var_name).unwrap();
-                *val -= 1;
-
-                if *val == 0 {
-                    assert!(map.remove(&p.lhs.var_name).is_some());
+                let index: usize = p.lhs.index;
+                // decrement counter of field
+                fields.list[index].as_mut().unwrap().1 -= 1;
+                // for field removing, reserve the slot for resue and remove it in map
+                if fields.list[index].as_mut().unwrap().1 == 0 {
+                    fields.list[index] = None;
+                    fields.slots.push(index);
+                    assert!(fields.map.remove(&p.lhs.var_name).is_some());
                 }
             }
         }
@@ -240,17 +282,49 @@ impl FieldCounter for CirInstruction {
 }
 
 impl FieldCounter for CirProgram {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
+    fn add_to_counter(&mut self, fields: &mut Fields) {
         self.instructions
-            .iter()
-            .for_each(|instruction: &CirInstruction| instruction.add_to_counter(map));
+            .iter_mut()
+            .for_each(|instruction: &mut CirInstruction| instruction.add_to_counter(fields));
     }
 
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
+    fn remove_from_counter(&mut self, fields: &mut Fields) {
         self.instructions
-            .iter()
-            .for_each(|instruction: &CirInstruction| instruction.remove_from_counter(map));
+            .iter_mut()
+            .for_each(|instruction: &mut CirInstruction| instruction.remove_from_counter(fields));
     }
+}
+
+#[cfg(test)]
+pub fn get_predicates(cir: &CirProgram) -> Vec<&Predicate> {
+    let mut predicates = Vec::new();
+    cir.instructions.iter().for_each(|ins| match ins {
+        CirInstruction::AndIns(and) => {
+            if let CirOperand::Predicate(predicate) = &and.left {
+                predicates.push(predicate);
+            }
+            if let CirOperand::Predicate(predicate) = &and.right {
+                predicates.push(predicate);
+            }
+        }
+        CirInstruction::OrIns(or) => {
+            if let CirOperand::Predicate(predicate) = &or.left {
+                predicates.push(predicate);
+            }
+            if let CirOperand::Predicate(predicate) = &or.right {
+                predicates.push(predicate);
+            }
+        }
+        CirInstruction::NotIns(not) => {
+            if let CirOperand::Predicate(predicate) = &not.right {
+                predicates.push(predicate);
+            }
+        }
+        CirInstruction::Predicate(predicate) => {
+            predicates.push(predicate);
+        }
+    });
+    predicates
 }
 
 #[cfg(test)]
@@ -260,6 +334,7 @@ mod tests {
     use crate::ast::Value;
     use crate::context::Match;
     use crate::interpreter::Execute;
+    use crate::router::Router;
     use crate::schema::Schema;
 
     impl Execute for Expression {
@@ -292,7 +367,8 @@ mod tests {
             r#"http.path == "hello" && http.version == "1.1""#,
         ];
 
-        let mut context = crate::context::Context::new(&schema);
+        let r = Router::new(&schema);
+        let mut context = crate::context::Context::new(&r);
         context.add_value("http.path", crate::ast::Value::String("hello".to_string()));
         context.add_value("http.version", crate::ast::Value::String("1.1".to_string()));
         context.add_value("a", Value::Int(3 as i64));

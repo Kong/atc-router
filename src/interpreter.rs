@@ -7,7 +7,7 @@ pub trait Execute {
 
 impl Execute for Predicate {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
-        let lhs_values = match ctx.value_of(&self.lhs.var_name) {
+        let lhs_values = match ctx.value_of(self.lhs.index) {
             None => return false,
             Some(v) => v,
         };
@@ -261,18 +261,28 @@ impl Execute for Predicate {
 #[test]
 fn test_predicate() {
     use crate::ast;
+    use crate::router::Router;
     use crate::schema;
+    use uuid::Uuid;
 
     let mut mat = Match::new();
     let mut schema = schema::Schema::default();
     schema.add_field("my_key", ast::Type::String);
-    let mut ctx = Context::new(&schema);
+    let mut r = Router::new(&schema);
+    // expression here is not practical, just used to setup context
+    assert!(r
+        .add_matcher(1, Uuid::new_v4(), r#"my_key=="whatever""#)
+        .is_ok());
+
+    let mut ctx = Context::new(&r);
+    let field_index: usize = 0;
 
     // check when value list is empty
     // check if all values match starts_with foo -- should be false
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![],
         },
         rhs: Value::String("foo".to_string()),
@@ -285,6 +295,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![],
         },
         rhs: Value::String("foo".to_string()),
@@ -302,13 +313,14 @@ fn test_predicate() {
     ];
 
     for v in lhs_values {
-        ctx.add_value("my_key", v);
+        ctx.add_value_by_index(field_index, v);
     }
 
     // check if all values match starts_with foo -- should be true
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![],
         },
         rhs: Value::String("foo".to_string()),
@@ -321,6 +333,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![],
         },
         rhs: Value::String("foo".to_string()),
@@ -333,6 +346,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("foo".to_string()),
@@ -345,6 +359,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("foo".to_string()),
@@ -357,6 +372,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("nar".to_string()),
@@ -369,6 +385,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("".to_string()),
@@ -381,6 +398,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("".to_string()),
@@ -393,6 +411,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("ob".to_string()),
@@ -405,6 +424,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
+            index: field_index,
             transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("ok".to_string()),

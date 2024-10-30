@@ -22,6 +22,7 @@ ATC Router library for Kong.
     * [resty.router.context](#restyroutercontext)
         * [new](#new)
         * [add\_value](#add_value)
+        * [add\_value\_by\_index](#add_value_by_index)
         * [get\_result](#get_result)
         * [reset](#reset)
 * [Copyright and license](#copyright-and-license)
@@ -186,9 +187,9 @@ none of the matcher matched.
 
 **context:** *any*
 
-Returns the currently used field names by all matchers inside the router as
-an Lua array. It can help reduce unnecessarily producing values that are not
-actually used by the user supplied matchers.
+Returns the currently used {field name: field index} map by all matchers inside
+the router as an Lua table. It can help reduce unnecessarily producing values 
+that are not actually used by the user supplied matchers.
 
 [Back to TOC](#table-of-contents)
 
@@ -209,12 +210,12 @@ Returns the fields used in the provided expression when the expression is valid.
 
 ### new
 
-**syntax:** *c = context.new(schema)*
+**syntax:** *c = context.new(router)*
 
 **context:** *any*
 
 Create a new context instance that can later be used for storing contextual information.
-for router matches. `schema` must refer to an existing schema instance.
+for router matches. `router` must refer to an existing router instance.
 
 [Back to TOC](#table-of-contents)
 
@@ -225,6 +226,28 @@ for router matches. `schema` must refer to an existing schema instance.
 **context:** *any*
 
 Provides `value` for `field` inside the context.
+
+Returns `true` if field exists and value has successfully been provided.
+
+If an error occurred, `nil` and a string describing the error will be returned.
+
+[Back to TOC](#table-of-contents)
+
+### add\_value\_by\_index
+
+**syntax:** *res, err = c:add_value_by_index(field, value, index)*
+
+**context:** *any*
+
+Provides `value` for `field` inside the context.
+
+Use `index` got from `r:get_fields()` to provide `value` for `field`.
+
+This method is faster than `add_value`, but notice that users should gurantee
+
+the index got from `r:get_fields()` is not stale. e.g. `router` fields changed
+
+by `remove_matcher` may cause field indexes got previously invalid.
 
 Returns `true` if field exists and value has successfully been provided.
 

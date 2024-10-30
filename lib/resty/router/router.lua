@@ -75,23 +75,21 @@ end
 
 function _M:get_fields()
     local out = {}
-    local out_n = 0
     local router = self.router
 
-    local total = tonumber(clib.router_get_fields(router, nil, nil))
+    local total = tonumber(clib.router_get_fields(router, nil, nil, nil))
     if total == 0 then
         return out
     end
 
     local fields = ffi_new("const uint8_t *[?]", total)
     local fields_len = ffi_new("size_t [?]", total)
+    local indexes = ffi_new("size_t [?]", total)
     fields_len[0] = total
 
-    clib.router_get_fields(router, fields, fields_len)
-
+    clib.router_get_fields(router, fields, fields_len, indexes)
     for i = 0, total - 1 do
-        out_n = out_n + 1
-        out[out_n] = ffi_string(fields[i], fields_len[i])
+        out[ffi_string(fields[i], fields_len[i])] = indexes[i]
     end
 
     return out

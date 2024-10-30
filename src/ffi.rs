@@ -319,21 +319,26 @@ pub unsafe extern "C" fn router_get_fields(
     router: &Router,
     fields: *mut *const u8,
     fields_len: *mut usize,
+    indexes: *mut usize,
 ) -> usize {
     if !fields.is_null() {
         assert!(!fields_len.is_null());
-        assert!(*fields_len >= router.fields.len());
+        assert!(*fields_len >= router.fields.map.len());
 
         let fields = from_raw_parts_mut(fields, *fields_len);
+        let indexes = from_raw_parts_mut(indexes, *fields_len);
         let fields_len = from_raw_parts_mut(fields_len, *fields_len);
 
-        for (i, k) in router.fields.keys().enumerate() {
-            fields[i] = k.as_bytes().as_ptr();
-            fields_len[i] = k.len()
+        let mut i = 0;
+        for (field, pos) in router.fields.map.iter() {
+            fields[i] = field.as_bytes().as_ptr();
+            fields_len[i] = field.len();
+            indexes[i] = *pos;
+            i += 1;
         }
     }
 
-    router.fields.len()
+    router.fields.map.len()
 }
 
 /// Allocate a new context object associated with the schema.
@@ -348,8 +353,8 @@ pub unsafe extern "C" fn router_get_fields(
 ///
 /// - `schema` must be a valid pointer returned by [`schema_new`].
 #[no_mangle]
-pub unsafe extern "C" fn context_new(schema: &Schema) -> *mut Context {
-    Box::into_raw(Box::new(Context::new(schema)))
+pub unsafe extern "C" fn context_new<'a>(router: &'a Router<'a>) -> *mut Context<'a> {
+    Box::into_raw(Box::new(Context::new(router)))
 }
 
 /// Deallocate the context object.
@@ -414,9 +419,31 @@ pub unsafe extern "C" fn context_add_value(
     errbuf: *mut u8,
     errbuf_len: *mut usize,
 ) -> bool {
-    let field = ffi::CStr::from_ptr(field as *const c_char)
-        .to_str()
-        .unwrap();
+    let field = ffi::CStr::from_ptr(field).to_str().unwrap();
+    let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
+
+    let value: Result<Value, _> = value.try_into();
+    if let Err(e) = value {
+        errbuf[..e.len()].copy_from_slice(e.as_bytes());
+        unsafe {
+            *errbuf_len = e.len();
+        }
+        return false;
+    }
+
+    context.add_value(field, value.unwrap());
+
+    true
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn context_add_value_by_index(
+    context: &mut Context,
+    index: usize,
+    value: &CValue,
+    errbuf: *mut u8,
+    errbuf_len: *mut usize,
+) -> bool {
     let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
 
     let value: Result<Value, _> = value.try_into();
@@ -427,8 +454,7 @@ pub unsafe extern "C" fn context_add_value(
         return false;
     }
 
-    context.add_value(field, value.unwrap());
-
+    context.add_value_by_index(index, value.unwrap());
     true
 }
 

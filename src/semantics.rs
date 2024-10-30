@@ -1,6 +1,6 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
+use crate::router::Fields;
 use crate::schema::Schema;
-use std::collections::HashMap;
 
 type ValidationResult = Result<(), String>;
 
@@ -9,8 +9,78 @@ pub trait Validate {
 }
 
 pub trait FieldCounter {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>);
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>);
+    fn add_to_counter(&mut self, fields: &mut Fields);
+    fn remove_from_counter(&mut self, fields: &mut Fields);
+}
+
+impl FieldCounter for Expression {
+    fn add_to_counter(&mut self, fields: &mut Fields) {
+        match self {
+            Expression::Logical(l) => match l.as_mut() {
+                LogicalExpression::And(l, r) => {
+                    l.add_to_counter(fields);
+                    r.add_to_counter(fields);
+                }
+                LogicalExpression::Or(l, r) => {
+                    l.add_to_counter(fields);
+                    r.add_to_counter(fields);
+                }
+                LogicalExpression::Not(r) => {
+                    r.add_to_counter(fields);
+                }
+            },
+            Expression::Predicate(p) => {
+                // 1. fields: increment counter for field
+                // 2. lhs: assign field index to the LHS
+                // 3. map: maintain the fields map: {field_name : field_index}
+                if let Some(index) = fields.map.get(&p.lhs.var_name) {
+                    fields.list[*index].as_mut().unwrap().1 += 1;
+                    p.lhs.index = *index;
+                } else {
+                    // reuse slots in queue if possible
+                    let new_idx: usize;
+                    if fields.slots.is_empty() {
+                        fields.list.push(Some((p.lhs.var_name.clone(), 1)));
+                        new_idx = fields.list.len() - 1;
+                    } else {
+                        new_idx = fields.slots.pop().unwrap();
+                        fields.list[new_idx] = Some((p.lhs.var_name.clone(), 1));
+                    }
+                    fields.map.insert(p.lhs.var_name.clone(), new_idx);
+                    p.lhs.index = new_idx;
+                }
+            }
+        }
+    }
+
+    fn remove_from_counter(&mut self, fields: &mut Fields) {
+        match self {
+            Expression::Logical(l) => match l.as_mut() {
+                LogicalExpression::And(l, r) => {
+                    l.remove_from_counter(fields);
+                    r.remove_from_counter(fields);
+                }
+                LogicalExpression::Or(l, r) => {
+                    l.remove_from_counter(fields);
+                    r.remove_from_counter(fields);
+                }
+                LogicalExpression::Not(r) => {
+                    r.remove_from_counter(fields);
+                }
+            },
+            Expression::Predicate(p) => {
+                let index: usize = p.lhs.index;
+                // decrement counter of field
+                fields.list[index].as_mut().unwrap().1 -= 1;
+                // for field removing, reserve the slot for resue and remove it in map
+                if fields.list[index].as_mut().unwrap().1 == 0 {
+                    fields.list[index] = None;
+                    fields.slots.push(index);
+                    assert!(fields.map.remove(&p.lhs.var_name).is_some());
+                }
+            }
+        }
+    }
 }
 
 impl Validate for Expression {

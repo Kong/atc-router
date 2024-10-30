@@ -24,6 +24,13 @@ fnv = "1"
 
 [dev-dependencies]
 criterion = "0.*"
+serde_json = "1"
+serde = "1"
+uuid = {version = "1.8", features = ["v4"]}
+
+[[bench]]
+name = "misc_match"
+harness = false
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]

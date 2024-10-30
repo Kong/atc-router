@@ -26,23 +26,23 @@ local clib = cdefs.clib
 local context_free = cdefs.context_free
 
 
-function _M.new(schema)
-    local context = clib.context_new(schema.schema)
+function _M.new(router)
+    local context = clib.context_new(router.router)
     local c = setmetatable({
         context = ffi_gc(context, context_free),
-        schema = schema,
+        schema = router.schema,
     }, _MT)
 
     return c
 end
 
 
-function _M:add_value(field, value)
+local function add_value_impl(ctx, field, value, index)
     if not value then
         return true
     end
 
-    local typ, err = self.schema:get_field_type(field)
+    local typ, err = ctx.schema:get_field_type(field)
     if not typ then
         return nil, err
     end
@@ -63,13 +63,28 @@ function _M:add_value(field, value)
 
     local errbuf = get_string_buf(ERR_BUF_MAX_LEN)
     local errbuf_len = get_size_ptr()
-    errbuf_len[0] = ERR_BUF_MAX_LEN
-
-    if clib.context_add_value(self.context, field, CACHED_VALUE, errbuf, errbuf_len) == false then
+    errbuf_len[0] = ERR_BUF_MAX_LEN 
+    local res
+    if index ~= nil then
+       res = clib.context_add_value_by_index(ctx.context, index, CACHED_VALUE, errbuf, errbuf_len)
+    else
+       res = clib.context_add_value(ctx.context, field, CACHED_VALUE, errbuf, errbuf_len)
+    end
+    if res == false then
         return nil, ffi_string(errbuf, errbuf_len[0])
     end
 
     return true
+end
+
+
+function _M:add_value(field, value)
+    return add_value_impl(self, field, value)
+end
+
+
+function _M:add_value_by_index(field, value, index)
+    return add_value_impl(self, field, value, index)
 end
 
 

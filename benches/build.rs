@@ -20,9 +20,6 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut schema = Schema::default();
     schema.add_field("a", Type::Int);
 
-    let mut context = Context::new(&schema);
-    context.add_value("a", Value::Int(N as i64));
-
     c.bench_function("Build Router", |b| {
         b.iter_with_large_drop(|| {
             let mut router = Router::new(&schema);

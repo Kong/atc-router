@@ -37,8 +37,11 @@ __DATA__
 
             ngx.say(type(r))
             ngx.say(err)
-            ngx.say(#r)
-            ngx.say(r[1])
+
+            for k, v in pairs(r) do
+                ngx.say(k)
+                ngx.say(tonumber(v))
+            end
         }
     }
 --- request
@@ -46,8 +49,8 @@ GET /t
 --- response_body
 table
 nil
-1
 http.headers.foo
+0
 --- no_error_log
 [error]
 [warn]

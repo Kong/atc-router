@@ -34,7 +34,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         router.add_matcher(N - i, uuid, &expr).unwrap();
     }
 
-    let mut ctx_match = Context::new(&schema);
+    let mut ctx_match = Context::new(&router);
     ctx_match.add_value(
         "http.path",
         atc_router::ast::Value::String("hello49999".to_string()),
