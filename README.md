@@ -22,6 +22,7 @@ ATC Router library for Kong.
     * [resty.router.context](#restyroutercontext)
         * [new](#new)
         * [add\_value](#add_value)
+        * [add\_value\_by\_index](#add_value_by_index)
         * [get\_result](#get_result)
         * [reset](#reset)
 * [Copyright and license](#copyright-and-license)
@@ -234,7 +235,7 @@ If an error occurred, `nil` and a string describing the error will be returned.
 
 ### add\_value\_by\_index
 
-**syntax:** *res, err = c:add_value(field, value, index)*
+**syntax:** *res, err = c:add_value_by_index(field, value, index)*
 
 **context:** *any*
 
