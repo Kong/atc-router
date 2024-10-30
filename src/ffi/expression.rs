@@ -96,66 +96,56 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_OK: i64 = 0;
 pub const ATC_ROUTER_EXPRESSION_VALIDATE_FAILED: i64 = 1;
 pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 
-/// Validate the ATC expression with the schema.
+/// Validates an ATC expression against a schema.
 ///
 /// # Arguments
 ///
-/// - `atc`: the C-style string representing the ATC expression.
-/// - `schema`: a valid pointer to the [`Schema`] object returned by [`schema_new`].
-/// - `fields_buf`: a buffer to store the used fields.
-/// - `fields_len`: a pointer to the length of the fields buffer.
-/// - `fields_total`: a pointer for saving the total number of the fields.
-/// - `operators`: a pointer for saving the used operators with bitflags.
-/// - `errbuf`: a buffer to store the error message.
+/// - `atc`: a C-style string representing the ATC expression.
+/// - `schema`: a valid pointer to a [`Schema`] object, as returned by [`schema_new`].
+/// - `fields_buf`: a buffer for storing the fields used in the expression.
+/// - `fields_len`: a pointer to the length of `fields_buf`.
+/// - `fields_total`: a pointer for storing the total number of fields.
+/// - `operators`: a pointer for storing the bitflags representing used operators.
+/// - `errbuf`: a buffer to store any error messages.
 /// - `errbuf_len`: a pointer to the length of the error message buffer.
 ///
 /// # Returns
 ///
-/// Returns an integer value indicating the validation result:
-/// - ATC_ROUTER_EXPRESSION_VALIDATE_OK(0) if validation is passed.
-/// - ATC_ROUTER_EXPRESSION_VALIDATE_FAILED(1) if validation is failed. The `errbuf` and `errbuf_len` will be updated with the error message.
-/// - ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL(2) if the provided fields buffer is not enough.
+/// An integer indicating the validation result:
+/// - `ATC_ROUTER_EXPRESSION_VALIDATE_OK` (0): Validation succeeded.
+/// - `ATC_ROUTER_EXPRESSION_VALIDATE_FAILED` (1): Validation failed; `errbuf` and `errbuf_len` will be updated with an error message.
+/// - `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL` (2): The provided `fields_buf` is too small.
 ///
-/// If `fields_buf` is non-null, and `fields_len` is enough for the required buffer length,
-/// it will write the used fields to the buffer, each terminated by '\0' and the total number of fields
-/// to the `fields_total`, and `fields_len` will be updated with the total buffer length.
+/// If `fields_buf` is non-null and `fields_len` is sufficient, this function writes the used fields to `fields_buf`,
+/// each field terminated by `\0`. It updates `fields_len` with the required buffer length and stores the total number of fields in `fields_total`.
 ///
-/// If `fields_buf` is non-null, and `fields_len` is not enough for the required buffer length,
-/// it will write the required buffer length to the `fields_len`, and the total number of fields
-/// to the `fields_total`, and return `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL`.
+/// If `fields_buf` is non-null but `fields_len` is insufficient, it writes the required buffer length to `fields_len`
+/// and the total number of fields to `fields_total`, then returns `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL`.
 ///
-/// If `operators` is non-null, it will write the used operators with bitflags to the provided pointer.
-/// The bitflags is defined by `BinaryOperatorFlags` and it must not contain any bits from `BinaryOperatorFlags::UNUSED`.
-///
+/// If `operators` is non-null, it writes the used operators as bitflags to the provided pointer.
+/// Bitflags are defined by `BinaryOperatorFlags` and must exclude bits from `BinaryOperatorFlags::UNUSED`.
 ///
 /// # Panics
 ///
-/// This function will panic when:
+/// This function will panic if:
 ///
-/// - `atc` doesn't point to a valid C-style string.
-/// - `fields_len` and `fields_total` are null when `fields_buf` is non-null.
+/// - `atc` does not point to a valid C-style string.
+/// - `fields_len` or `fields_total` are null when `fields_buf` is non-null.
 ///
 /// # Safety
 ///
-/// Violating any of the following constraints will result in undefined behavior:
+/// Violating any of the following constraints results in undefined behavior:
 ///
-/// - `atc` must be a valid pointer to a C-style string, must be properly aligned,
-///    and must not have '\0' in the middle.
+/// - `atc` must be a valid pointer to a C-style string, properly aligned, and must not contain an internal `\0`.
 /// - `schema` must be a valid pointer returned by [`schema_new`].
-/// - `fields_buf` must be a valid to write for `fields_len * size_of::<u8>()` bytes,
-///    and it must be properly aligned if non-null.
-/// - `fields_len` must be a valid to write for `size_of::<usize>()` bytes,
-///    and it must be properly aligned if non-null.
-/// - `fields_total` must be a valid to write for `size_of::<usize>()` bytes,
-///    and it must be properly aligned if non-null.
-/// - `operators` must be a valid to write for `size_of::<u64>()` bytes,
-///    and it must be properly aligned if non-null.
-/// - `errbuf` must be valid to read and write for `errbuf_len * size_of::<u8>()` bytes,
-///    and it must be properly aligned.
-/// - `errbuf_len` must be valid to read and write for `size_of::<usize>()` bytes,
-///    and it must be properly aligned.
-/// - If `fields_buf` is non-null, `fields_len` and `fields_total` must be non-null.
-///   for writing required buffer length and total number of fields.
+/// - `fields_buf`, if non-null, must be valid for writing `fields_len * size_of::<u8>()` bytes and properly aligned.
+/// - `fields_len` must be a valid pointer to write `size_of::<usize>()` bytes and properly aligned.
+/// - `fields_total` must be a valid pointer to write `size_of::<usize>()` bytes and properly aligned.
+/// - `operators` must be a valid pointer to write `size_of::<u64>()` bytes and properly aligned.
+/// - `errbuf` must be valid for reading and writing `errbuf_len * size_of::<u8>()` bytes and properly aligned.
+/// - `errbuf_len` must be a valid pointer for reading and writing `size_of::<usize>()` bytes and properly aligned.
+/// - If `fields_buf` is non-null, then `fields_len` and `fields_total` must also be non-null to store the buffer length used and total field count.
+
 #[no_mangle]
 pub unsafe extern "C" fn expression_validate(
     atc: *const u8,
