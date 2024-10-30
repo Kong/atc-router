@@ -685,17 +685,17 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 ///
 /// Returns an integer value indicating the validation result:
 /// - ATC_ROUTER_EXPRESSION_VALIDATE_OK(0) if validation is passed.
-/// - ATC_ROUTER_EXPRESSION_VALIDATE_FAILED(1) if validation is failed.
+/// - ATC_ROUTER_EXPRESSION_VALIDATE_FAILED(1) if validation is failed. The `errbuf` and `errbuf_len` will be updated with the error message.
 /// - ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL(2) if the provided fields buffer is not enough.
 ///
-/// If `fields_buf` is null and `fields_len` or `fields_total` is non-null, it will write
-/// the required buffer length and the total number of fields to the provided pointers.
 /// If `fields_buf` is non-null, and `fields_len` is enough for the required buffer length,
 /// it will write the used fields to the buffer, each terminated by '\0' and the total number of fields
 /// to the `fields_total`, and `fields_len` will be updated with the total buffer length.
+///
 /// If `fields_buf` is non-null, and `fields_len` is not enough for the required buffer length,
 /// it will write the required buffer length to the `fields_len`, and the total number of fields
-/// to the `fields_total`, and return `2`.
+/// to the `fields_total`, and return `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL`.
+///
 /// If `operators` is non-null, it will write the used operators with bitflags to the provided pointer.
 /// The bitflags is defined by `BinaryOperatorFlags` and it must not contain any bits from `BinaryOperatorFlags::UNUSED`.
 ///
@@ -727,7 +727,6 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// - `errbuf_len` must be valid to read and write for `size_of::<usize>()` bytes,
 ///    and it must be properly aligned.
 /// - If `fields_buf` is non-null, `fields_len` and `fields_total` must be non-null.
-/// - If `fields_buf` is null, `fields_len` and `fields_total` can be non-null
 ///   for writing required buffer length and total number of fields.
 #[no_mangle]
 pub unsafe extern "C" fn expression_validate(
@@ -771,13 +770,11 @@ pub unsafe extern "C" fn expression_validate(
     let predicates = ast.get_predicates();
 
     // Get used fields
-    if !(fields_buf.is_null() && fields_len.is_null() && fields_total.is_null()) {
-        if !fields_buf.is_null() {
-            assert!(
-                !fields_len.is_null() && !fields_total.is_null(),
-                "fields_len and fields_total must be non-null when fields_buf is non-null"
-            );
-        }
+    if !fields_buf.is_null() {
+        assert!(
+            !(fields_len.is_null() || fields_total.is_null()),
+            "fields_len and fields_total must be non-null when fields_buf is non-null"
+        );
 
         let expr_fields = predicates
             .iter()
@@ -790,13 +787,6 @@ pub unsafe extern "C" fn expression_validate(
 
         if !fields_buf.is_null() {
             if *fields_len < total_fields_length {
-                let err_msg = format!(
-                    "Fields buffer too small, provided {} bytes but required at least {} bytes.",
-                    *fields_len, total_fields_length
-                );
-                let errlen = min(err_msg.len(), *errbuf_len);
-                errbuf[..errlen].copy_from_slice(&err_msg.as_bytes()[..errlen]);
-                *errbuf_len = errlen;
                 *fields_len = total_fields_length;
                 *fields_total = expr_fields.len();
                 return ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL;
@@ -813,12 +803,8 @@ pub unsafe extern "C" fn expression_validate(
             }
         }
 
-        if !fields_len.is_null() {
-            *fields_len = total_fields_length;
-        }
-        if !fields_total.is_null() {
-            *fields_total = expr_fields.len();
-        }
+        *fields_len = total_fields_length;
+        *fields_total = expr_fields.len();
     }
 
     // Get used operators
@@ -910,21 +896,26 @@ mod tests {
             )
         };
 
-        if result == ATC_ROUTER_EXPRESSION_VALIDATE_OK {
-            let mut fields = Vec::<String>::with_capacity(fields_total);
-            let mut p = 0;
-            for _ in 0..fields_total {
-                let field = unsafe { ffi::CStr::from_ptr(fields_buf[p..].as_ptr().cast()) };
-                let len = field.to_bytes().len() + 1;
-                fields.push(field.to_string_lossy().to_string());
-                p += len;
+        match result {
+            ATC_ROUTER_EXPRESSION_VALIDATE_OK => {
+                let mut fields = Vec::<String>::with_capacity(fields_total);
+                let mut p = 0;
+                for _ in 0..fields_total {
+                    let field = unsafe { ffi::CStr::from_ptr(fields_buf[p..].as_ptr().cast()) };
+                    let len = field.to_bytes().len() + 1;
+                    fields.push(field.to_string_lossy().to_string());
+                    p += len;
+                }
+                assert_eq!(fields_len, p, "Fields buffer length mismatch");
+                fields.sort();
+                Ok((fields, operators))
             }
-            assert_eq!(fields_len, p, "Fields buffer length mismatch");
-            fields.sort();
-            Ok((fields, operators))
-        } else {
-            let err = String::from_utf8(errbuf[..errbuf_len].to_vec()).unwrap();
-            Err((result, err))
+            ATC_ROUTER_EXPRESSION_VALIDATE_FAILED => {
+                let err = String::from_utf8(errbuf[..errbuf_len].to_vec()).unwrap();
+                Err((result, err))
+            }
+            ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL => Err((result, String::new())),
+            _ => panic!("Unknown error code"),
         }
     }
 
@@ -1026,16 +1017,10 @@ mod tests {
         let result = expr_validate_on(&schema, atc, 10);
 
         assert!(result.is_err(), "Validation failed");
-        let (err_code, err_message) = result.unwrap_err(); // Unwrap is safe since we've already asserted it
+        let (err_code, _) = result.unwrap_err(); // Unwrap is safe since we've already asserted it
         assert_eq!(
             err_code, ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL,
             "Error code mismatch"
-        );
-        assert_eq!(
-            err_message,
-            "Fields buffer too small, provided 10 bytes but required at least 47 bytes."
-                .to_string(),
-            "Error message mismatch"
         );
     }
 }
