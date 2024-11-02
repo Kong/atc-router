@@ -104,7 +104,7 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// - `schema`: a valid pointer to a [`Schema`] object, as returned by [`schema_new`].
 /// - `fields_buf`: a buffer for storing the fields used in the expression.
 /// - `fields_buf_len`: a pointer to the length of `fields_buf`.
-/// - `fields_total`: a pointer for storing the total number of fields.
+/// - `fields_total`: a pointer for storing the total number of unique fields used in the expression.
 /// - `operators`: a pointer for storing the bitflags representing used operators.
 /// - `errbuf`: a buffer to store any error messages.
 /// - `errbuf_len`: a pointer to the length of the error message buffer.
