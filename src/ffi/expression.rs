@@ -129,7 +129,6 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 ///
 /// This function will panic if:
 ///
-/// - `atc` does not point to a valid C-style string.
 /// - `fields_buf_len` or `fields_total` are null when `fields_buf` is non-null.
 ///
 /// # Safety
