@@ -103,7 +103,7 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// - `atc`: a C-style string representing the ATC expression.
 /// - `schema`: a valid pointer to a [`Schema`] object, as returned by [`schema_new`].
 /// - `fields_buf`: a buffer for storing the fields used in the expression.
-/// - `fields_len`: a pointer to the length of `fields_buf`.
+/// - `fields_buf_len`: a pointer to the length of `fields_buf`.
 /// - `fields_total`: a pointer for storing the total number of fields.
 /// - `operators`: a pointer for storing the bitflags representing used operators.
 /// - `errbuf`: a buffer to store any error messages.
@@ -116,10 +116,10 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// - `ATC_ROUTER_EXPRESSION_VALIDATE_FAILED` (1): Validation failed; `errbuf` and `errbuf_len` will be updated with an error message.
 /// - `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL` (2): The provided `fields_buf` is too small.
 ///
-/// If `fields_buf` is non-null and `fields_len` is sufficient, this function writes the used fields to `fields_buf`,
-/// each field terminated by `\0`. It updates `fields_len` with the required buffer length and stores the total number of fields in `fields_total`.
+/// If `fields_buf` is non-null and `fields_buf_len` is sufficient, this function writes the used fields to `fields_buf`,
+/// each field terminated by `\0`. It updates `fields_buf_len` with the required buffer length and stores the total number of fields in `fields_total`.
 ///
-/// If `fields_buf` is non-null but `fields_len` is insufficient, it writes the required buffer length to `fields_len`
+/// If `fields_buf` is non-null but `fields_buf_len` is insufficient, it writes the required buffer length to `fields_buf_len`
 /// and the total number of fields to `fields_total`, then returns `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL`.
 ///
 /// If `operators` is non-null, it writes the used operators as bitflags to the provided pointer.
@@ -130,7 +130,7 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// This function will panic if:
 ///
 /// - `atc` does not point to a valid C-style string.
-/// - `fields_len` or `fields_total` are null when `fields_buf` is non-null.
+/// - `fields_buf_len` or `fields_total` are null when `fields_buf` is non-null.
 ///
 /// # Safety
 ///
@@ -138,20 +138,20 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 ///
 /// - `atc` must be a valid pointer to a C-style string, properly aligned, and must not contain an internal `\0`.
 /// - `schema` must be a valid pointer returned by [`schema_new`].
-/// - `fields_buf`, if non-null, must be valid for writing `fields_len * size_of::<u8>()` bytes and properly aligned.
-/// - `fields_len` must be a valid pointer to write `size_of::<usize>()` bytes and properly aligned.
+/// - `fields_buf`, if non-null, must be valid for writing `fields_buf_len * size_of::<u8>()` bytes and properly aligned.
+/// - `fields_buf_len` must be a valid pointer to write `size_of::<usize>()` bytes and properly aligned.
 /// - `fields_total` must be a valid pointer to write `size_of::<usize>()` bytes and properly aligned.
 /// - `operators` must be a valid pointer to write `size_of::<u64>()` bytes and properly aligned.
 /// - `errbuf` must be valid for reading and writing `errbuf_len * size_of::<u8>()` bytes and properly aligned.
 /// - `errbuf_len` must be a valid pointer for reading and writing `size_of::<usize>()` bytes and properly aligned.
-/// - If `fields_buf` is non-null, then `fields_len` and `fields_total` must also be non-null to store the buffer length used and total field count.
+/// - If `fields_buf` is non-null, then `fields_buf_len` and `fields_total` must also be non-null to store the buffer length used and total field count.
 
 #[no_mangle]
 pub unsafe extern "C" fn expression_validate(
     atc: *const u8,
     schema: &Schema,
     fields_buf: *mut u8,
-    fields_len: *mut usize,
+    fields_buf_len: *mut usize,
     fields_total: *mut usize,
     operators: *mut u64,
     errbuf: *mut u8,
@@ -190,8 +190,8 @@ pub unsafe extern "C" fn expression_validate(
     // Get used fields
     if !fields_buf.is_null() {
         assert!(
-            !(fields_len.is_null() || fields_total.is_null()),
-            "fields_len and fields_total must be non-null when fields_buf is non-null"
+            !(fields_buf_len.is_null() || fields_total.is_null()),
+            "fields_buf_len and fields_total must be non-null when fields_buf is non-null"
         );
 
         let expr_fields = predicates
@@ -204,8 +204,8 @@ pub unsafe extern "C" fn expression_validate(
             .sum::<usize>();
 
         if !fields_buf.is_null() {
-            if *fields_len < total_fields_length {
-                *fields_len = total_fields_length;
+            if *fields_buf_len < total_fields_length {
+                *fields_buf_len = total_fields_length;
                 *fields_total = expr_fields.len();
                 return ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL;
             }
@@ -221,7 +221,7 @@ pub unsafe extern "C" fn expression_validate(
             }
         }
 
-        *fields_len = total_fields_length;
+        *fields_buf_len = total_fields_length;
         *fields_total = expr_fields.len();
     }
 
@@ -252,7 +252,7 @@ mod tests {
         let mut errbuf_len = ERR_BUF_MAX_LEN;
 
         let mut fields_buf = vec![0u8; fields_buf_size];
-        let mut fields_len = fields_buf.len();
+        let mut fields_buf_len = fields_buf.len();
         let mut fields_total = 0;
         let mut operators = 0u64;
 
@@ -261,7 +261,7 @@ mod tests {
                 atc.as_bytes().as_ptr(),
                 &schema,
                 fields_buf.as_mut_ptr(),
-                &mut fields_len,
+                &mut fields_buf_len,
                 &mut fields_total,
                 &mut operators,
                 errbuf.as_mut_ptr(),
@@ -279,7 +279,7 @@ mod tests {
                     fields.push(field.to_string_lossy().to_string());
                     p += len;
                 }
-                assert_eq!(fields_len, p, "Fields buffer length mismatch");
+                assert_eq!(fields_buf_len, p, "Fields buffer length mismatch");
                 fields.sort();
                 Ok((fields, operators))
             }
