@@ -96,7 +96,7 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_OK: i64 = 0;
 pub const ATC_ROUTER_EXPRESSION_VALIDATE_FAILED: i64 = 1;
 pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 
-/// Validates an ATC expression against a schema.
+/// Validates an ATC expression against a schema and get its elements.
 ///
 /// # Arguments
 ///
@@ -116,20 +116,15 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// - `ATC_ROUTER_EXPRESSION_VALIDATE_FAILED` (1): Validation failed; `errbuf` and `errbuf_len` will be updated with an error message.
 /// - `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL` (2): The provided `fields_buf` is too small.
 ///
-/// If `fields_buf` is non-null and `fields_buf_len` is sufficient, this function writes the used fields to `fields_buf`,
-/// each field terminated by `\0`. It updates `fields_buf_len` with the required buffer length and stores the total number of fields in `fields_total`.
+/// If `fields_buf_len` indicates that `fields_buf` is sufficient, this function writes the used fields to `fields_buf`, each field terminated by `\0`.
+/// It updates `fields_buf_len` with the required buffer length and stores the total number of fields in `fields_total`.
 ///
-/// If `fields_buf` is non-null but `fields_buf_len` is insufficient, it writes the required buffer length to `fields_buf_len`
+/// If `fields_buf_len` indicates that `fields_buf` is insufficient, it writes the required buffer length to `fields_buf_len`
 /// and the total number of fields to `fields_total`, then returns `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL`.
 ///
-/// If `operators` is non-null, it writes the used operators as bitflags to the provided pointer.
+/// It writes the used operators as bitflags to `operators`.
 /// Bitflags are defined by `BinaryOperatorFlags` and must exclude bits from `BinaryOperatorFlags::UNUSED`.
 ///
-/// # Panics
-///
-/// This function will panic if:
-///
-/// - `fields_buf_len` or `fields_total` are null when `fields_buf` is non-null.
 ///
 /// # Safety
 ///
@@ -137,13 +132,12 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 ///
 /// - `atc` must be a valid pointer to a C-style string, properly aligned, and must not contain an internal `\0`.
 /// - `schema` must be a valid pointer returned by [`schema_new`].
-/// - `fields_buf`, if non-null, must be valid for writing `fields_buf_len * size_of::<u8>()` bytes and properly aligned.
+/// - `fields_buf`, must be valid for writing `fields_buf_len * size_of::<u8>()` bytes and properly aligned.
 /// - `fields_buf_len` must be a valid pointer to write `size_of::<usize>()` bytes and properly aligned.
 /// - `fields_total` must be a valid pointer to write `size_of::<usize>()` bytes and properly aligned.
 /// - `operators` must be a valid pointer to write `size_of::<u64>()` bytes and properly aligned.
 /// - `errbuf` must be valid for reading and writing `errbuf_len * size_of::<u8>()` bytes and properly aligned.
 /// - `errbuf_len` must be a valid pointer for reading and writing `size_of::<usize>()` bytes and properly aligned.
-/// - If `fields_buf` is non-null, then `fields_buf_len` and `fields_total` must also be non-null to store the buffer length used and total field count.
 
 #[no_mangle]
 pub unsafe extern "C" fn expression_validate(
@@ -187,51 +181,40 @@ pub unsafe extern "C" fn expression_validate(
     let predicates = ast.get_predicates();
 
     // Get used fields
-    if !fields_buf.is_null() {
-        assert!(
-            !(fields_buf_len.is_null() || fields_total.is_null()),
-            "fields_buf_len and fields_total must be non-null when fields_buf is non-null"
-        );
+    let expr_fields = predicates
+        .iter()
+        .map(|p| p.lhs.var_name.as_str())
+        .collect::<HashSet<_>>();
+    let total_fields_length = expr_fields
+        .iter()
+        .map(|k| k.as_bytes().len() + 1)
+        .sum::<usize>();
 
-        let expr_fields = predicates
-            .iter()
-            .map(|p| p.lhs.var_name.as_str())
-            .collect::<HashSet<_>>();
-        let total_fields_length = expr_fields
-            .iter()
-            .map(|k| k.as_bytes().len() + 1)
-            .sum::<usize>();
-
-        if !fields_buf.is_null() {
-            if *fields_buf_len < total_fields_length {
-                *fields_buf_len = total_fields_length;
-                *fields_total = expr_fields.len();
-                return ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL;
-            }
-
-            let mut fields_buf_ptr = fields_buf;
-            for field in &expr_fields {
-                let field = ffi::CString::new(*field).unwrap();
-                let field_slice = field.as_bytes_with_nul();
-                let field_len = field_slice.len();
-                let fields_buf = from_raw_parts_mut(fields_buf_ptr, field_len);
-                fields_buf.copy_from_slice(field_slice);
-                fields_buf_ptr = fields_buf_ptr.add(field_len);
-            }
-        }
-
+    if *fields_buf_len < total_fields_length {
         *fields_buf_len = total_fields_length;
         *fields_total = expr_fields.len();
+        return ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL;
     }
 
-    // Get used operators
-    if !operators.is_null() {
-        let mut ops = BinaryOperatorFlags::empty();
-        for pred in &predicates {
-            ops |= BinaryOperatorFlags::from(&pred.op);
-        }
-        *operators = ops.bits();
+    let mut fields_buf_ptr = fields_buf;
+    for field in &expr_fields {
+        let field = ffi::CString::new(*field).unwrap();
+        let field_slice = field.as_bytes_with_nul();
+        let field_len = field_slice.len();
+        let fields_buf = from_raw_parts_mut(fields_buf_ptr, field_len);
+        fields_buf.copy_from_slice(field_slice);
+        fields_buf_ptr = fields_buf_ptr.add(field_len);
     }
+
+    *fields_buf_len = total_fields_length;
+    *fields_total = expr_fields.len();
+
+    // Get used operators
+    let mut ops = BinaryOperatorFlags::empty();
+    for pred in &predicates {
+        ops |= BinaryOperatorFlags::from(&pred.op);
+    }
+    *operators = ops.bits();
 
     ATC_ROUTER_EXPRESSION_VALIDATE_OK
 }
