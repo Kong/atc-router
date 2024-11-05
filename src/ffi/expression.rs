@@ -7,37 +7,43 @@ use std::ffi;
 use std::os::raw::c_char;
 use std::slice::from_raw_parts_mut;
 
-impl Expression {
-    fn get_predicates(&self) -> Vec<&Predicate> {
-        let mut predicates = Vec::new();
+use std::iter::Iterator;
 
-        fn visit<'a, 'b>(expr: &'a Expression, predicates: &mut Vec<&'b Predicate>)
-        where
-            'a: 'b,
-        {
+struct PredicateIterator<'a> {
+    stack: Vec<&'a Expression>,
+}
+
+impl<'a> PredicateIterator<'a> {
+    fn new(expr: &'a Expression) -> Self {
+        Self { stack: vec![expr] }
+    }
+}
+
+impl<'a> Iterator for PredicateIterator<'a> {
+    type Item = &'a Predicate;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(expr) = self.stack.pop() {
             match expr {
                 Expression::Logical(l) => match l.as_ref() {
-                    LogicalExpression::And(l, r) => {
-                        visit(l, predicates);
-                        visit(r, predicates);
-                    }
-                    LogicalExpression::Or(l, r) => {
-                        visit(l, predicates);
-                        visit(r, predicates);
+                    LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
+                        self.stack.push(l);
+                        self.stack.push(r);
                     }
                     LogicalExpression::Not(r) => {
-                        visit(r, predicates);
+                        self.stack.push(r);
                     }
                 },
-                Expression::Predicate(p) => {
-                    predicates.push(p);
-                }
+                Expression::Predicate(p) => return Some(p),
             }
         }
+        None
+    }
+}
 
-        visit(self, &mut predicates);
-
-        predicates
+impl Expression {
+    fn iter_predicates(&self) -> PredicateIterator {
+        PredicateIterator::new(self)
     }
 }
 
@@ -119,8 +125,7 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// If `fields_buf_len` indicates that `fields_buf` is sufficient, this function writes the used fields to `fields_buf`, each field terminated by `\0`.
 /// It updates `fields_buf_len` with the required buffer length and stores the total number of fields in `fields_total`.
 ///
-/// If `fields_buf_len` indicates that `fields_buf` is insufficient, it writes the required buffer length to `fields_buf_len`
-/// and the total number of fields to `fields_total`, then returns `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL`.
+/// If `fields_buf_len` indicates that `fields_buf` is insufficient, it returns `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL`.
 ///
 /// It writes the used operators as bitflags to `operators`.
 /// Bitflags are defined by `BinaryOperatorFlags` and must exclude bits from `BinaryOperatorFlags::UNUSED`.
@@ -177,43 +182,38 @@ pub unsafe extern "C" fn expression_validate(
         return ATC_ROUTER_EXPRESSION_VALIDATE_FAILED;
     }
 
-    // Direct use GetPredicates trait to avoid unnecessary accesses
-    let predicates = ast.get_predicates();
-
-    // Get used fields
-    let expr_fields = predicates
-        .iter()
-        .map(|p| p.lhs.var_name.as_str())
-        .collect::<HashSet<_>>();
-    let total_fields_length = expr_fields
-        .iter()
-        .map(|k| k.as_bytes().len() + 1)
-        .sum::<usize>();
-
-    if *fields_buf_len < total_fields_length {
-        *fields_buf_len = total_fields_length;
-        *fields_total = expr_fields.len();
-        return ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL;
-    }
-
+    // Iterate over predicates to get fields and operators
+    let mut ops = BinaryOperatorFlags::empty();
+    let mut existed_fields = HashSet::new();
+    let mut total_fields_length = 0;
     let mut fields_buf_ptr = fields_buf;
-    for field in &expr_fields {
-        let field = ffi::CString::new(*field).unwrap();
-        let field_slice = field.as_bytes_with_nul();
-        let field_len = field_slice.len();
-        let fields_buf = from_raw_parts_mut(fields_buf_ptr, field_len);
-        fields_buf.copy_from_slice(field_slice);
-        fields_buf_ptr = fields_buf_ptr.add(field_len);
+    *fields_total = 0;
+
+    for pred in ast.iter_predicates() {
+        ops |= BinaryOperatorFlags::from(&pred.op);
+
+        let field = pred.lhs.var_name.as_str();
+
+        if existed_fields.insert(field) {
+            // Fields is not existed yet.
+            let field = ffi::CString::new(field).unwrap();
+            let field_slice = field.as_bytes_with_nul();
+            let field_len = field_slice.len();
+
+            *fields_total += 1;
+            total_fields_length += field_len;
+
+            if *fields_buf_len < total_fields_length {
+                return ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL;
+            }
+
+            let fields_buf = from_raw_parts_mut(fields_buf_ptr, field_len);
+            fields_buf.copy_from_slice(field_slice);
+            fields_buf_ptr = fields_buf_ptr.add(field_len);
+        }
     }
 
     *fields_buf_len = total_fields_length;
-    *fields_total = expr_fields.len();
-
-    // Get used operators
-    let mut ops = BinaryOperatorFlags::empty();
-    for pred in &predicates {
-        ops |= BinaryOperatorFlags::from(&pred.op);
-    }
     *operators = ops.bits();
 
     ATC_ROUTER_EXPRESSION_VALIDATE_OK
@@ -228,7 +228,7 @@ mod tests {
         schema: &Schema,
         atc: &str,
         fields_buf_size: usize,
-    ) -> Result<(Vec<String>, u64), (i64, String)> {
+    ) -> Result<(Vec<String>, usize, u64), (i64, String)> {
         let atc = ffi::CString::new(atc).unwrap();
         let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
         let mut errbuf_len = ERR_BUF_MAX_LEN;
@@ -263,7 +263,7 @@ mod tests {
                 }
                 assert_eq!(fields_buf_len, p, "Fields buffer length mismatch");
                 fields.sort();
-                Ok((fields, operators))
+                Ok((fields, fields_buf_len, operators))
             }
             ATC_ROUTER_EXPRESSION_VALIDATE_FAILED => {
                 let err = String::from_utf8(errbuf[..errbuf_len].to_vec()).unwrap();
@@ -284,10 +284,10 @@ mod tests {
         schema.add_field("net.src.ip", Type::IpAddr);
         schema.add_field("http.path", Type::String);
 
-        let result = expr_validate_on(&schema, atc, 1024);
+        let result = expr_validate_on(&schema, atc, 47);
 
         assert!(result.is_ok(), "Validation failed");
-        let (fields, ops) = result.unwrap(); // Unwrap is safe since we've already asserted it
+        let (fields, fields_buf_len, ops) = result.unwrap(); // Unwrap is safe since we've already asserted it
         assert_eq!(
             ops,
             (BinaryOperatorFlags::EQUALS
@@ -308,6 +308,7 @@ mod tests {
             ],
             "Fields mismatch"
         );
+        assert_eq!(fields_buf_len, 47, "Fields buffer length mismatch");
     }
 
     #[test]
@@ -369,7 +370,7 @@ mod tests {
         schema.add_field("net.src.ip", Type::IpAddr);
         schema.add_field("http.path", Type::String);
 
-        let result = expr_validate_on(&schema, atc, 10);
+        let result = expr_validate_on(&schema, atc, 46);
 
         assert!(result.is_err(), "Validation failed");
         let (err_code, _) = result.unwrap_err(); // Unwrap is safe since we've already asserted it
