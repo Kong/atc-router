@@ -1,8 +1,7 @@
 use crate::context::Context;
-use crate::ffi::ERR_BUF_MAX_LEN;
+use crate::ffi::write_errbuf;
 use crate::router::Router;
 use crate::schema::Schema;
-use std::cmp::min;
 use std::ffi;
 use std::os::raw::c_char;
 use std::slice::from_raw_parts_mut;
@@ -100,14 +99,11 @@ pub unsafe extern "C" fn router_add_matcher(
 ) -> bool {
     let uuid = ffi::CStr::from_ptr(uuid as *const c_char).to_str().unwrap();
     let atc = ffi::CStr::from_ptr(atc as *const c_char).to_str().unwrap();
-    let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
 
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
 
     if let Err(e) = router.add_matcher(priority, uuid, atc) {
-        let errlen = min(e.len(), *errbuf_len);
-        errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
-        *errbuf_len = errlen;
+        write_errbuf(e, errbuf, errbuf_len);
         return false;
     }
 
@@ -244,6 +240,7 @@ pub unsafe extern "C" fn router_get_fields(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ffi::ERR_BUF_MAX_LEN;
 
     #[test]
     fn test_long_error_message() {
