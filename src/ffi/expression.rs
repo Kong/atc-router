@@ -262,7 +262,8 @@ mod tests {
                 Ok((fields, fields_buf_len, operators))
             }
             ATC_ROUTER_EXPRESSION_VALIDATE_FAILED => {
-                let err = ffi::CStr::from_bytes_with_nul(&errbuf[..errbuf_len]).expect("error message is not null-terminated");
+                let err = ffi::CStr::from_bytes_with_nul(&errbuf[..errbuf_len])
+                    .expect("error message is not null-terminated");
                 Err((result, err.to_string_lossy().to_string()))
             }
             ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL => Err((result, String::new())),

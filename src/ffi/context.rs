@@ -1,6 +1,6 @@
 use crate::ast::Value;
 use crate::context::Context;
-use crate::ffi::{CValue, write_errbuf};
+use crate::ffi::{write_errbuf, CValue};
 use crate::schema::Schema;
 use std::ffi;
 use std::os::raw::c_char;
