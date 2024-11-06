@@ -196,6 +196,7 @@ pub unsafe extern "C" fn expression_validate(
 
         if existed_fields.insert(field) {
             // Fields is not existed yet.
+            // Unwrap is safe since `field` cannot contain '\0' as `atc` must not contain any internal `\0`.
             let field = ffi::CString::new(field).unwrap();
             let field_slice = field.as_bytes_with_nul();
             let field_len = field_slice.len();
