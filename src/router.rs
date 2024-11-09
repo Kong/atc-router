@@ -52,17 +52,23 @@ impl<'a> Router<'a> {
         false
     }
 
-    pub fn execute(&self, context: &mut Context) -> bool {
+    pub fn execute(&self, context: &mut Context, collect_all: bool) -> bool {
+        let mut matched = false;
         for (MatcherKey(_, id), m) in self.matchers.iter().rev() {
             let mut mat = Match::new();
             if m.execute(context, &mut mat) {
+                matched = true;
                 mat.uuid = *id;
-                context.result = Some(mat);
-
-                return true;
+                if collect_all {
+                    context.results.push(mat);
+                }
+                else {
+                  context.result = Some(mat);
+                  return true;
+                }
             }
         }
 
-        false
+        return matched;
     }
 }

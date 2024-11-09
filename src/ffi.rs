@@ -268,8 +268,8 @@ pub unsafe extern "C" fn router_remove_matcher(
 ///    and must be reset by [`context_reset`] before calling this function
 ///    if you want to reuse the same context for multiple matches.
 #[no_mangle]
-pub unsafe extern "C" fn router_execute(router: &Router, context: &mut Context) -> bool {
-    router.execute(context)
+pub unsafe extern "C" fn router_execute(router: &Router, context: &mut Context, collect_all: bool) -> bool {
+    router.execute(context, collect_all)
 }
 
 /// Get the de-duplicated fields that are actually used in the router.
@@ -576,6 +576,57 @@ pub unsafe extern "C" fn context_get_result(
         .len()
         .try_into()
         .unwrap()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn context_get_results(
+    context: &Context,
+    uuids: *mut *const u8,
+    uuid_lens: *mut usize,
+    matched_fields: *mut *const i8,
+    matched_values: *mut *const u8,
+    matched_value_lens: *mut usize,
+    capture_counts: *mut usize,
+) -> usize {
+    let results_count = context.results.len();
+
+    if results_count == 0 {
+        return 0;
+    }
+
+    if !uuids.is_null() {
+        let uuids_slice = from_raw_parts_mut(uuids, context.results.len());
+        let uuid_lens_slice = from_raw_parts_mut(uuid_lens, context.results.len());
+        let matched_fields_slice = from_raw_parts_mut(matched_fields, context.results.len());
+        let matched_values_slice = from_raw_parts_mut(matched_values, context.results.len());
+        let matched_value_lens_slice = from_raw_parts_mut(matched_value_lens, context.results.len());
+        let capture_counts_slice = from_raw_parts_mut(capture_counts, context.results.len());
+
+        for (i, result) in context.results.iter().enumerate() {
+            let uuid_bytes = result.uuid.as_bytes();
+            uuids_slice[i] = uuid_bytes.as_ptr();
+            uuid_lens_slice[i] = uuid_bytes.len();
+
+            if let Some((field, value)) = result.matches.iter().next() {
+                matched_fields_slice[i] = field.as_ptr() as *const i8;
+                if let Value::String(v) = value {
+                    matched_values_slice[i] = v.as_ptr();
+                    matched_value_lens_slice[i] = v.len();
+                } else {
+                    matched_values_slice[i] = std::ptr::null();
+                    matched_value_lens_slice[i] = 0;
+                }
+            } else {
+                matched_fields_slice[i] = std::ptr::null();
+                matched_values_slice[i] = std::ptr::null();
+                matched_value_lens_slice[i] = 0;
+            }
+
+            capture_counts_slice[i] = result.captures.len();
+        }
+    }
+
+    results_count
 }
 
 #[cfg(test)]

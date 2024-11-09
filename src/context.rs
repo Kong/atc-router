@@ -29,6 +29,7 @@ pub struct Context<'a> {
     schema: &'a Schema,
     values: FnvHashMap<String, Vec<Value>>,
     pub result: Option<Match>,
+    pub results: Vec<Match>,
 }
 
 impl<'a> Context<'a> {
@@ -37,6 +38,7 @@ impl<'a> Context<'a> {
             schema,
             values: FnvHashMap::with_hasher(Default::default()),
             result: None,
+            results: Vec::new(),
         }
     }
 

@@ -131,6 +131,43 @@ function _M:get_result(matched_field)
     return uuid, matched_value, captures
 end
 
+function _M:get_all_results()
+  local count = tonumber(clib.context_get_results(self.context, nil, nil, nil, nil, nil, nil))
+
+  if count <= 0 then
+    return {}
+  end
+
+  -- Allocate memory for result data
+  local uuids = ffi.new("const uint8_t *[?]", count)
+  local uuid_lens = ffi.new("size_t [?]", count)
+  local matched_fields = ffi.new("const char *[?]", count)
+  local matched_values = ffi.new("const uint8_t *[?]", count)
+  local matched_value_lens = ffi.new("size_t[?]", count)
+  local capture_counts = ffi.new("size_t[?]", count)
+
+  -- Get the actual results
+  clib.context_get_results(self.context, uuids, uuid_lens, matched_fields, matched_values, matched_value_lens,
+    capture_counts)
+
+  local results = {}
+  for i = 0, count - 1 do
+    local uuid_str = ffi.string(uuids[i], uuid_lens[i])
+    local uuid_hex = uuid_str:gsub(".", function(c) return string.format("%02x", string.byte(c)) end)
+    local uuid_with_hyphens = string.format("%s-%s-%s-%s-%s",
+      uuid_hex:sub(1, 8), uuid_hex:sub(9, 12), uuid_hex:sub(13, 16), uuid_hex:sub(17, 20), uuid_hex:sub(21, 32))
+
+    local result = {
+      uuid = uuid_with_hyphens,
+      matched_field = matched_fields[i] ~= nil and ffi.string(matched_fields[i]) or nil,
+      matched_value = matched_values[i] ~= nil and ffi.string(matched_values[i], matched_value_lens[i]) or nil,
+      capture_count = tonumber(capture_counts[i]),
+    }
+    table.insert(results, result)
+  end
+
+  return results
+end
 
 function _M:reset()
     clib.context_reset(self.context)

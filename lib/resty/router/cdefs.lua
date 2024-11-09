@@ -64,7 +64,7 @@ bool router_add_matcher(struct Router *router,
 
 bool router_remove_matcher(struct Router *router, uintptr_t priority, const int8_t *uuid);
 
-bool router_execute(const struct Router *router, struct Context *context);
+bool router_execute(const struct Router *router, struct Context *context, bool collect_all);
 
 uintptr_t router_get_fields(const struct Router *router,
                             const uint8_t **fields,
@@ -91,6 +91,15 @@ intptr_t context_get_result(const struct Context *context,
                             uintptr_t *capture_names_len,
                             const uint8_t **capture_values,
                             uintptr_t *capture_values_len);
+
+size_t context_get_results(const struct Context *context,
+                           const uint8_t **uuids,
+                           size_t *uuid_lens,
+                           const char **matched_fields,
+                           const uint8_t **matched_values,
+                           size_t *matched_value_lens,
+                           size_t *capture_counts
+  );
 ]])
 
 

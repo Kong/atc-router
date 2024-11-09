@@ -67,9 +67,10 @@ function _M:remove_matcher(uuid)
 end
 
 
-function _M:execute(context)
+function _M:execute(context, collect_all)
+    collect_all = collect_all or false
     assert(context.schema == self.schema)
-    return clib.router_execute(self.router, context.context) == true
+    return clib.router_execute(self.router, context.context, collect_all) == true
 end
 
 
