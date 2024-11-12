@@ -79,11 +79,8 @@ impl TryFrom<&CValue> for Value {
 unsafe fn write_errbuf(err: impl Display, errbuf: *mut u8, errbuf_len: *mut usize) {
     let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
     // Replace internal '\0' to space.
-    let err = err.to_string().replace('\0', " ");
-    // Unwrap is safe since we already remove all internal '\0's.
-    let err_cstring = std::ffi::CString::new(err.to_string()).unwrap();
-    let err_bytes = err_cstring.as_bytes_with_nul();
-    let errlen = min(err_bytes.len(), *errbuf_len);
-    errbuf[..errlen].copy_from_slice(&err_bytes[..errlen]);
+    let err = err.to_string();
+    let errlen = min(err.len(), *errbuf_len);
+    errbuf[..errlen].copy_from_slice(&err.as_bytes()[..errlen]);
     *errbuf_len = errlen;
 }
