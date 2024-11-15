@@ -123,7 +123,7 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// - `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL` (2): The provided `fields_buf` is too small.
 ///
 /// If `fields_buf_len` indicates that `fields_buf` is sufficient, this function writes the used fields to `fields_buf`, each field terminated by `\0`.
-/// It updates `fields_buf_len` with the required buffer length and stores the total number of fields in `fields_total`.
+/// It stores the total number of fields in `fields_total`.
 ///
 /// If `fields_buf_len` indicates that `fields_buf` is insufficient, it returns `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL`.
 ///
@@ -214,7 +214,6 @@ pub unsafe extern "C" fn expression_validate(
         }
     }
 
-    *fields_buf_len = total_fields_length;
     *operators = ops.bits();
 
     ATC_ROUTER_EXPRESSION_VALIDATE_OK
