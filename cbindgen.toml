@@ -6,3 +6,14 @@ prefix_with_name = true
 
 [defines]
 "feature = ffi" = "DEFINE_ATC_ROUTER_FFI"
+
+[macro_expansion]
+bitflags = true
+
+[export]
+include = [
+    "BinaryOperatorFlags", 
+    "ATC_ROUTER_EXPRESSION_VALIDATE_OK", 
+    "ATC_ROUTER_EXPRESSION_VALIDATE_FAILED",
+    "ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL"
+]
