@@ -12,7 +12,7 @@ use uuid::fmt::Hyphenated;
 ///
 /// # Errors
 ///
-/// This function never fails.
+/// This function never returns an error, however, it can panic if memory allocation failed.
 ///
 /// # Safety
 ///
