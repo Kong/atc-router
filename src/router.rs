@@ -1,11 +1,16 @@
-use crate::cir::{CirProgram, Translate};
+use crate::ast::Value;
+use crate::cir::{CirInstruction, CirProgram, Translate};
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
 use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
+use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
+use std::rc::Rc;
 use uuid::Uuid;
+
+// use crate::ast::{Expression, LogicalExpression, Value};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 struct MatcherKey(usize, Uuid);
@@ -14,6 +19,20 @@ pub struct Router<'a> {
     schema: &'a Schema,
     matchers: BTreeMap<MatcherKey, CirProgram>,
     pub fields: HashMap<String, usize>,
+    pub regex_cache: HashMap<String, Rc<Regex>>,
+}
+
+fn release_cache(cir: &CirProgram, router: &mut Router) {
+    cir.instructions.iter().for_each(|instruction| {
+        if let CirInstruction::Predicate(predicate) = instruction {
+            if let Value::Regex(rc) = &predicate.rhs {
+                if Rc::strong_count(rc) == 2 {
+                    // about to be dropped and the only Rc left is in the map
+                    router.regex_cache.remove(rc.as_str());
+                }
+            }
+        }
+    });
 }
 
 impl<'a> Router<'a> {
@@ -22,6 +41,7 @@ impl<'a> Router<'a> {
             schema,
             matchers: BTreeMap::new(),
             fields: HashMap::new(),
+            regex_cache: HashMap::new(),
         }
     }
 
@@ -32,7 +52,7 @@ impl<'a> Router<'a> {
             return Err("UUID already exists".to_string());
         }
 
-        let ast = parse(atc).map_err(|e| e.to_string())?;
+        let ast = parse(atc, &mut self.regex_cache).map_err(|e| e.to_string())?;
         ast.validate(self.schema)?;
         let cir = ast.translate();
         cir.add_to_counter(&mut self.fields);
@@ -46,6 +66,7 @@ impl<'a> Router<'a> {
 
         if let Some(cir) = self.matchers.remove(&key) {
             cir.remove_from_counter(&mut self.fields);
+            release_cache(&cir, self);
             return true;
         }
 

@@ -298,7 +298,8 @@ mod tests {
         context.add_value("a", Value::Int(3 as i64));
 
         for source in sources {
-            let ast = crate::parser::parse(source)
+            let mut regex_cache = HashMap::new();
+            let ast = crate::parser::parse(source, &mut regex_cache)
                 .map_err(|e| e.to_string())
                 .unwrap();
             let mut mat = Match::new();
