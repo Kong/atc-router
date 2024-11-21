@@ -9,7 +9,7 @@ Versatile DSL based rule matching engine used by the Kong API Gateway
 """
 repository = "https://github.com/Kong/atc-router"
 keywords = ["dsl", "atc", "router", "rule", "engine"]
-categories = ["Compilers", "Parser implementations"]
+categories = ["compilers"]
 
 [dependencies]
 pest = "2.7"
