@@ -1,8 +1,36 @@
-use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
+use pest::error::LineColLocation;
+
+use crate::ast::{
+    BinaryOperator, Expression, LocationedExpression, LogicalExpression, Type, Value,
+};
 use crate::schema::Schema;
 use std::collections::HashMap;
+use std::fmt::Display;
 
-type ValidationResult = Result<(), String>;
+#[derive(Debug, PartialEq, Eq)]
+pub struct ValidationErr(String, Option<LineColLocation>);
+
+impl Display for ValidationErr {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match &self.1 {
+            Some(LineColLocation::Pos((start, end))) => {
+                write!(f, "[{}-{}] {}", start, end, self.0)
+            }
+            Some(LineColLocation::Span(start, end)) => {
+                write!(
+                    f,
+                    "[{}:{}-{}:{}] {}",
+                    start.0, start.1, end.0, end.1, self.0
+                )
+            }
+            None => {
+                write!(f, "{}", self.0)
+            }
+        }
+    }
+}
+
+type ValidationResult = Result<(), ValidationErr>;
 
 pub trait Validate {
     fn validate(&self, schema: &Schema) -> ValidationResult;
@@ -11,6 +39,16 @@ pub trait Validate {
 pub trait FieldCounter {
     fn add_to_counter(&self, map: &mut HashMap<String, usize>);
     fn remove_from_counter(&self, map: &mut HashMap<String, usize>);
+}
+
+impl Validate for LocationedExpression {
+    fn validate(&self, schema: &Schema) -> ValidationResult {
+        match self {
+            LocationedExpression { expression, span } => expression
+                .validate(schema)
+                .map_err(|e| ValidationErr(e.0, Some(span.clone()))),
+        }
+    }
 }
 
 impl Validate for Expression {
@@ -37,7 +75,7 @@ impl Validate for Expression {
                 // lhs and rhs must be the same type
                 let lhs_type = p.lhs.my_type(schema);
                 if lhs_type.is_none() {
-                    return Err("Unknown LHS field".to_string());
+                    return Err(ValidationErr(String::from("Unknown LHS field"), None));
                 }
                 let lhs_type = lhs_type.unwrap();
 
@@ -46,19 +84,21 @@ impl Validate for Expression {
                     && p.op != BinaryOperator::NotIn
                     && lhs_type != &p.rhs.my_type()
                 {
-                    return Err(
-                        "Type mismatch between the LHS and RHS values of predicate".to_string()
-                    );
+                    return Err(ValidationErr(
+                        "Type mismatch between the LHS and RHS values of predicate".to_string(),
+                        None,
+                    ));
                 }
 
                 let (lower, _any) = p.lhs.get_transformations();
 
                 // LHS transformations only makes sense with string fields
                 if lower && lhs_type != &Type::String {
-                    return Err(
+                    return Err(ValidationErr(
                         "lower-case transformation function only supported with String type fields"
                             .to_string(),
-                    );
+                        None,
+                    ));
                 }
 
                 match p.op {
@@ -68,7 +108,8 @@ impl Validate for Expression {
                         if lhs_type == &Type::String {
                             Ok(())
                         } else {
-                            Err("Regex operators only supports string operands".to_string())
+                            Err(ValidationErr("Regex operators only supports string operands".to_string(),
+                            None,))
                         }
                     },
                     BinaryOperator::Prefix | BinaryOperator::Postfix => {
@@ -76,7 +117,7 @@ impl Validate for Expression {
                             Value::String(_) => {
                                 Ok(())
                             }
-                            _ => Err("Regex/Prefix/Postfix operators only supports string operands".to_string())
+                            _ => Err(ValidationErr("Regex/Prefix/Postfix operators only supports string operands".to_string(), None))
                         }
                     },
                     BinaryOperator::Greater | BinaryOperator::GreaterOrEqual | BinaryOperator::Less | BinaryOperator::LessOrEqual => {
@@ -84,7 +125,7 @@ impl Validate for Expression {
                             Value::Int(_) => {
                                 Ok(())
                             }
-                            _ => Err("Greater/GreaterOrEqual/Lesser/LesserOrEqual operators only supports integer operands".to_string())
+                            _ => Err(ValidationErr("Greater/GreaterOrEqual/Lesser/LesserOrEqual operators only supports integer operands".to_string(), None))
                         }
                     },
                     BinaryOperator::In | BinaryOperator::NotIn => {
@@ -93,7 +134,7 @@ impl Validate for Expression {
                             (Type::IpAddr, Value::IpCidr(_)) => {
                                 Ok(())
                             }
-                            _ => Err("In/NotIn operators only supports IP in CIDR".to_string())
+                            _ => Err(ValidationErr("In/NotIn operators only supports IP in CIDR".to_string(), None))
                         }
                     },
                     BinaryOperator::Contains => {
@@ -101,7 +142,7 @@ impl Validate for Expression {
                             Value::String(_) => {
                                 Ok(())
                             }
-                            _ => Err("Contains operator only supports string operands".to_string())
+                            _ => Err(ValidationErr("Contains operator only supports string operands".to_string(), None))
                         }
                     }
                 }
@@ -131,7 +172,7 @@ mod tests {
         let expression = parse(r#"unkn == "abc""#).unwrap();
         assert_eq!(
             expression.validate(&SCHEMA).unwrap_err(),
-            "Unknown LHS field"
+            ValidationErr("Unknown LHS field".to_string(), None)
         );
     }
 

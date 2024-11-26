@@ -27,11 +27,11 @@ impl<'a> Iterator for PredicateIterator<'a> {
             match expr {
                 Expression::Logical(l) => match l.as_ref() {
                     LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
-                        self.stack.push(l);
-                        self.stack.push(r);
+                        self.stack.push(&l.expression);
+                        self.stack.push(&r.expression);
                     }
                     LogicalExpression::Not(r) => {
-                        self.stack.push(r);
+                        self.stack.push(&r.expression);
                     }
                 },
                 Expression::Predicate(p) => return Some(p),
@@ -189,7 +189,7 @@ pub unsafe extern "C" fn expression_validate(
     let mut fields_buf_ptr = fields_buf;
     *fields_total = 0;
 
-    for pred in ast.iter_predicates() {
+    for pred in ast.expression.iter_predicates() {
         ops |= BinaryOperatorFlags::from(&pred.op);
 
         let field = pred.lhs.var_name.as_str();
