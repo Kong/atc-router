@@ -1,11 +1,12 @@
 extern crate pest;
 
 use crate::ast::{
-    BinaryOperator, Expression, Lhs, LhsTransformations, LogicalExpression, Predicate, Value,
+    BinaryOperator, Expression, Lhs, LhsTransformations, LocationedExpression, LogicalExpression,
+    Predicate, Value,
 };
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
-use pest::error::Error as ParseError;
 use pest::error::ErrorVariant;
+use pest::error::{Error as ParseError, LineColLocation};
 use pest::iterators::Pair;
 use pest::pratt_parser::Assoc as AssocNew;
 use pest::pratt_parser::{Op, PrattParser};
@@ -61,7 +62,7 @@ impl ATCParser {
     }
     // matcher = { SOI ~ expression ~ EOI }
     #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-    fn parse_matcher(&mut self, source: &str) -> ParseResult<Expression> {
+    fn parse_matcher(&mut self, source: &str) -> ParseResult<LocationedExpression> {
         let pairs = ATCParser::parse(Rule::matcher, source)?;
         let expr_pair = pairs.peek().unwrap().into_inner().peek().unwrap();
         let rule = expr_pair.as_rule();
@@ -70,6 +71,10 @@ impl ATCParser {
             _ => unreachable!(),
         }
     }
+}
+
+fn non_ref_span_from_pair(pair: &Pair<Rule>) -> LineColLocation {
+    pair.as_span().into()
 }
 
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
@@ -289,27 +294,35 @@ fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
 fn parse_parenthesised_expression(
     pair: Pair<Rule>,
     pratt: &PrattParser<Rule>,
-) -> ParseResult<Expression> {
+) -> ParseResult<LocationedExpression> {
     let mut pairs = pair.into_inner();
     let pair = pairs.next().unwrap();
     let rule = pair.as_rule();
     match rule {
         Rule::expression => parse_expression(pair, pratt),
-        Rule::not_op => Ok(Expression::Logical(Box::new(LogicalExpression::Not(
-            parse_expression(pairs.next().unwrap(), pratt)?,
-        )))),
+        Rule::not_op => Ok(LocationedExpression::new(
+            Expression::Logical(Box::new(LogicalExpression::Not(parse_expression(
+                pairs.next().unwrap(),
+                pratt,
+            )?))),
+            non_ref_span_from_pair(&pair),
+        )),
         _ => unreachable!(),
     }
 }
 
 // term = { predicate | parenthesised_expression }
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
+fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<LocationedExpression> {
+    let span = non_ref_span_from_pair(&pair);
     let pairs = pair.into_inner();
     let inner_rule = pairs.peek().unwrap();
     let rule = inner_rule.as_rule();
     match rule {
-        Rule::predicate => Ok(Expression::Predicate(parse_predicate(inner_rule)?)),
+        Rule::predicate => Ok(LocationedExpression::new(
+            Expression::Predicate(parse_predicate(inner_rule)?),
+            span,
+        )),
         Rule::parenthesised_expression => parse_parenthesised_expression(inner_rule, pratt),
         _ => unreachable!(),
     }
@@ -317,17 +330,28 @@ fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expres
 
 // expression = { term ~ ( logical_operator ~ term )* }
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
+fn parse_expression(
+    pair: Pair<Rule>,
+    pratt: &PrattParser<Rule>,
+) -> ParseResult<LocationedExpression> {
+    let span = non_ref_span_from_pair(&pair);
     let pairs = pair.into_inner();
     pratt
         .map_primary(|operand| match operand.as_rule() {
             Rule::term => parse_term(operand, pratt),
             _ => unreachable!(),
         })
-        .map_infix(|lhs, op, rhs| {
+        .map_infix(move |lhs, op, rhs| {
+            let span = span.clone();
             Ok(match op.as_rule() {
-                Rule::and_op => Expression::Logical(Box::new(LogicalExpression::And(lhs?, rhs?))),
-                Rule::or_op => Expression::Logical(Box::new(LogicalExpression::Or(lhs?, rhs?))),
+                Rule::and_op => LocationedExpression::new(
+                    Expression::Logical(Box::new(LogicalExpression::And(lhs?.into(), rhs?.into()))),
+                    span,
+                ),
+                Rule::or_op => LocationedExpression::new(
+                    Expression::Logical(Box::new(LogicalExpression::Or(lhs?.into(), rhs?.into()))),
+                    span,
+                ),
                 _ => unreachable!(),
             })
         })
@@ -335,7 +359,7 @@ fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<
 }
 
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-pub fn parse(source: &str) -> ParseResult<Expression> {
+pub fn parse(source: &str) -> ParseResult<LocationedExpression> {
     ATCParser::new().parse_matcher(source)
 }
 

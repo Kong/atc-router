@@ -4,7 +4,9 @@ use crate::interpreter::Execute;
 use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
+use pest::error::LineColLocation;
 use std::collections::{BTreeMap, HashMap};
+use std::f32::consts::E;
 use uuid::Uuid;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
@@ -33,8 +35,8 @@ impl<'a> Router<'a> {
         }
 
         let ast = parse(atc).map_err(|e| e.to_string())?;
-        ast.validate(self.schema)?;
-        let cir = ast.translate();
+        ast.validate(self.schema).map_err(|e| e.to_string())?;
+        let cir = ast.expression.translate();
         cir.add_to_counter(&mut self.fields);
         assert!(self.matchers.insert(key, cir).is_none());
 

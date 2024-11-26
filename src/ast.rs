@@ -1,5 +1,6 @@
 use crate::schema::Schema;
 use cidr::IpCidr;
+use pest::error::LineColLocation;
 use regex::Regex;
 use std::net::IpAddr;
 
@@ -13,12 +14,46 @@ pub enum Expression {
     Predicate(Predicate),
 }
 
+#[derive(Debug)]
+pub struct Span {
+    pub start_line: usize,
+    pub end_line: usize,
+    pub start_col: usize,
+    pub end_col: usize,
+}
+
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug)]
+pub struct LocationedExpression {
+    pub expression: Expression,
+    pub span: LineColLocation,
+}
+
+impl LocationedExpression {
+    pub fn new(expression: Expression, span: LineColLocation) -> Self {
+        LocationedExpression { expression, span }
+    }
+}
+
+impl From<LocationedExpression> for Expression {
+    fn from(loc_expr: LocationedExpression) -> Self {
+        loc_expr.expression
+    }
+}
+
+impl From<Expression> for LocationedExpression {
+    fn from(expr: Expression) -> Self {
+        // unknown location
+        LocationedExpression::new(expr, LineColLocation::Pos((0, 0)))
+    }
+}
+
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub enum LogicalExpression {
-    And(Expression, Expression),
-    Or(Expression, Expression),
-    Not(Expression),
+    And(LocationedExpression, LocationedExpression),
+    Or(LocationedExpression, LocationedExpression),
+    Not(LocationedExpression),
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -149,6 +184,12 @@ mod tests {
                     Expression::Predicate(predicate) => predicate.to_string(),
                 }
             )
+        }
+    }
+
+    impl fmt::Display for LocationedExpression {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{}", self.expression)
         }
     }
 

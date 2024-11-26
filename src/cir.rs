@@ -80,16 +80,16 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
     match exp {
         Expression::Logical(logic_exp) => match logic_exp.as_ref() {
             LogicalExpression::And(l, r) => {
-                let left = match l {
+                let left = match &l.expression {
                     Expression::Logical(_logic_exp) => {
-                        CirOperand::Index(cir_translate_helper(l, cir))
+                        CirOperand::Index(cir_translate_helper(&l.expression, cir))
                     }
                     Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
 
-                let right = match r {
+                let right = match &r.expression {
                     Expression::Logical(_logic_exp) => {
-                        CirOperand::Index(cir_translate_helper(r, cir))
+                        CirOperand::Index(cir_translate_helper(&r.expression, cir))
                     }
                     Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
@@ -97,16 +97,16 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
                 cir.instructions.push(CirInstruction::AndIns(and_ins));
             }
             LogicalExpression::Or(l, r) => {
-                let left = match l {
+                let left = match &l.expression {
                     Expression::Logical(_logic_exp) => {
-                        CirOperand::Index(cir_translate_helper(l, cir))
+                        CirOperand::Index(cir_translate_helper(&l.expression, cir))
                     }
                     Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
 
-                let right = match r {
+                let right = match &r.expression {
                     Expression::Logical(_logic_exp) => {
-                        CirOperand::Index(cir_translate_helper(r, cir))
+                        CirOperand::Index(cir_translate_helper(&r.expression, cir))
                     }
                     Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
@@ -114,9 +114,9 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
                 cir.instructions.push(CirInstruction::OrIns(or_ins));
             }
             LogicalExpression::Not(r) => {
-                let right: CirOperand = match r {
+                let right: CirOperand = match &r.expression {
                     Expression::Logical(_logic_exp) => {
-                        CirOperand::Index(cir_translate_helper(r, cir))
+                        CirOperand::Index(cir_translate_helper(&r.expression, cir))
                     }
                     Expression::Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
@@ -267,9 +267,13 @@ mod tests {
             use crate::ast::{Expression, LogicalExpression};
             match self {
                 Expression::Logical(l) => match l.as_ref() {
-                    LogicalExpression::And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
-                    LogicalExpression::Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
-                    LogicalExpression::Not(r) => !r.execute(ctx, m),
+                    LogicalExpression::And(l, r) => {
+                        l.expression.execute(ctx, m) && r.expression.execute(ctx, m)
+                    }
+                    LogicalExpression::Or(l, r) => {
+                        l.expression.execute(ctx, m) || r.expression.execute(ctx, m)
+                    }
+                    LogicalExpression::Not(r) => !r.expression.execute(ctx, m),
                 },
                 Expression::Predicate(p) => p.execute(ctx, m),
             }
@@ -302,9 +306,9 @@ mod tests {
                 .map_err(|e| e.to_string())
                 .unwrap();
             let mut mat = Match::new();
-            let ast_result = ast.execute(&mut context, &mut mat);
+            let ast_result = ast.expression.execute(&mut context, &mut mat);
 
-            let cir_result = ast.translate().execute(&mut context, &mut mat);
+            let cir_result = ast.expression.translate().execute(&mut context, &mut mat);
             assert_eq!(ast_result, cir_result);
         }
     }
