@@ -73,6 +73,31 @@ function _M:execute(context, collect_all)
     return clib.router_execute(self.router, context.context, collect_all) == true
 end
 
+function _M:iter_matches(ctx)
+  local iter = clib.router_iter_matches(self.router, ctx.context)
+  if iter == nil then
+    return function() end     -- Return empty iterator if creation failed
+  end
+
+  local uuid = ffi_new("uint8_t[16]")
+
+  return function()
+    if clib.match_iterator_next(iter, uuid) then
+      -- Convert UUID bytes to string
+      local uuid_str = string.format(
+        "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+        uuid[0], uuid[1], uuid[2], uuid[3],
+        uuid[4], uuid[5], uuid[6], uuid[7],
+        uuid[8], uuid[9], uuid[10], uuid[11],
+        uuid[12], uuid[13], uuid[14], uuid[15]
+      )
+      return uuid_str
+    else
+      clib.match_iterator_free(iter)
+      return nil
+    end
+  end
+end
 
 function _M:get_fields()
     local out = {}

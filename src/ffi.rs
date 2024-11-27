@@ -2,6 +2,7 @@ use crate::ast::{Type, Value};
 use crate::context::Context;
 use crate::router::Router;
 use crate::schema::Schema;
+use crate::context::Match;
 use cidr::IpCidr;
 use std::cmp::min;
 use std::convert::TryFrom;
@@ -13,6 +14,55 @@ use uuid::fmt::Hyphenated;
 use uuid::Uuid;
 
 pub const ERR_BUF_MAX_LEN: usize = 4096;
+
+
+#[repr(C)]
+pub struct CMatchIterator<'a> {
+    router: &'a Router<'a>,
+    context: *mut Context<'a>,
+    iter: Box<dyn Iterator<Item = Match> + 'a>,
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn router_iter_matches<'a>(
+    router: &'a Router<'a>,
+    context: *mut Context<'a>,
+) -> *mut CMatchIterator<'a> {
+    let context_ref = &mut *context;
+    let iter = Box::new(router.iter_matches(context_ref));
+
+    let c_iter = Box::new(CMatchIterator {
+        router,
+        context,
+        iter,
+    });
+
+    Box::into_raw(c_iter)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn match_iterator_next<'a>(
+    iter: *mut CMatchIterator<'a>,
+    uuid: *mut [u8; 16],
+) -> bool {
+    let iter = &mut *iter;
+
+    if let Some(mat) = iter.iter.next() {
+        if let Some(uuid_slice) = uuid.as_mut() {
+            uuid_slice.copy_from_slice(mat.uuid.as_bytes());
+        } else {
+            return false;
+        }
+        true
+    } else {
+        false
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn match_iterator_free<'a>(iter: *mut CMatchIterator<'a>) {
+    drop(Box::from_raw(iter));
+}
 
 #[derive(Debug)]
 #[repr(C)]

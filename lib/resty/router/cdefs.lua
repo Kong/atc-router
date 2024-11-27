@@ -24,6 +24,14 @@ typedef enum CValue_Tag {
   CValue_Int,
 } CValue_Tag;
 
+typedef struct CMatchIterator CMatchIterator;
+
+CMatchIterator* router_iter_matches(const struct Router *router, struct Context *context);
+
+bool match_iterator_next(CMatchIterator *iter, uint8_t uuid[16]);
+
+void match_iterator_free(CMatchIterator *iter);
+
 typedef struct CValue_Str_Body {
   const uint8_t *_0;
   uintptr_t _1;
@@ -100,6 +108,7 @@ size_t context_get_results(const struct Context *context,
                            size_t *matched_value_lens,
                            size_t *capture_counts
   );
+  
 ]])
 
 

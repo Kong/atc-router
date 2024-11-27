@@ -6,6 +6,8 @@ use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
+use std::iter::Iterator;
+
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 struct MatcherKey(usize, Uuid);
@@ -22,6 +24,14 @@ impl<'a> Router<'a> {
             schema,
             matchers: BTreeMap::new(),
             fields: HashMap::new(),
+        }
+    }
+
+    pub fn iter_matches<'b>(&'b self, context: &'b mut Context<'a>) -> MatchIterator<'b, 'a> {
+        MatchIterator {
+            router: self,
+            context,
+            current_index: self.matchers.len(),
         }
     }
 
@@ -70,5 +80,28 @@ impl<'a> Router<'a> {
         }
 
         return matched;
+    }
+}
+
+pub struct MatchIterator<'b, 'a> {
+    router: &'b Router<'a>,
+    context: &'b mut Context<'a>,
+    current_index: usize,
+}
+
+impl<'b, 'a> Iterator for MatchIterator<'b, 'a> {
+    type Item = Match;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.current_index > 0 {
+            self.current_index -= 1;
+            let (MatcherKey(_, id), m) = self.router.matchers.iter().nth(self.current_index)?;
+            let mut mat = Match::new();
+            if m.execute(self.context, &mut mat) {
+                mat.uuid = *id;
+                return Some(mat);
+            }
+        }
+        None
     }
 }
