@@ -9,6 +9,9 @@ Versatile DSL based rule matching engine used by the Kong API Gateway
 """
 repository = "https://github.com/Kong/atc-router"
 
+[profile.bench]
+debug = true
+
 [dependencies]
 pest = "2.7"
 pest_derive = "2.7"
@@ -27,3 +30,32 @@ crate-type = ["lib", "cdylib", "staticlib"]
 default = ["ffi"]
 ffi = []
 serde = ["cidr/serde", "dep:serde", "dep:serde_regex"]
+
+[dev-dependencies]
+criterion = "0"
+rand = "0"
+
+[[bench]]
+name = "test"
+harness = false
+
+[[bench]]
+name = "string"
+harness = false
+
+[[bench]]
+name = "match_mix"
+harness = false
+
+[[bench]]
+name = "not_match_mix"
+harness = false
+
+[[bench]]
+name = "build"
+harness = false
+
+[[bench]]
+name = "change_route"
+harness = false
+

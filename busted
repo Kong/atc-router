@@ -1,0 +1,4 @@
+#!env resty
+
+setmetatable(_G, nil)
+require 'busted.runner'({ standalone = false })

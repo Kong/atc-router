@@ -91,6 +91,11 @@ intptr_t context_get_result(const struct Context *context,
                             uintptr_t *capture_names_len,
                             const uint8_t **capture_values,
                             uintptr_t *capture_values_len);
+
+void debug_router_get_duration(Router *router,
+                               uint64_t *add_matcher_duration,
+                               uint64_t *remove_matcher_duration,
+                               uint64_t *execute_duration);
 ]])
 
 
