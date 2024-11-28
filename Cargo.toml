@@ -25,6 +25,7 @@ bitflags = { version = "2.6", optional = true }
 
 [dev-dependencies]
 criterion = "0"
+rand = "0"
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
@@ -52,4 +53,8 @@ harness = false
 
 [[bench]]
 name = "build"
+harness = false
+
+[[bench]]
+name = "change_route"
 harness = false

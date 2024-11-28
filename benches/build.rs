@@ -19,15 +19,20 @@ fn make_uuid(a: usize) -> String {
 fn criterion_benchmark(c: &mut Criterion) {
     let mut schema = Schema::default();
     schema.add_field("a", Type::Int);
+    schema.add_field("b", Type::String);
 
     let mut context = Context::new(&schema);
     context.add_value("a", Value::Int(N as i64));
+    context.add_value("b", Value::String("apple".to_string()));
 
     c.bench_function("Build Router", |b| {
         b.iter_with_large_drop(|| {
             let mut router = Router::new(&schema);
             for i in 0..N {
-                let expr = format!("((a > 0 || a < {}) && a != 0) && a == 1", N + 1);
+                let expr = format!(
+                    "(((a > 0 || a < {}) && a != 0) && a == 1) && b ~ r#\".*pl.*\"#",
+                    N + 1
+                );
                 let variant = make_uuid(i);
                 let uuid = Uuid::try_from(variant.as_str()).unwrap();
                 router.add_matcher(N - i, uuid, &expr).unwrap();

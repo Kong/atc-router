@@ -1,4 +1,5 @@
 pub mod context;
+pub mod debug;
 pub mod expression;
 pub mod router;
 pub mod schema;
