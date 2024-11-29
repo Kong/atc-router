@@ -1,8 +1,21 @@
-use crate::ast::{BinaryOperator, Predicate, Value};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Value};
 use crate::context::{Context, Match};
 
 pub trait Execute {
     fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
+}
+
+impl Execute for Expression {
+    fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
+        match self {
+            Expression::Logical(l) => match l.as_ref() {
+                LogicalExpression::And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
+                LogicalExpression::Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
+                LogicalExpression::Not(r) => !r.execute(ctx, m),
+            },
+            Expression::Predicate(p) => p.execute(ctx, m),
+        }
+    }
 }
 
 impl Execute for Predicate {
