@@ -16,10 +16,14 @@ pub struct Router<'a> {
     schema: &'a Schema,
     matchers: BTreeMap<MatcherKey, CirProgram>,
     pub fields: HashMap<String, usize>,
+    /* Debug usage */
     pub add_matcher_duration: Duration,
     pub remove_matcher_duration: Duration,
     // Safety: Nginx is single-threaded, no need for synchronization
     pub execute_duration: UnsafeCell<Duration>,
+    pub add_matcher_counter: usize,
+    pub remove_matcher_counter: usize,
+    pub execute_counter: UnsafeCell<usize>,
 }
 
 impl<'a> Router<'a> {
@@ -31,15 +35,20 @@ impl<'a> Router<'a> {
             add_matcher_duration: Duration::default(),
             remove_matcher_duration: Duration::default(),
             execute_duration: UnsafeCell::new(Duration::default()),
+            add_matcher_counter: 0,
+            remove_matcher_counter: 0,
+            execute_counter: UnsafeCell::new(0),
         }
     }
 
     pub fn add_matcher(&mut self, priority: usize, uuid: Uuid, atc: &str) -> Result<(), String> {
+        self.add_matcher_counter += 1;
         let start = Instant::now();
 
         let key = MatcherKey(priority, uuid);
 
         if self.matchers.contains_key(&key) {
+            self.add_matcher_duration += start.elapsed();
             return Err("UUID already exists".to_string());
         }
 
@@ -54,6 +63,7 @@ impl<'a> Router<'a> {
     }
 
     pub fn remove_matcher(&mut self, priority: usize, uuid: Uuid) -> bool {
+        self.remove_matcher_counter += 1;
         let start = Instant::now();
 
         let key = MatcherKey(priority, uuid);
@@ -69,6 +79,7 @@ impl<'a> Router<'a> {
     }
 
     pub fn execute(&self, context: &mut Context) -> bool {
+        *unsafe { &mut *self.execute_counter.get() } += 1;
         let start = Instant::now();
 
         for (MatcherKey(_, id), m) in self.matchers.iter().rev() {
