@@ -30,6 +30,15 @@ function _M.router_get_duration(router)
     return tonumber(add_matcher[0]), tonumber(remove_matcher[0]), tonumber(execute[0])
 end
 
+function _M.router_get_counter(router)
+    local add_matcher = ffi_new("size_t[1]")
+    local remove_matcher = ffi_new("size_t[1]")
+    local execute = ffi_new("size_t[1]")
+
+    clib.debug_router_get_counter(router.router, add_matcher, remove_matcher, execute)
+
+    return tonumber(add_matcher[0]), tonumber(remove_matcher[0]), tonumber(execute[0])
+end
 
 return _M
 

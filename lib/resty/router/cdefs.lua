@@ -96,6 +96,11 @@ void debug_router_get_duration(Router *router,
                                uint64_t *add_matcher_duration,
                                uint64_t *remove_matcher_duration,
                                uint64_t *execute_duration);
+
+void debug_router_get_counter(Router *router,
+                               uint64_t *add_matcher_counter,
+                               uint64_t *remove_matcher_counter,
+                               uint64_t *execute_counter);
 ]])
 
 

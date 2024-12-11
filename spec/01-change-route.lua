@@ -31,6 +31,7 @@ describe("change-route test", function()
 
     it("test1", function()
         local _, _, _ = debug.router_get_duration(r)
+        local _, _, _ = debug.router_get_counter(r)
 
         for _i = 1, 500000 do
             -- Change
@@ -50,6 +51,13 @@ describe("change-route test", function()
         print("remove_matcher: " .. remove / 1000000)
         print("execute: " .. execute / 1000000)
         print("Total in ms: " .. (add + remove + execute) / 1000000)
+        print()
+        add, remove, execute = debug.router_get_counter(r)
+        print("Counter:")
+        print("add_matcher: " .. add)
+        print("remove_matcher: " .. remove)
+        print("execute: " .. execute)
+        print()
         print()
     end)
 
