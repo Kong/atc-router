@@ -1,6 +1,6 @@
 [package]
 name = "atc-router"
-version = "1.7.0"
+version = "1.7.1"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Datong Sun <datong.sun@konghq.com>", "Kong Contributors"]
@@ -33,23 +33,3 @@ crate-type = ["lib", "cdylib", "staticlib"]
 default = ["ffi"]
 ffi = ["dep:bitflags"]
 serde = ["cidr/serde", "dep:serde", "dep:serde_regex"]
-
-[[bench]]
-name = "test"
-harness = false
-
-[[bench]]
-name = "string"
-harness = false
-
-[[bench]]
-name = "match_mix"
-harness = false
-
-[[bench]]
-name = "not_match_mix"
-harness = false
-
-[[bench]]
-name = "build"
-harness = false
