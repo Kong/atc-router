@@ -13,55 +13,6 @@ pub trait FieldCounter {
     fn remove_from_counter(&self, map: &mut HashMap<String, usize>);
 }
 
-impl FieldCounter for Expression {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
-        match self {
-            Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) => {
-                    l.add_to_counter(map);
-                    r.add_to_counter(map);
-                }
-                LogicalExpression::Or(l, r) => {
-                    l.add_to_counter(map);
-                    r.add_to_counter(map);
-                }
-                LogicalExpression::Not(r) => {
-                    r.add_to_counter(map);
-                }
-            },
-            Expression::Predicate(p) => {
-                *map.entry(p.lhs.var_name.clone()).or_default() += 1;
-            }
-        }
-    }
-
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
-        match self {
-            Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) => {
-                    l.remove_from_counter(map);
-                    r.remove_from_counter(map);
-                }
-                LogicalExpression::Or(l, r) => {
-                    l.remove_from_counter(map);
-                    r.remove_from_counter(map);
-                }
-                LogicalExpression::Not(r) => {
-                    r.remove_from_counter(map);
-                }
-            },
-            Expression::Predicate(p) => {
-                let val = map.get_mut(&p.lhs.var_name).unwrap();
-                *val -= 1;
-
-                if *val == 0 {
-                    assert!(map.remove(&p.lhs.var_name).is_some());
-                }
-            }
-        }
-    }
-}
-
 impl Validate for Expression {
     fn validate(&self, schema: &Schema) -> ValidationResult {
         match self {
