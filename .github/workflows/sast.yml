@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: Kong/public-shared-actions/security-actions/semgrep@v2
+      - uses: Kong/public-shared-actions/security-actions/semgrep@0ccacffed804d85da3f938a1b78c12831935f992 # v2
         with:
           additional_config: '--config p/rust'
 
