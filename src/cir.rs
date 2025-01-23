@@ -11,6 +11,12 @@ pub enum CirProgram {
     Predicate(Predicate),
 }
 
+impl Default for CirProgram {
+    fn default() -> Self {
+        Self::Instructions(Vec::new())
+    }
+}
+
 #[derive(Debug)]
 pub enum CirInstruction {
     AndIns(AndIns),
