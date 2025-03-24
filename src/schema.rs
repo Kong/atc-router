@@ -1,7 +1,7 @@
 use crate::ast::Type;
 use std::collections::HashMap;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Schema {
     fields: HashMap<String, Type>,
 }
