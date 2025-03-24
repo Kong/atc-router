@@ -66,4 +66,18 @@ impl<'a> Router<'a> {
 
         false
     }
+
+    /// Note that unlike `execute`, this doesn't set `Context.result`
+    /// but it also doesn't need a `&mut Context`.
+    pub fn r#match(&self, context: &Context) -> Option<Match> {
+        for (MatcherKey(_, id), m) in self.matchers.iter().rev() {
+            let mut mat = Match::new();
+            if m.execute(context, &mut mat) {
+                mat.uuid = *id;
+                return Some(mat);
+            }
+        }
+
+        None
+    }
 }
