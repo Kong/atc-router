@@ -258,7 +258,7 @@ mod tests {
                 errbuf.as_mut_ptr(),
                 &mut errbuf_len,
             );
-            assert_eq!(result, false);
+            assert!(!result);
             assert_eq!(errbuf_len, ERR_BUF_MAX_LEN);
         }
     }
@@ -281,7 +281,7 @@ mod tests {
                 errbuf.as_mut_ptr(),
                 &mut errbuf_len,
             );
-            assert_eq!(result, false);
+            assert!(!result);
             assert!(errbuf_len < ERR_BUF_MAX_LEN);
         }
     }

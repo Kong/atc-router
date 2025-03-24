@@ -143,7 +143,6 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// - `operators` must be a valid pointer to write `size_of::<u64>()` bytes and properly aligned.
 /// - `errbuf` must be valid for reading and writing `errbuf_len * size_of::<u8>()` bytes and properly aligned.
 /// - `errbuf_len` must be a valid pointer for reading and writing `size_of::<usize>()` bytes and properly aligned.
-
 #[no_mangle]
 pub unsafe extern "C" fn expression_validate(
     atc: *const u8,
@@ -241,7 +240,7 @@ mod tests {
         let result = unsafe {
             expression_validate(
                 atc.as_bytes().as_ptr(),
-                &schema,
+                schema,
                 fields_buf.as_mut_ptr(),
                 &mut fields_buf_len,
                 &mut fields_total,
