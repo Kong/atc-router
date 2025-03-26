@@ -134,7 +134,7 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
 fn execute_helper(
     cir_instructions: &[CirInstruction],
     index: usize,
-    ctx: &mut Context,
+    ctx: &Context,
     m: &mut Match,
 ) -> bool {
     match &cir_instructions[index] {
@@ -172,7 +172,7 @@ fn execute_helper(
 }
 
 impl Execute for CirProgram {
-    fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
+    fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
         execute_helper(&self.instructions, self.instructions.len() - 1, ctx, m)
     }
 }
