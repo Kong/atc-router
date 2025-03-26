@@ -14,9 +14,9 @@ use regex::Regex;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
+
 /// cbindgen:ignore
 // Bug: https://github.com/eqrion/cbindgen/issues/286
-
 trait IntoParseResult<T> {
     #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
     fn into_parse_result(self, pair: &Pair<Rule>) -> ParseResult<T>;
@@ -157,7 +157,7 @@ fn parse_str_esc(pair: Pair<Rule>) -> char {
     }
 }
 fn parse_str_char(pair: Pair<Rule>) -> char {
-    return pair.as_str().chars().next().unwrap();
+    pair.as_str().chars().next().unwrap()
 }
 
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
