@@ -55,17 +55,12 @@ impl<'a> Router<'a> {
     }
 
     pub fn execute(&self, context: &mut Context) -> bool {
-        for (MatcherKey(_, id), m) in self.matchers.iter().rev() {
-            let mut mat = Match::new();
-            if m.execute(context, &mut mat) {
-                mat.uuid = *id;
-                context.result = Some(mat);
-
-                return true;
-            }
+        if let Some(m) = self.r#match(context) {
+            context.result = Some(m);
+            true
+        } else {
+            false
         }
-
-        false
     }
 
     /// Note that unlike `execute`, this doesn't set `Context.result`
