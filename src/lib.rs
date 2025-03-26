@@ -1,3 +1,4 @@
+#![deny(warnings, missing_debug_implementations)]
 /*!
 This crate provides a powerful rule based matching engine that can match a set of routes
 against dynamic input value efficiently.
