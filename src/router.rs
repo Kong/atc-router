@@ -55,7 +55,7 @@ impl<'a> Router<'a> {
     }
 
     pub fn execute(&self, context: &mut Context) -> bool {
-        if let Some(m) = self.r#match(context) {
+        if let Some(m) = self.try_match(context) {
             context.result = Some(m);
             true
         } else {
@@ -65,7 +65,7 @@ impl<'a> Router<'a> {
 
     /// Note that unlike `execute`, this doesn't set `Context.result`
     /// but it also doesn't need a `&mut Context`.
-    pub fn r#match(&self, context: &Context) -> Option<Match> {
+    pub fn try_match(&self, context: &Context) -> Option<Match> {
         for (MatcherKey(_, id), m) in self.matchers.iter().rev() {
             let mut mat = Match::new();
             if m.execute(context, &mut mat) {
