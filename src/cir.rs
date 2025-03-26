@@ -7,13 +7,13 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum CirProgram {
-    Instructions(Vec<CirInstruction>),
+    Instructions(Box<[CirInstruction]>),
     Predicate(Predicate),
 }
 
 impl Default for CirProgram {
     fn default() -> Self {
-        Self::Instructions(Vec::new())
+        Self::Instructions(Box::new([]))
     }
 }
 
@@ -72,10 +72,10 @@ impl Translate for Expression {
                     unreachable!()
                 }
             } else {
-                CirProgram::Instructions(cir_instructions)
+                CirProgram::Instructions(cir_instructions.into_boxed_slice())
             }
         } else {
-            CirProgram::Instructions(cir_instructions)
+            CirProgram::Instructions(cir_instructions.into_boxed_slice())
         }
     }
 }
