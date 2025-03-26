@@ -58,7 +58,6 @@ impl Translate for Expression {
     fn translate(&self) -> Self::Output {
         let mut cir_instructions = Vec::new();
         cir_translate_helper(self, &mut cir_instructions);
-        cir_instructions.shrink_to_fit();
 
         if cir_instructions.len() == 1 {
             // Avoid unnecessary cloning
