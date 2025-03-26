@@ -26,6 +26,10 @@ impl<'a> Router<'a> {
         }
     }
 
+    pub fn new_context(&self) -> Context {
+        Context::new(self.schema)
+    }
+
     pub fn add_matcher(&mut self, priority: usize, uuid: Uuid, atc: &str) -> Result<(), String> {
         let key = MatcherKey(priority, uuid);
 
