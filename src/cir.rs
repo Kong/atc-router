@@ -143,7 +143,7 @@ fn cir_translate_helper(exp: &Expression, cir_instructions: &mut Vec<CirInstruct
 fn execute_helper(
     cir_instructions: &[CirInstruction],
     index: usize,
-    ctx: &mut Context,
+    ctx: &Context,
     m: &mut Match,
 ) -> bool {
     match &cir_instructions[index] {
@@ -181,7 +181,7 @@ fn execute_helper(
 }
 
 impl Execute for CirProgram {
-    fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
+    fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
         match self {
             CirProgram::Instructions(instructions) => {
                 execute_helper(instructions, instructions.len() - 1, ctx, m)
@@ -302,7 +302,7 @@ mod tests {
     use crate::schema::Schema;
 
     impl Execute for Expression {
-        fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
+        fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
             use crate::ast::{Expression, LogicalExpression};
             match self {
                 Expression::Logical(l) => match l.as_ref() {
