@@ -3,6 +3,7 @@ use crate::schema::Schema;
 use fnv::FnvHashMap;
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct Match {
     pub uuid: Uuid,
     pub matches: FnvHashMap<String, Value>,
@@ -25,6 +26,7 @@ impl Default for Match {
     }
 }
 
+#[derive(Debug)]
 pub struct Context<'a> {
     schema: &'a Schema,
     values: FnvHashMap<String, Vec<Value>>,
