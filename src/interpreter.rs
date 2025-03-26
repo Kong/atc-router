@@ -2,11 +2,11 @@ use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Value
 use crate::context::{Context, Match};
 
 pub trait Execute {
-    fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool;
+    fn execute(&self, ctx: &Context, m: &mut Match) -> bool;
 }
 
 impl Execute for Expression {
-    fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
+    fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
         match self {
             Expression::Logical(l) => match l.as_ref() {
                 LogicalExpression::And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
@@ -19,7 +19,7 @@ impl Execute for Expression {
 }
 
 impl Execute for Predicate {
-    fn execute(&self, ctx: &mut Context, m: &mut Match) -> bool {
+    fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
         let lhs_values = match ctx.value_of(&self.lhs.var_name) {
             None => return false,
             Some(v) => v,
