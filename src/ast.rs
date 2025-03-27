@@ -22,14 +22,14 @@ pub enum LogicalExpression {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LhsTransformations {
     Lower,
     Any,
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {
     Equals,         // ==
     NotEquals,      // !=
@@ -101,7 +101,7 @@ pub enum Type {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Lhs {
     pub var_name: String,
     pub transformations: Vec<LhsTransformations>,
@@ -126,7 +126,7 @@ impl Lhs {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Predicate {
     pub lhs: Lhs,
     pub rhs: Value,
