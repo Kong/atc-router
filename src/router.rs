@@ -55,16 +55,94 @@ impl<'a> Router<'a> {
     }
 
     pub fn execute(&self, context: &mut Context) -> bool {
+        if let Some(m) = self.try_match(context) {
+            context.result = Some(m);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Note that unlike `execute`, this doesn't set `Context.result`
+    /// but it also doesn't need a `&mut Context`.
+    pub fn try_match(&self, context: &Context) -> Option<Match> {
         for (MatcherKey(_, id), m) in self.matchers.iter().rev() {
             let mut mat = Match::new();
             if m.execute(context, &mut mat) {
                 mat.uuid = *id;
-                context.result = Some(mat);
-
-                return true;
+                return Some(mat);
             }
         }
 
-        false
+        None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use uuid::Uuid;
+
+    use crate::{ast::Type, context::Context, schema::Schema};
+
+    use super::Router;
+
+    #[test]
+    fn execute_succeeds() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.path", "/dev".to_owned().into());
+        assert!(router.execute(&mut ctx));
+    }
+
+    #[test]
+    fn execute_fails() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.path", "/not-dev".to_owned().into());
+        assert!(!router.execute(&mut ctx));
+    }
+
+    #[test]
+    fn try_match_succeeds() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.path", "/dev".to_owned().into());
+        router.try_match(&ctx).expect("matches");
+    }
+
+    #[test]
+    fn try_match_fails() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.path", "/not-dev".to_owned().into());
+        router.try_match(&ctx).ok_or(()).expect_err("should fail");
     }
 }
