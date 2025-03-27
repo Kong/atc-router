@@ -7,14 +7,14 @@ use std::net::IpAddr;
 use serde::{Deserialize, Serialize};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Expression {
     Logical(Box<LogicalExpression>),
     Predicate(Predicate),
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum LogicalExpression {
     And(Expression, Expression),
     Or(Expression, Expression),
@@ -22,14 +22,14 @@ pub enum LogicalExpression {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LhsTransformations {
     Lower,
     Any,
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BinaryOperator {
     Equals,         // ==
     NotEquals,      // !=
@@ -101,7 +101,7 @@ pub enum Type {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Lhs {
     pub var_name: String,
     pub transformations: Vec<LhsTransformations>,
@@ -126,7 +126,7 @@ impl Lhs {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Predicate {
     pub lhs: Lhs,
     pub rhs: Value,
