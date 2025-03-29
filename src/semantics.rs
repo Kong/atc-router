@@ -1,6 +1,7 @@
+use ahash::AHashMap;
+
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
 use crate::schema::Schema;
-use std::collections::HashMap;
 
 type ValidationResult = Result<(), String>;
 
@@ -9,12 +10,12 @@ pub trait Validate {
 }
 
 pub trait FieldCounter {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>);
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>);
+    fn add_to_counter(&self, map: &mut AHashMap<String, usize>);
+    fn remove_from_counter(&self, map: &mut AHashMap<String, usize>);
 }
 
 impl FieldCounter for Expression {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
+    fn add_to_counter(&self, map: &mut AHashMap<String, usize>) {
         match self {
             Expression::Logical(l) => match l.as_ref() {
                 LogicalExpression::And(l, r) => {
@@ -35,7 +36,7 @@ impl FieldCounter for Expression {
         }
     }
 
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
+    fn remove_from_counter(&self, map: &mut AHashMap<String, usize>) {
         match self {
             Expression::Logical(l) => match l.as_ref() {
                 LogicalExpression::And(l, r) => {

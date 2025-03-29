@@ -20,8 +20,8 @@ uuid = "1.8"
 regex = "1"
 serde = { version = "1.0", features = ["derive"], optional = true }
 serde_regex = { version = "1.1", optional = true }
-fnv = "1"
 bitflags = { version = "2.6", optional = true }
+ahash = "0.8"
 
 [dev-dependencies]
 criterion = "0"
