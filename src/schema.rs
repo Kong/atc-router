@@ -1,9 +1,10 @@
+use ahash::AHashMap;
+
 use crate::ast::Type;
-use std::collections::HashMap;
 
 #[derive(Debug, Default)]
 pub struct Schema {
-    fields: HashMap<String, Type>,
+    fields: AHashMap<String, Type>,
 }
 
 impl Schema {

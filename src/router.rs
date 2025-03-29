@@ -4,7 +4,8 @@ use crate::interpreter::Execute;
 use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
+use ahash::AHashMap;
 use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -14,7 +15,7 @@ struct MatcherKey(usize, Uuid);
 pub struct Router<'a> {
     schema: &'a Schema,
     matchers: BTreeMap<MatcherKey, Expression>,
-    pub fields: HashMap<String, usize>,
+    pub fields: AHashMap<String, usize>,
 }
 
 impl<'a> Router<'a> {
@@ -22,7 +23,7 @@ impl<'a> Router<'a> {
         Self {
             schema,
             matchers: BTreeMap::new(),
-            fields: HashMap::new(),
+            fields: AHashMap::new(),
         }
     }
 
