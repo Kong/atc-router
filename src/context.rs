@@ -13,7 +13,7 @@ pub struct Match {
 
 impl Match {
     pub fn new() -> Self {
-        Match {
+        Self {
             uuid: Uuid::default(),
             matches: HashMap::default(),
             captures: HashMap::default(),
