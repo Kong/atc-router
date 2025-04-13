@@ -1,21 +1,22 @@
 use crate::ast::Value;
 use crate::schema::Schema;
-use fnv::FnvHashMap;
 use uuid::Uuid;
+
+type MyHashMap<K, V> = fnv::FnvHashMap<K, V>;
 
 #[derive(Debug)]
 pub struct Match {
     pub uuid: Uuid,
-    pub matches: FnvHashMap<String, Value>,
-    pub captures: FnvHashMap<String, String>,
+    pub matches: MyHashMap<String, Value>,
+    pub captures: MyHashMap<String, String>,
 }
 
 impl Match {
     pub fn new() -> Self {
         Match {
             uuid: Uuid::default(),
-            matches: FnvHashMap::default(),
-            captures: FnvHashMap::default(),
+            matches: MyHashMap::default(),
+            captures: MyHashMap::default(),
         }
     }
 }
@@ -29,7 +30,7 @@ impl Default for Match {
 #[derive(Debug)]
 pub struct Context<'a> {
     schema: &'a Schema,
-    values: FnvHashMap<String, Vec<Value>>,
+    values: MyHashMap<String, Vec<Value>>,
     pub result: Option<Match>,
 }
 
@@ -37,7 +38,7 @@ impl<'a> Context<'a> {
     pub fn new(schema: &'a Schema) -> Self {
         Context {
             schema,
-            values: FnvHashMap::with_hasher(Default::default()),
+            values: MyHashMap::with_hasher(Default::default()),
             result: None,
         }
     }
