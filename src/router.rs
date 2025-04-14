@@ -57,10 +57,10 @@ impl<'a> Router<'a> {
     pub fn execute(&self, context: &mut Context) -> bool {
         if let Some(m) = self.try_match(context) {
             context.result = Some(m);
-            true
-        } else {
-            false
+            return true;
         }
+
+        false
     }
 
     /// Note that unlike `execute`, this doesn't set `Context.result`
