@@ -183,27 +183,27 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::In => match (lhs_value, &self.rhs) {
-                    (Value::IpAddr(l), Value::IpCidr(r)) => {
-                        if r.contains(l) {
-                            matched = true;
-                            if any {
-                                return true;
-                            }
-                        }
+                BinaryOperator::In => {
+                    let rhs = get_op_value!(&self.rhs, Value::IpCidr);
+                    let lhs = get_op_value!(lhs_value, Value::IpAddr);
+
+                    if rhs.contains(lhs) {
+                      matched = true;
+                      if any {
+                        return true;
+                      }
                     }
-                    _ => unreachable!(),
                 },
-                BinaryOperator::NotIn => match (lhs_value, &self.rhs) {
-                    (Value::IpAddr(l), Value::IpCidr(r)) => {
-                        if !r.contains(l) {
-                            matched = true;
-                            if any {
-                                return true;
-                            }
-                        }
-                    }
-                    _ => unreachable!(),
+                BinaryOperator::NotIn => {
+                    let rhs = get_op_value!(&self.rhs, Value::IpCidr);
+                    let lhs = get_op_value!(lhs_value, Value::IpAddr);
+
+                      if !rhs.contains(lhs) {
+                          matched = true;
+                          if any {
+                              return true;
+                          }
+                      }
                 },
                 BinaryOperator::Contains => {
                     let rhs = get_op_value!(&self.rhs, Value::String);
