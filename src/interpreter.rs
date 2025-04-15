@@ -76,8 +76,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Regex => {
-                    let rhs = get_op_value!(&self.rhs, Value::Regex);
                     let lhs = get_op_value!(lhs_value, Value::String);
+                    let rhs = get_op_value!(&self.rhs, Value::Regex);
 
                     if rhs.is_match(lhs) {
                         let reg_cap = rhs.captures(lhs).unwrap();
@@ -108,8 +108,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Prefix => {
-                    let rhs = get_op_value!(&self.rhs, Value::String);
                     let lhs = get_op_value!(lhs_value, Value::String);
+                    let rhs = get_op_value!(&self.rhs, Value::String);
 
                     if lhs.starts_with(rhs) {
                         m.matches
@@ -122,8 +122,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Postfix => {
-                    let rhs = get_op_value!(&self.rhs, Value::String);
                     let lhs = get_op_value!(lhs_value, Value::String);
+                    let rhs = get_op_value!(&self.rhs, Value::String);
 
                     if lhs.ends_with(rhs) {
                         m.matches
@@ -136,8 +136,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Greater => {
-                    let rhs = get_op_value!(&self.rhs, Value::Int);
                     let lhs = get_op_value!(lhs_value, Value::Int);
+                    let rhs = get_op_value!(&self.rhs, Value::Int);
 
                     if lhs > rhs {
                         if any {
@@ -148,8 +148,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::GreaterOrEqual => {
-                    let rhs = get_op_value!(&self.rhs, Value::Int);
                     let lhs = get_op_value!(lhs_value, Value::Int);
+                    let rhs = get_op_value!(&self.rhs, Value::Int);
 
                     if lhs >= rhs {
                         if any {
@@ -160,8 +160,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Less => {
-                    let rhs = get_op_value!(&self.rhs, Value::Int);
                     let lhs = get_op_value!(lhs_value, Value::Int);
+                    let rhs = get_op_value!(&self.rhs, Value::Int);
 
                     if lhs < rhs {
                         if any {
@@ -172,8 +172,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::LessOrEqual => {
-                    let rhs = get_op_value!(&self.rhs, Value::Int);
                     let lhs = get_op_value!(lhs_value, Value::Int);
+                    let rhs = get_op_value!(&self.rhs, Value::Int);
 
                     if lhs <= rhs {
                         if any {
@@ -184,8 +184,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::In => {
-                    let rhs = get_op_value!(&self.rhs, Value::IpCidr);
                     let lhs = get_op_value!(lhs_value, Value::IpAddr);
+                    let rhs = get_op_value!(&self.rhs, Value::IpCidr);
 
                     if rhs.contains(lhs) {
                       matched = true;
@@ -195,8 +195,8 @@ impl Execute for Predicate {
                     }
                 },
                 BinaryOperator::NotIn => {
-                    let rhs = get_op_value!(&self.rhs, Value::IpCidr);
                     let lhs = get_op_value!(lhs_value, Value::IpAddr);
+                    let rhs = get_op_value!(&self.rhs, Value::IpCidr);
 
                       if !rhs.contains(lhs) {
                           matched = true;
@@ -206,8 +206,8 @@ impl Execute for Predicate {
                       }
                 },
                 BinaryOperator::Contains => {
-                    let rhs = get_op_value!(&self.rhs, Value::String);
                     let lhs = get_op_value!(lhs_value, Value::String);
+                    let rhs = get_op_value!(&self.rhs, Value::String);
 
                     if lhs.contains(rhs) {
                         if any {
