@@ -84,9 +84,9 @@ impl Value {
 }
 
 impl Value {
-    pub fn as_string(&self) -> Option<&String> {
+    pub fn as_string(&self) -> Option<&str> {
         if let Value::String(s) = self {
-            return Some(s);
+            return Some(s.as_str());
         }
         None
     }
@@ -98,9 +98,9 @@ impl Value {
         None
     }
 
-    pub fn as_int(&self) -> Option<&i64> {
+    pub fn as_int(&self) -> Option<i64> {
         if let Value::Int(i) = self {
-            return Some(i);
+            return Some(*i);
         }
         None
     }
