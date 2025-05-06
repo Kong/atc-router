@@ -123,10 +123,7 @@ impl Execute for Predicate {
                         Value::String(s) => s,
                         _ => unreachable!(),
                     };
-                    let lhs = match lhs_value {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
+                    let lhs = lhs_value.as_string().unwrap();
 
                     if lhs.ends_with(rhs) {
                         m.matches
@@ -143,10 +140,7 @@ impl Execute for Predicate {
                         Value::Int(i) => i,
                         _ => unreachable!(),
                     };
-                    let lhs = match lhs_value {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
+                    let lhs = lhs_value.as_int().unwrap();
 
                     if lhs > rhs {
                         if any {
@@ -161,10 +155,7 @@ impl Execute for Predicate {
                         Value::Int(i) => i,
                         _ => unreachable!(),
                     };
-                    let lhs = match lhs_value {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
+                    let lhs = lhs_value.as_int().unwrap();
 
                     if lhs >= rhs {
                         if any {
@@ -179,10 +170,7 @@ impl Execute for Predicate {
                         Value::Int(i) => i,
                         _ => unreachable!(),
                     };
-                    let lhs = match lhs_value {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
+                    let lhs = lhs_value.as_int().unwrap();
 
                     if lhs < rhs {
                         if any {
@@ -197,10 +185,7 @@ impl Execute for Predicate {
                         Value::Int(i) => i,
                         _ => unreachable!(),
                     };
-                    let lhs = match lhs_value {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
+                    let lhs = lhs_value.as_int().unwrap();
 
                     if lhs <= rhs {
                         if any {
@@ -210,37 +195,40 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::In => match (lhs_value, &self.rhs) {
-                    (Value::IpAddr(l), Value::IpCidr(r)) => {
-                        if r.contains(l) {
-                            matched = true;
-                            if any {
-                                return true;
-                            }
+                BinaryOperator::In => {
+                    let rhs = match &self.rhs {
+                        Value::IpCidr(r) => r,
+                        _ => unreachable!(),
+                    };
+                    let lhs = lhs_value.as_ipaddr().unwrap();
+
+                    if rhs.contains(lhs) {
+                        matched = true;
+                        if any {
+                            return true;
                         }
                     }
-                    _ => unreachable!(),
-                },
-                BinaryOperator::NotIn => match (lhs_value, &self.rhs) {
-                    (Value::IpAddr(l), Value::IpCidr(r)) => {
-                        if !r.contains(l) {
-                            matched = true;
-                            if any {
-                                return true;
-                            }
+                }
+                BinaryOperator::NotIn => {
+                    let rhs = match &self.rhs {
+                        Value::IpCidr(r) => r,
+                        _ => unreachable!(),
+                    };
+                    let lhs = lhs_value.as_ipaddr().unwrap();
+
+                    if !rhs.contains(lhs) {
+                        matched = true;
+                        if any {
+                            return true;
                         }
                     }
-                    _ => unreachable!(),
-                },
+                }
                 BinaryOperator::Contains => {
                     let rhs = match &self.rhs {
                         Value::String(s) => s,
                         _ => unreachable!(),
                     };
-                    let lhs = match lhs_value {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
+                    let lhs = lhs_value.as_string().unwrap();
 
                     if lhs.contains(rhs) {
                         if any {
