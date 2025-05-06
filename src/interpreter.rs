@@ -106,10 +106,7 @@ impl Execute for Predicate {
                         Value::String(s) => s,
                         _ => unreachable!(),
                     };
-                    let lhs = match lhs_value {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
+                    let lhs = lhs_value.as_string().unwrap();
 
                     if lhs.starts_with(rhs) {
                         m.matches
