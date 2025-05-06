@@ -87,38 +87,38 @@ impl Value {
 // when we call it as its correct value
 impl Value {
     pub fn as_str(&self) -> Option<&str> {
-        if let Value::String(s) = self {
-            return Some(s.as_str());
-        }
-        None
+        let Value::String(s) = self else {
+            return None;
+        };
+        Some(s.as_str())
     }
 
     pub fn as_regex(&self) -> Option<&Regex> {
-        if let Value::Regex(r) = self {
-            return Some(r);
-        }
-        None
+        let Value::Regex(r) = self else {
+            return None;
+        };
+        Some(r)
     }
 
     pub fn as_int(&self) -> Option<i64> {
-        if let Value::Int(i) = self {
-            return Some(*i);
-        }
-        None
+        let Value::Int(i) = self else {
+            return None;
+        };
+        Some(*i)
     }
 
     pub fn as_ipaddr(&self) -> Option<&IpAddr> {
-        if let Value::IpAddr(a) = self {
-            return Some(a);
-        }
-        None
+        let Value::IpAddr(a) = self else {
+            return None;
+        };
+        Some(a)
     }
 
     pub fn as_ipcidr(&self) -> Option<&IpCidr> {
-        if let Value::IpCidr(c) = self {
-            return Some(c);
-        }
-        None
+        let Value::IpCidr(c) = self else {
+            return None;
+        };
+        Some(c)
     }
 }
 
