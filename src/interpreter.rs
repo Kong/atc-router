@@ -102,11 +102,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Prefix => {
-                    let rhs = match &self.rhs {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
                     let lhs = lhs_value.as_string().unwrap();
+                    let rhs = self.rhs.as_string().unwrap();
 
                     if lhs.starts_with(rhs) {
                         m.matches
@@ -119,11 +116,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Postfix => {
-                    let rhs = match &self.rhs {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
                     let lhs = lhs_value.as_string().unwrap();
+                    let rhs = self.rhs.as_string().unwrap();
 
                     if lhs.ends_with(rhs) {
                         m.matches
@@ -136,11 +130,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Greater => {
-                    let rhs = match &self.rhs {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
                     let lhs = lhs_value.as_int().unwrap();
+                    let rhs = self.rhs.as_int().unwrap();
 
                     if lhs > rhs {
                         if any {
@@ -151,11 +142,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::GreaterOrEqual => {
-                    let rhs = match &self.rhs {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
                     let lhs = lhs_value.as_int().unwrap();
+                    let rhs = self.rhs.as_int().unwrap();
 
                     if lhs >= rhs {
                         if any {
@@ -166,11 +154,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Less => {
-                    let rhs = match &self.rhs {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
                     let lhs = lhs_value.as_int().unwrap();
+                    let rhs = self.rhs.as_int().unwrap();
 
                     if lhs < rhs {
                         if any {
@@ -181,11 +166,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::LessOrEqual => {
-                    let rhs = match &self.rhs {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
                     let lhs = lhs_value.as_int().unwrap();
+                    let rhs = self.rhs.as_int().unwrap();
 
                     if lhs <= rhs {
                         if any {
@@ -224,11 +206,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Contains => {
-                    let rhs = match &self.rhs {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
                     let lhs = lhs_value.as_string().unwrap();
+                    let rhs = self.rhs.as_string().unwrap();
 
                     if lhs.contains(rhs) {
                         if any {
