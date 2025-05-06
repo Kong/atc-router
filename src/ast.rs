@@ -81,10 +81,19 @@ impl Value {
             Value::Regex(_) => Type::Regex,
         }
     }
+}
 
+impl Value {
     pub fn as_string(&self) -> Option<&String> {
         if let Value::String(s) = self {
             return Some(s);
+        }
+        None
+    }
+
+    pub fn as_regex(&self) -> Option<&Regex> {
+        if let Value::Regex(r) = self {
+            return Some(r);
         }
         None
     }

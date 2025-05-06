@@ -67,11 +67,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Regex => {
-                    let rhs = match &self.rhs {
-                        Value::Regex(r) => r,
-                        _ => unreachable!(),
-                    };
                     let lhs = lhs_value.as_string().unwrap();
+                    let rhs = self.rhs.as_regex().unwrap();
 
                     if rhs.is_match(lhs) {
                         let reg_cap = rhs.captures(lhs).unwrap();
