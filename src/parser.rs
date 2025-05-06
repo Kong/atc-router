@@ -238,6 +238,7 @@ fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
         op,
     })
 }
+
 // transform_func = { ident ~ "(" ~ lhs ~ ")" }
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_transform_func(pair: Pair<Rule>) -> ParseResult<Lhs> {
