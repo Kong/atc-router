@@ -188,23 +188,23 @@ impl Execute for Predicate {
                     let rhs = get_op_value!(&self.rhs, Value::IpCidr);
 
                     if rhs.contains(lhs) {
-                      matched = true;
-                      if any {
-                        return true;
-                      }
+                        matched = true;
+                        if any {
+                            return true;
+                        }
                     }
-                },
+                }
                 BinaryOperator::NotIn => {
                     let lhs = get_op_value!(lhs_value, Value::IpAddr);
                     let rhs = get_op_value!(&self.rhs, Value::IpCidr);
 
-                      if !rhs.contains(lhs) {
-                          matched = true;
-                          if any {
-                              return true;
-                          }
-                      }
-                },
+                    if !rhs.contains(lhs) {
+                        matched = true;
+                        if any {
+                            return true;
+                        }
+                    }
+                }
                 BinaryOperator::Contains => {
                     let lhs = get_op_value!(lhs_value, Value::String);
                     let rhs = get_op_value!(&self.rhs, Value::String);
