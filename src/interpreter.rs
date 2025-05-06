@@ -34,13 +34,10 @@ impl Execute for Predicate {
             let lhs_value_transformed;
 
             if lower {
-                match lhs_value {
-                    Value::String(s) => {
-                        lhs_value_transformed = Value::String(s.to_lowercase());
-                        lhs_value = &lhs_value_transformed;
-                    }
-                    _ => unreachable!(),
-                }
+                let s = lhs_value.as_str().unwrap();
+
+                lhs_value_transformed = Value::String(s.to_lowercase());
+                lhs_value = &lhs_value_transformed;
             }
 
             let mut matched = false;
