@@ -111,6 +111,13 @@ impl Value {
         }
         None
     }
+
+    pub fn as_ipcidr(&self) -> Option<&IpCidr> {
+        if let Value::IpCidr(c) = self {
+            return Some(c);
+        }
+        None
+    }
 }
 
 impl From<String> for Value {

@@ -175,11 +175,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::In => {
-                    let rhs = match &self.rhs {
-                        Value::IpCidr(r) => r,
-                        _ => unreachable!(),
-                    };
                     let lhs = lhs_value.as_ipaddr().unwrap();
+                    let rhs = self.rhs.as_ipcidr().unwrap();
 
                     if rhs.contains(lhs) {
                         matched = true;
@@ -189,11 +186,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::NotIn => {
-                    let rhs = match &self.rhs {
-                        Value::IpCidr(r) => r,
-                        _ => unreachable!(),
-                    };
                     let lhs = lhs_value.as_ipaddr().unwrap();
+                    let rhs = self.rhs.as_ipcidr().unwrap();
 
                     if !rhs.contains(lhs) {
                         matched = true;
