@@ -84,7 +84,7 @@ impl Value {
 }
 
 impl Value {
-    pub fn as_string(&self) -> Option<&str> {
+    pub fn as_str(&self) -> Option<&str> {
         if let Value::String(s) = self {
             return Some(s.as_str());
         }

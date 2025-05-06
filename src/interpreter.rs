@@ -67,7 +67,7 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Regex => {
-                    let lhs = lhs_value.as_string().unwrap();
+                    let lhs = lhs_value.as_str().unwrap();
                     let rhs = self.rhs.as_regex().unwrap();
 
                     if rhs.is_match(lhs) {
@@ -99,8 +99,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Prefix => {
-                    let lhs = lhs_value.as_string().unwrap();
-                    let rhs = self.rhs.as_string().unwrap();
+                    let lhs = lhs_value.as_str().unwrap();
+                    let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.starts_with(rhs) {
                         m.matches
@@ -113,8 +113,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Postfix => {
-                    let lhs = lhs_value.as_string().unwrap();
-                    let rhs = self.rhs.as_string().unwrap();
+                    let lhs = lhs_value.as_str().unwrap();
+                    let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.ends_with(rhs) {
                         m.matches
@@ -197,8 +197,8 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Contains => {
-                    let lhs = lhs_value.as_string().unwrap();
-                    let rhs = self.rhs.as_string().unwrap();
+                    let lhs = lhs_value.as_str().unwrap();
+                    let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.contains(rhs) {
                         if any {
