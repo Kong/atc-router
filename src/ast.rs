@@ -81,6 +81,27 @@ impl Value {
             Value::Regex(_) => Type::Regex,
         }
     }
+
+    pub fn as_string(self) -> Option<String> {
+        if let Value::String(s) = self {
+            return Some(s);
+        }
+        None
+    }
+
+    pub fn as_int(self) -> Option<i64> {
+        if let Value::Int(i) = self {
+            return Some(i);
+        }
+        None
+    }
+
+    pub fn as_ipaddr(self) -> Option<IpAddr> {
+        if let Value::IpAddr(a) = self {
+            return Some(a);
+        }
+        None
+    }
 }
 
 impl From<String> for Value {
