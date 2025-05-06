@@ -1,4 +1,4 @@
-use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Value, Type};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Type, Value};
 use crate::context::{Context, Match};
 
 pub trait Execute {
