@@ -71,10 +71,7 @@ impl Execute for Predicate {
                         Value::Regex(r) => r,
                         _ => unreachable!(),
                     };
-                    let lhs = match lhs_value {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
+                    let lhs = lhs_value.as_string().unwrap();
 
                     if rhs.is_match(lhs) {
                         let reg_cap = rhs.captures(lhs).unwrap();
