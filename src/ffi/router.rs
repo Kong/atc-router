@@ -80,13 +80,13 @@ pub unsafe extern "C" fn router_free(router: *mut Router) {
 ///
 /// - `router` must be a valid pointer returned by [`router_new`].
 /// - `uuid` must be a valid pointer to a C-style string, must be properly aligned,
-///    and must not have '\0' in the middle.
+///   and must not have '\0' in the middle.
 /// - `atc` must be a valid pointer to a C-style string, must be properly aligned,
-///    and must not have '\0' in the middle.
+///   and must not have '\0' in the middle.
 /// - `errbuf` must be valid to read and write for `errbuf_len * size_of::<u8>()` bytes,
-///    and it must be properly aligned.
+///   and it must be properly aligned.
 /// - `errbuf_len` must be valid to read and write for `size_of::<usize>()` bytes,
-///    and it must be properly aligned.
+///   and it must be properly aligned.
 #[no_mangle]
 pub unsafe extern "C" fn router_add_matcher(
     router: &mut Router,
@@ -135,7 +135,7 @@ pub unsafe extern "C" fn router_add_matcher(
 ///
 /// - `router` must be a valid pointer returned by [`router_new`].
 /// - `uuid` must be a valid pointer to a C-style string, must be properly aligned,
-///    and must not have '\0' in the middle.
+///   and must not have '\0' in the middle.
 #[no_mangle]
 pub unsafe extern "C" fn router_remove_matcher(
     router: &mut Router,
@@ -165,8 +165,8 @@ pub unsafe extern "C" fn router_remove_matcher(
 ///
 /// - `router` must be a valid pointer returned by [`router_new`].
 /// - `context` must be a valid pointer returned by [`context_new`],
-///    and must be reset by [`context_reset`] before calling this function
-///    if you want to reuse the same context for multiple matches.
+///   and must be reset by [`context_reset`] before calling this function
+///   if you want to reuse the same context for multiple matches.
 #[no_mangle]
 pub unsafe extern "C" fn router_execute(router: &Router, context: &mut Context) -> bool {
     router.execute(context)
@@ -180,9 +180,9 @@ pub unsafe extern "C" fn router_execute(router: &Router, context: &mut Context) 
 ///
 /// - `router`: a pointer to the [`Router`] object returned by [`router_new`].
 /// - `fields`: a pointer to an array of pointers to the field names
-///    (NOT C-style strings) that are actually used in the router, which will be filled in.
-///    if `fields` is `NULL`, this function will only return the number of fields used
-///    in the router.
+///   (NOT C-style strings) that are actually used in the router, which will be filled in.
+///   if `fields` is `NULL`, this function will only return the number of fields used
+///   in the router.
 /// - `fields_len`: a pointer to an array of the length of each field name.
 ///
 /// # Lifetimes

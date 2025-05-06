@@ -12,7 +12,7 @@ pub struct Match {
 
 impl Match {
     pub fn new() -> Self {
-        Match {
+        Self {
             uuid: Uuid::default(),
             matches: FnvHashMap::default(),
             captures: FnvHashMap::default(),

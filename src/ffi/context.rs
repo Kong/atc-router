@@ -158,8 +158,8 @@ pub unsafe extern "C" fn context_reset(context: &mut Context) {
 /// Violating any of the following constraints will result in undefined behavior:
 ///
 /// - `context` must be a valid pointer returned by [`context_new`],
-///    must be passed to [`router_execute`] before calling this function,
-///    and must not be reset by [`context_reset`] before calling this function.
+///   must be passed to [`router_execute`] before calling this function,
+///   and must not be reset by [`context_reset`] before calling this function.
 /// - If `uuid_hex` is not `NULL`, `uuid_hex` must be valid to read and write for
 ///   `16 * size_of::<u8>()` bytes, and it must be properly aligned.
 /// - If `matched_field` is not `NULL`,
