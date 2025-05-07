@@ -83,8 +83,6 @@ impl Value {
     }
 }
 
-// as_xxx().unwrap is safe and None is unreachable
-// when we call it as its correct value
 impl Value {
     pub fn as_str(&self) -> Option<&str> {
         let Value::String(s) = self else {

@@ -1,4 +1,4 @@
-use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Type, Value};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Value};
 use crate::context::{Context, Match};
 
 pub trait Execute {
@@ -34,8 +34,9 @@ impl Execute for Predicate {
             let lhs_value_transformed;
 
             if lower {
-                debug_assert!(lhs_value.my_type() == Type::String);
-
+                // SAFETY: this only panic if and only if
+                // the semantic checking didn't catch the mismatched types,
+                // which is a bug.
                 let s = lhs_value.as_str().unwrap();
 
                 lhs_value_transformed = Value::String(s.to_lowercase());
@@ -66,9 +67,9 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Regex => {
-                    debug_assert!(lhs_value.my_type() == Type::String);
-                    debug_assert!(self.rhs.my_type() == Type::Regex);
-
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
                     let lhs = lhs_value.as_str().unwrap();
                     let rhs = self.rhs.as_regex().unwrap();
 
@@ -101,9 +102,9 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Prefix => {
-                    debug_assert!(lhs_value.my_type() == Type::String);
-                    debug_assert!(self.rhs.my_type() == Type::String);
-
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
                     let lhs = lhs_value.as_str().unwrap();
                     let rhs = self.rhs.as_str().unwrap();
 
@@ -118,9 +119,9 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Postfix => {
-                    debug_assert!(lhs_value.my_type() == Type::String);
-                    debug_assert!(self.rhs.my_type() == Type::String);
-
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
                     let lhs = lhs_value.as_str().unwrap();
                     let rhs = self.rhs.as_str().unwrap();
 
@@ -135,9 +136,9 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Greater => {
-                    debug_assert!(lhs_value.my_type() == Type::Int);
-                    debug_assert!(self.rhs.my_type() == Type::Int);
-
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
                     let lhs = lhs_value.as_int().unwrap();
                     let rhs = self.rhs.as_int().unwrap();
 
@@ -150,9 +151,9 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::GreaterOrEqual => {
-                    debug_assert!(lhs_value.my_type() == Type::Int);
-                    debug_assert!(self.rhs.my_type() == Type::Int);
-
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
                     let lhs = lhs_value.as_int().unwrap();
                     let rhs = self.rhs.as_int().unwrap();
 
@@ -165,9 +166,9 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Less => {
-                    debug_assert!(lhs_value.my_type() == Type::Int);
-                    debug_assert!(self.rhs.my_type() == Type::Int);
-
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
                     let lhs = lhs_value.as_int().unwrap();
                     let rhs = self.rhs.as_int().unwrap();
 
@@ -180,9 +181,9 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::LessOrEqual => {
-                    debug_assert!(lhs_value.my_type() == Type::Int);
-                    debug_assert!(self.rhs.my_type() == Type::Int);
-
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
                     let lhs = lhs_value.as_int().unwrap();
                     let rhs = self.rhs.as_int().unwrap();
 
@@ -195,9 +196,9 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::In => {
-                    debug_assert!(lhs_value.my_type() == Type::IpAddr);
-                    debug_assert!(self.rhs.my_type() == Type::IpCidr);
-
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
                     let lhs = lhs_value.as_ipaddr().unwrap();
                     let rhs = self.rhs.as_ipcidr().unwrap();
 
@@ -209,9 +210,9 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::NotIn => {
-                    debug_assert!(lhs_value.my_type() == Type::IpAddr);
-                    debug_assert!(self.rhs.my_type() == Type::IpCidr);
-
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
                     let lhs = lhs_value.as_ipaddr().unwrap();
                     let rhs = self.rhs.as_ipcidr().unwrap();
 
@@ -223,9 +224,9 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Contains => {
-                    debug_assert!(lhs_value.my_type() == Type::String);
-                    debug_assert!(self.rhs.my_type() == Type::String);
-
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
                     let lhs = lhs_value.as_str().unwrap();
                     let rhs = self.rhs.as_str().unwrap();
 
