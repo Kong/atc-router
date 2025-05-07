@@ -7,10 +7,10 @@ use crate::semantics::{FieldCounter, Validate};
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct MatcherKey(usize, Uuid);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Router<'a> {
     schema: &'a Schema,
     matchers: BTreeMap<MatcherKey, Expression>,
