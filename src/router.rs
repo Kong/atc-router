@@ -46,21 +46,21 @@ impl<'a> Router<'a> {
     pub fn remove_matcher(&mut self, priority: usize, uuid: Uuid) -> bool {
         let key = MatcherKey(priority, uuid);
 
-        if let Some(ast) = self.matchers.remove(&key) {
-            ast.remove_from_counter(&mut self.fields);
-            return true;
-        }
+        let Some(ast) = self.matchers.remove(&key) else {
+            return false;
+        };
 
-        false
+        ast.remove_from_counter(&mut self.fields);
+        true
     }
 
     pub fn execute(&self, context: &mut Context) -> bool {
-        if let Some(m) = self.try_match(context) {
-            context.result = Some(m);
-            true
-        } else {
-            false
-        }
+        let Some(m) = self.try_match(context) else {
+            return false;
+        };
+
+        context.result = Some(m);
+        true
     }
 
     /// Note that unlike `execute`, this doesn't set `Context.result`
