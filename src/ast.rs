@@ -83,6 +83,43 @@ impl Value {
     }
 }
 
+impl Value {
+    pub fn as_str(&self) -> Option<&str> {
+        let Value::String(s) = self else {
+            return None;
+        };
+        Some(s.as_str())
+    }
+
+    pub fn as_regex(&self) -> Option<&Regex> {
+        let Value::Regex(r) = self else {
+            return None;
+        };
+        Some(r)
+    }
+
+    pub fn as_int(&self) -> Option<i64> {
+        let Value::Int(i) = self else {
+            return None;
+        };
+        Some(*i)
+    }
+
+    pub fn as_ipaddr(&self) -> Option<&IpAddr> {
+        let Value::IpAddr(a) = self else {
+            return None;
+        };
+        Some(a)
+    }
+
+    pub fn as_ipcidr(&self) -> Option<&IpCidr> {
+        let Value::IpCidr(c) = self else {
+            return None;
+        };
+        Some(c)
+    }
+}
+
 impl From<String> for Value {
     fn from(v: String) -> Self {
         Value::String(v)
