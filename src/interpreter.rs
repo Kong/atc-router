@@ -312,6 +312,42 @@ fn test_predicate() {
 
     assert!(p.execute(&mut ctx, &mut mat));
 
+    // test default ctx
+    let lhs_values = vec![
+        Value::String("foofoo".to_string()),
+        Value::String("foobar".to_string()),
+        Value::String("foocar".to_string()),
+        Value::String("fooban".to_string()),
+    ];
+
+    for v in lhs_values {
+        ctx.add_value("my_key", v);
+    }
+
+    // random() lower bound
+    let p = Predicate {
+        lhs: ast::Lhs {
+            var_name: "random()".to_string(),
+            transformations: vec![],
+        },
+        rhs: Value::Int(0),
+        op: BinaryOperator::GreaterOrEqual,
+    };
+
+    assert!(p.execute(&mut ctx, &mut mat));
+
+    // random() upper bound
+    let p = Predicate {
+        lhs: ast::Lhs {
+            var_name: "random()".to_string(),
+            transformations: vec![],
+        },
+        rhs: Value::Int(100),
+        op: BinaryOperator::LessOrEqual,
+    };
+
+    assert!(p.execute(&mut ctx, &mut mat));
+
     // check if all values match ends_with foo -- should be false
     let p = Predicate {
         lhs: ast::Lhs {
