@@ -77,7 +77,7 @@ impl Validate for Expression {
             Expression::Predicate(p) => {
                 // lhs and rhs must be the same type
                 let Some(lhs_type) = p.lhs.my_type(schema) else {
-                    return Err("Unknown LHS field".to_string());
+                    return raise_err("Unknown LHS field");
                 };
 
                 if p.op != BinaryOperator::Regex // Regex RHS is always Regex, and LHS is always String
