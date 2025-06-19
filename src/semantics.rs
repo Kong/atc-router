@@ -3,18 +3,19 @@ use crate::schema::Schema;
 use std::collections::HashMap;
 
 type ValidationResult = Result<(), String>;
+type ValidationHashMap = HashMap<String, usize>;
 
 pub trait Validate {
     fn validate(&self, schema: &Schema) -> ValidationResult;
 }
 
 pub trait FieldCounter {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>);
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>);
+    fn add_to_counter(&self, map: &mut ValidationHashMap);
+    fn remove_from_counter(&self, map: &mut ValidationHashMap);
 }
 
 impl FieldCounter for Expression {
-    fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
+    fn add_to_counter(&self, map: &mut ValidationHashMap) {
         use Expression::*;
         use LogicalExpression::*;
 
@@ -34,7 +35,7 @@ impl FieldCounter for Expression {
         }
     }
 
-    fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
+    fn remove_from_counter(&self, map: &mut ValidationHashMap) {
         use Expression::*;
         use LogicalExpression::*;
 
