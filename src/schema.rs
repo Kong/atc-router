@@ -38,5 +38,19 @@ mod tests {
         assert_eq!(s.type_of("cidr"), Some(&Type::IpCidr));
         assert_eq!(s.type_of("r"), Some(&Type::Regex));
         assert_eq!(s.type_of("i"), Some(&Type::Int));
+
+        assert_eq!(s.type_of("unknown"), None);
+    }
+
+    #[test]
+    fn wildcard_fields() {
+        let mut s = Schema::default();
+
+        s.add_field("a.*", Type::String);
+
+        assert_eq!(s.type_of("a.b"), Some(&Type::String));
+        assert_eq!(s.type_of("a.xxx"), Some(&Type::String));
+
+        assert_eq!(s.type_of("a.x.y"), None);
     }
 }
