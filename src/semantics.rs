@@ -93,7 +93,7 @@ impl Validate for Expression {
                 // LHS transformations only makes sense with string fields
                 if lower && lhs_type != &Type::String {
                     return raise_err(
-                        "lower-case transformation function only supported with String type fields"
+                        "lower-case transformation function only supported with String type fields",
                     );
                 }
 
