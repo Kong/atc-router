@@ -64,22 +64,17 @@ fn raise_err(msg: &str) -> ValidationResult {
     Err(msg.to_string())
 }
 
-const MSG_UNKNOWN_LHS: &str =
-    "Unknown LHS field";
-const MSG_TYPE_MISMATCH_LHS_RHS: &str =
-    "Type mismatch between the LHS and RHS values of predicate";
+const MSG_UNKNOWN_LHS: &str = "Unknown LHS field";
+const MSG_TYPE_MISMATCH_LHS_RHS: &str = "Type mismatch between the LHS and RHS values of predicate";
 const MSG_LOWER_ONLY_FOR_STRING: &str =
     "lower-case transformation function only supported with String type fields";
-const MSG_REGEX_ONLY_FOR_STRING: &str =
-    "Regex operators only supports string operands";
+const MSG_REGEX_ONLY_FOR_STRING: &str = "Regex operators only supports string operands";
 const MSG_PREFFIX_POSTFIX_ONLY_FOR_STRING: &str =
     "Prefix/Postfix operators only supports string operands";
 const MSG_ONLY_FOR_INT: &str =
     "Greater/GreaterOrEqual/Less/LessOrEqual operators only supports integer operands";
-const MSG_ONLY_FOR_CIDR: &str =
-    "In/NotIn operators only supports IP in CIDR";
-const MSG_CONTAINS_ONLY_FOR_CIDR: &str =
-    "Contains operator only supports string operands";
+const MSG_ONLY_FOR_CIDR: &str = "In/NotIn operators only supports IP in CIDR";
+const MSG_CONTAINS_ONLY_FOR_CIDR: &str = "Contains operator only supports string operands";
 
 impl Validate for Expression {
     fn validate(&self, schema: &Schema) -> ValidationResult {
@@ -124,49 +119,33 @@ impl Validate for Expression {
                 }
 
                 match p.op {
-                    Equals | NotEquals => { Ok(()) }
+                    Equals | NotEquals => Ok(()),
                     Regex => {
                         // unchecked path above
                         match lhs_type {
-                          Type::String => {
-                              Ok(())
-                          }
-                          _ => raise_err(MSG_REGEX_ONLY_FOR_STRING)
+                            Type::String => Ok(()),
+                            _ => raise_err(MSG_REGEX_ONLY_FOR_STRING),
                         }
                     }
-                    Prefix | Postfix => {
-                        match p.rhs {
-                            Value::String(_) => {
-                                Ok(())
-                            }
-                            _ => raise_err(MSG_PREFFIX_POSTFIX_ONLY_FOR_STRING)
-                        }
-                    }
-                    Greater | GreaterOrEqual | Less | LessOrEqual => {
-                        match p.rhs {
-                            Value::Int(_) => {
-                                Ok(())
-                            }
-                            _ => raise_err(MSG_ONLY_FOR_INT)
-                        }
-                    }
+                    Prefix | Postfix => match p.rhs {
+                        Value::String(_) => Ok(()),
+                        _ => raise_err(MSG_PREFFIX_POSTFIX_ONLY_FOR_STRING),
+                    },
+                    Greater | GreaterOrEqual | Less | LessOrEqual => match p.rhs {
+                        Value::Int(_) => Ok(()),
+                        _ => raise_err(MSG_ONLY_FOR_INT),
+                    },
                     In | NotIn => {
                         // unchecked path above
-                        match (lhs_type, &p.rhs,) {
-                            (Type::IpAddr, Value::IpCidr(_)) => {
-                                Ok(())
-                            }
-                            _ => raise_err(MSG_ONLY_FOR_CIDR)
+                        match (lhs_type, &p.rhs) {
+                            (Type::IpAddr, Value::IpCidr(_)) => Ok(()),
+                            _ => raise_err(MSG_ONLY_FOR_CIDR),
                         }
                     }
-                    Contains => {
-                        match p.rhs {
-                            Value::String(_) => {
-                                Ok(())
-                            }
-                            _ => raise_err(MSG_CONTAINS_ONLY_FOR_CIDR)
-                        }
-                    }
+                    Contains => match p.rhs {
+                        Value::String(_) => Ok(()),
+                        _ => raise_err(MSG_CONTAINS_ONLY_FOR_CIDR),
+                    },
                 }
             }
         }
