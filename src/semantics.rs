@@ -112,10 +112,11 @@ impl Validate for Expression {
                     Equals | NotEquals => { Ok(()) }
                     Regex => {
                         // unchecked path above
-                        if lhs_type == &Type::String {
-                            Ok(())
-                        } else {
-                            raise_err("Regex operators only supports string operands")
+                        match lhs_type {
+                          Type::String => {
+                              Ok(())
+                          }
+                          _ => raise_err("Regex operators only supports string operands")
                         }
                     }
                     Prefix | Postfix => {
