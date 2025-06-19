@@ -64,6 +64,23 @@ fn raise_err(msg: &str) -> ValidationResult {
     Err(msg.to_string())
 }
 
+const MSG_UNKNOWN_LHS: &str =
+    "Unknown LHS field";
+const MSG_TYPE_MISMATCH_LHS_RHS: &str =
+    "Type mismatch between the LHS and RHS values of predicate";
+const MSG_LOWER_ONLY_FOR_STRING: &str =
+    "lower-case transformation function only supported with String type fields";
+const MSG_REGEX_ONLY_FOR_STRING: &str =
+    "Regex operators only supports string operands";
+const MSG_PREFFIX_POSTFIX_ONLY_FOR_STRING: &str =
+    "Prefix/Postfix operators only supports string operands";
+const MSG_ONLY_FOR_INT: &str =
+    "Greater/GreaterOrEqual/Less/LessOrEqual operators only supports integer operands";
+const MSG_ONLY_FOR_CIDR: &str =
+    "In/NotIn operators only supports IP in CIDR";
+const MSG_CONTAINS_ONLY_FOR_CIDR: &str =
+    "Contains operator only supports string operands";
+
 impl Validate for Expression {
     fn validate(&self, schema: &Schema) -> ValidationResult {
         use Expression::*;
@@ -88,7 +105,7 @@ impl Validate for Expression {
 
                 // lhs and rhs must be the same type
                 let Some(lhs_type) = p.lhs.my_type(schema) else {
-                    return raise_err("Unknown LHS field");
+                    return raise_err(MSG_UNKNOWN_LHS);
                 };
 
                 if p.op != Regex // Regex RHS is always Regex, and LHS is always String
@@ -96,16 +113,14 @@ impl Validate for Expression {
                     && p.op != NotIn
                     && lhs_type != &p.rhs.my_type()
                 {
-                    return raise_err("Type mismatch between the LHS and RHS values of predicate");
+                    return raise_err(MSG_TYPE_MISMATCH_LHS_RHS);
                 }
 
                 let (lower, _any) = p.lhs.get_transformations();
 
                 // LHS transformations only makes sense with string fields
                 if lower && lhs_type != &Type::String {
-                    return raise_err(
-                        "lower-case transformation function only supported with String type fields",
-                    );
+                    return raise_err(MSG_LOWER_ONLY_FOR_STRING);
                 }
 
                 match p.op {
@@ -116,7 +131,7 @@ impl Validate for Expression {
                           Type::String => {
                               Ok(())
                           }
-                          _ => raise_err("Regex operators only supports string operands")
+                          _ => raise_err(MSG_REGEX_ONLY_FOR_STRING)
                         }
                     }
                     Prefix | Postfix => {
@@ -124,7 +139,7 @@ impl Validate for Expression {
                             Value::String(_) => {
                                 Ok(())
                             }
-                            _ => raise_err("Regex/Prefix/Postfix operators only supports string operands")
+                            _ => raise_err(MSG_PREFFIX_POSTFIX_ONLY_FOR_STRING)
                         }
                     }
                     Greater | GreaterOrEqual | Less | LessOrEqual => {
@@ -132,7 +147,7 @@ impl Validate for Expression {
                             Value::Int(_) => {
                                 Ok(())
                             }
-                            _ => raise_err("Greater/GreaterOrEqual/Lesser/LesserOrEqual operators only supports integer operands")
+                            _ => raise_err(MSG_ONLY_FOR_INT)
                         }
                     }
                     In | NotIn => {
@@ -141,7 +156,7 @@ impl Validate for Expression {
                             (Type::IpAddr, Value::IpCidr(_)) => {
                                 Ok(())
                             }
-                            _ => raise_err("In/NotIn operators only supports IP in CIDR")
+                            _ => raise_err(MSG_ONLY_FOR_CIDR)
                         }
                     }
                     Contains => {
@@ -149,7 +164,7 @@ impl Validate for Expression {
                             Value::String(_) => {
                                 Ok(())
                             }
-                            _ => raise_err("Contains operator only supports string operands")
+                            _ => raise_err(MSG_CONTAINS_ONLY_FOR_CIDR)
                         }
                     }
                 }
