@@ -17,11 +17,7 @@ impl FieldCounter for Expression {
     fn add_to_counter(&self, map: &mut HashMap<String, usize>) {
         match self {
             Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) => {
-                    l.add_to_counter(map);
-                    r.add_to_counter(map);
-                }
-                LogicalExpression::Or(l, r) => {
+                LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
                     l.add_to_counter(map);
                     r.add_to_counter(map);
                 }
@@ -38,11 +34,7 @@ impl FieldCounter for Expression {
     fn remove_from_counter(&self, map: &mut HashMap<String, usize>) {
         match self {
             Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) => {
-                    l.remove_from_counter(map);
-                    r.remove_from_counter(map);
-                }
-                LogicalExpression::Or(l, r) => {
+                LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
                     l.remove_from_counter(map);
                     r.remove_from_counter(map);
                 }
