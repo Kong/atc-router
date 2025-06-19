@@ -55,7 +55,7 @@ impl FieldCounter for Expression {
 }
 
 fn raise_err(msg: &str) -> ValidationResult {
-    return Err(msg.to_string())
+    Err(msg.to_string())
 }
 
 impl Validate for Expression {
@@ -93,7 +93,8 @@ impl Validate for Expression {
                 // LHS transformations only makes sense with string fields
                 if lower && lhs_type != &Type::String {
                     return raise_err(
-                        "lower-case transformation function only supported with String type fields");
+                        "lower-case transformation function only supported with String type fields"
+                    );
                 }
 
                 match p.op {
@@ -105,7 +106,7 @@ impl Validate for Expression {
                         } else {
                             raise_err("Regex operators only supports string operands")
                         }
-                    },
+                    }
                     BinaryOperator::Prefix | BinaryOperator::Postfix => {
                         match p.rhs {
                             Value::String(_) => {
@@ -113,7 +114,7 @@ impl Validate for Expression {
                             }
                             _ => raise_err("Regex/Prefix/Postfix operators only supports string operands")
                         }
-                    },
+                    }
                     BinaryOperator::Greater | BinaryOperator::GreaterOrEqual | BinaryOperator::Less | BinaryOperator::LessOrEqual => {
                         match p.rhs {
                             Value::Int(_) => {
@@ -121,7 +122,7 @@ impl Validate for Expression {
                             }
                             _ => raise_err("Greater/GreaterOrEqual/Lesser/LesserOrEqual operators only supports integer operands")
                         }
-                    },
+                    }
                     BinaryOperator::In | BinaryOperator::NotIn => {
                         // unchecked path above
                         match (lhs_type, &p.rhs,) {
@@ -130,7 +131,7 @@ impl Validate for Expression {
                             }
                             _ => raise_err("In/NotIn operators only supports IP in CIDR")
                         }
-                    },
+                    }
                     BinaryOperator::Contains => {
                         match p.rhs {
                             Value::String(_) => {
