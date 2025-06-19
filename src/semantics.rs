@@ -70,7 +70,7 @@ const MSG_TYPE_MISMATCH_LHS_RHS: &str = "Type mismatch between the LHS and RHS v
 const MSG_LOWER_ONLY_FOR_STRING: &str =
     "lower-case transformation function only supported with String type fields";
 const MSG_REGEX_ONLY_FOR_STRING: &str = "Regex operators only supports string operands";
-const MSG_PREFFIX_POSTFIX_ONLY_FOR_STRING: &str =
+const MSG_PREFIX_POSTFIX_ONLY_FOR_STRING: &str =
     "Prefix/Postfix operators only supports string operands";
 const MSG_ONLY_FOR_INT: &str =
     "Greater/GreaterOrEqual/Less/LessOrEqual operators only supports integer operands";
@@ -130,7 +130,7 @@ impl Validate for Expression {
                     }
                     Prefix | Postfix => match p.rhs {
                         Value::String(_) => Ok(()),
-                        _ => raise_err(MSG_PREFFIX_POSTFIX_ONLY_FOR_STRING),
+                        _ => raise_err(MSG_PREFIX_POSTFIX_ONLY_FOR_STRING),
                     },
                     Greater | GreaterOrEqual | Less | LessOrEqual => match p.rhs {
                         Value::Int(_) => Ok(()),
