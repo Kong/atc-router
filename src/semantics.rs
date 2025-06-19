@@ -147,10 +147,10 @@ impl Validate for Expression {
                         Value::String(_) => Ok(()),
                         _ => raise_err(MSG_CONTAINS_ONLY_FOR_CIDR),
                     },
-                }
-            }
-        }
-    }
+                } // match p.op
+            } // Predicate(p)
+        } // match self
+    } // fn validate
 }
 
 #[cfg(test)]
