@@ -207,10 +207,11 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_ipcidr().unwrap();
 
                     if rhs.contains(lhs) {
-                        matched = true;
                         if any {
                             return true;
                         }
+
+                        matched = true;
                     }
                 }
                 NotIn => {
