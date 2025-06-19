@@ -59,11 +59,7 @@ impl Validate for Expression {
         match self {
             Expression::Logical(l) => {
                 match l.as_ref() {
-                    LogicalExpression::And(l, r) => {
-                        l.validate(schema)?;
-                        r.validate(schema)?;
-                    }
-                    LogicalExpression::Or(l, r) => {
+                    LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
                         l.validate(schema)?;
                         r.validate(schema)?;
                     }
@@ -76,11 +72,9 @@ impl Validate for Expression {
             }
             Expression::Predicate(p) => {
                 // lhs and rhs must be the same type
-                let lhs_type = p.lhs.my_type(schema);
-                if lhs_type.is_none() {
+                let Some(lhs_type) = p.lhs.my_type(schema) else {
                     return Err("Unknown LHS field".to_string());
-                }
-                let lhs_type = lhs_type.unwrap();
+                };
 
                 if p.op != BinaryOperator::Regex // Regex RHS is always Regex, and LHS is always String
                     && p.op != BinaryOperator::In // In/NotIn supports IPAddr in IpCidr
