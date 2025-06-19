@@ -33,6 +33,8 @@ impl Execute for Predicate {
         // - all: all values must match (default)
         // - any: ok if any any matched
         for mut lhs_value in lhs_values.iter() {
+            use BinaryOperator::*;
+
             let lhs_value_transformed;
 
             if lower {
@@ -47,7 +49,7 @@ impl Execute for Predicate {
 
             let mut matched = false;
             match self.op {
-                BinaryOperator::Equals => {
+                Equals => {
                     if lhs_value == &self.rhs {
                         m.matches
                             .insert(self.lhs.var_name.clone(), self.rhs.clone());
@@ -59,7 +61,7 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::NotEquals => {
+                NotEquals => {
                     if lhs_value != &self.rhs {
                         if any {
                             return true;
@@ -68,7 +70,7 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::Regex => {
+                Regex => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -103,7 +105,7 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::Prefix => {
+                Prefix => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -120,7 +122,7 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::Postfix => {
+                Postfix => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -137,7 +139,7 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::Greater => {
+                Greater => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -152,7 +154,7 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::GreaterOrEqual => {
+                GreaterOrEqual => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -167,7 +169,7 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::Less => {
+                Less => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -182,7 +184,7 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::LessOrEqual => {
+                LessOrEqual => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -197,7 +199,7 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::In => {
+                In => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -211,7 +213,7 @@ impl Execute for Predicate {
                         }
                     }
                 }
-                BinaryOperator::NotIn => {
+                NotIn => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -225,7 +227,7 @@ impl Execute for Predicate {
                         }
                     }
                 }
-                BinaryOperator::Contains => {
+                Contains => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
