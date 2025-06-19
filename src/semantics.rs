@@ -54,6 +54,10 @@ impl FieldCounter for Expression {
     }
 }
 
+fn raise_err(msg: &str) -> ValidationResult {
+    return Err(msg.to_string())
+}
+
 impl Validate for Expression {
     fn validate(&self, schema: &Schema) -> ValidationResult {
         match self {
@@ -81,19 +85,15 @@ impl Validate for Expression {
                     && p.op != BinaryOperator::NotIn
                     && lhs_type != &p.rhs.my_type()
                 {
-                    return Err(
-                        "Type mismatch between the LHS and RHS values of predicate".to_string()
-                    );
+                    return raise_err("Type mismatch between the LHS and RHS values of predicate");
                 }
 
                 let (lower, _any) = p.lhs.get_transformations();
 
                 // LHS transformations only makes sense with string fields
                 if lower && lhs_type != &Type::String {
-                    return Err(
-                        "lower-case transformation function only supported with String type fields"
-                            .to_string(),
-                    );
+                    return raise_err(
+                        "lower-case transformation function only supported with String type fields");
                 }
 
                 match p.op {
@@ -103,7 +103,7 @@ impl Validate for Expression {
                         if lhs_type == &Type::String {
                             Ok(())
                         } else {
-                            Err("Regex operators only supports string operands".to_string())
+                            raise_err("Regex operators only supports string operands")
                         }
                     },
                     BinaryOperator::Prefix | BinaryOperator::Postfix => {
@@ -111,7 +111,7 @@ impl Validate for Expression {
                             Value::String(_) => {
                                 Ok(())
                             }
-                            _ => Err("Regex/Prefix/Postfix operators only supports string operands".to_string())
+                            _ => raise_err("Regex/Prefix/Postfix operators only supports string operands")
                         }
                     },
                     BinaryOperator::Greater | BinaryOperator::GreaterOrEqual | BinaryOperator::Less | BinaryOperator::LessOrEqual => {
@@ -119,7 +119,7 @@ impl Validate for Expression {
                             Value::Int(_) => {
                                 Ok(())
                             }
-                            _ => Err("Greater/GreaterOrEqual/Lesser/LesserOrEqual operators only supports integer operands".to_string())
+                            _ => raise_err("Greater/GreaterOrEqual/Lesser/LesserOrEqual operators only supports integer operands")
                         }
                     },
                     BinaryOperator::In | BinaryOperator::NotIn => {
@@ -128,7 +128,7 @@ impl Validate for Expression {
                             (Type::IpAddr, Value::IpCidr(_)) => {
                                 Ok(())
                             }
-                            _ => Err("In/NotIn operators only supports IP in CIDR".to_string())
+                            _ => raise_err("In/NotIn operators only supports IP in CIDR")
                         }
                     },
                     BinaryOperator::Contains => {
@@ -136,7 +136,7 @@ impl Validate for Expression {
                             Value::String(_) => {
                                 Ok(())
                             }
-                            _ => Err("Contains operator only supports string operands".to_string())
+                            _ => raise_err("Contains operator only supports string operands")
                         }
                     }
                 }
