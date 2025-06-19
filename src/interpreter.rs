@@ -33,8 +33,6 @@ impl Execute for Predicate {
         // - all: all values must match (default)
         // - any: ok if any any matched
         for mut lhs_value in lhs_values.iter() {
-            use BinaryOperator::*;
-
             let lhs_value_transformed;
 
             if lower {
@@ -48,26 +46,31 @@ impl Execute for Predicate {
             }
 
             let mut matched = false;
+
+            // if any exists we will return immediatelly
+            macro_rules! check_any {
+                () => {
+                    if any {
+                        return true;
+                    }
+                    matched = true;
+                };
+            }
+
+            use BinaryOperator::*;
+
             match self.op {
                 Equals => {
                     if lhs_value == &self.rhs {
                         m.matches
                             .insert(self.lhs.var_name.clone(), self.rhs.clone());
 
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
                 NotEquals => {
                     if lhs_value != &self.rhs {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
                 Regex => {
@@ -98,11 +101,7 @@ impl Execute for Predicate {
                             }
                         }
 
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
                 Prefix => {
@@ -115,11 +114,8 @@ impl Execute for Predicate {
                     if lhs.starts_with(rhs) {
                         m.matches
                             .insert(self.lhs.var_name.clone(), self.rhs.clone());
-                        if any {
-                            return true;
-                        }
 
-                        matched = true;
+                        check_any!();
                     }
                 }
                 Postfix => {
@@ -132,11 +128,8 @@ impl Execute for Predicate {
                     if lhs.ends_with(rhs) {
                         m.matches
                             .insert(self.lhs.var_name.clone(), self.rhs.clone());
-                        if any {
-                            return true;
-                        }
 
-                        matched = true;
+                        check_any!();
                     }
                 }
                 Greater => {
@@ -147,11 +140,7 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_int().unwrap();
 
                     if lhs > rhs {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
                 GreaterOrEqual => {
@@ -162,11 +151,7 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_int().unwrap();
 
                     if lhs >= rhs {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
                 Less => {
@@ -177,11 +162,7 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_int().unwrap();
 
                     if lhs < rhs {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
                 LessOrEqual => {
@@ -192,11 +173,7 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_int().unwrap();
 
                     if lhs <= rhs {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
                 In => {
@@ -207,11 +184,7 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_ipcidr().unwrap();
 
                     if rhs.contains(lhs) {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
                 NotIn => {
@@ -222,11 +195,7 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_ipcidr().unwrap();
 
                     if !rhs.contains(lhs) {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
                 Contains => {
@@ -237,11 +206,7 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.contains(rhs) {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
             } // match
