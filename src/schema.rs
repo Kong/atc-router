@@ -51,6 +51,7 @@ mod tests {
         assert_eq!(s.type_of("a.b"), Some(&Type::String));
         assert_eq!(s.type_of("a.xxx"), Some(&Type::String));
 
+        assert_eq!(s.type_of("aa.xxx"), None);
         assert_eq!(s.type_of("a.x.y"), None);
     }
 }
