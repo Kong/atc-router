@@ -24,7 +24,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn normail_fields() {
+    fn normal_fields() {
         let mut s = Schema::default();
 
         s.add_field("str", Type::String);
