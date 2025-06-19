@@ -18,6 +18,11 @@ impl Match {
             captures: FnvHashMap::default(),
         }
     }
+
+    pub fn reset(&mut self) {
+        self.matches.clear();
+        self.captures.clear();
+    }
 }
 
 impl Default for Match {
