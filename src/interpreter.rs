@@ -7,22 +7,24 @@ pub trait Execute {
 
 impl Execute for Expression {
     fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
+        use Expression::*;
+        use LogicalExpression::*;
+
         match self {
-            Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
-                LogicalExpression::Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
-                LogicalExpression::Not(r) => !r.execute(ctx, m),
+            Logical(l) => match l.as_ref() {
+                And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
+                Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
+                Not(r) => !r.execute(ctx, m),
             },
-            Expression::Predicate(p) => p.execute(ctx, m),
+            Predicate(p) => p.execute(ctx, m),
         }
     }
 }
 
 impl Execute for Predicate {
     fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
-        let lhs_values = match ctx.value_of(&self.lhs.var_name) {
-            None => return false,
-            Some(v) => v,
+        let Some(lhs_values) = ctx.value_of(&self.lhs.var_name) else {
+            return false;
         };
 
         let (lower, any) = self.lhs.get_transformations();
