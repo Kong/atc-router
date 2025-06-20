@@ -16,8 +16,8 @@ pub trait FieldCounter {
 
 impl FieldCounter for Expression {
     fn add_to_counter(&self, map: &mut ValidationHashMap) {
-        use Expression::*;
-        use LogicalExpression::*;
+        use Expression::{Logical, Predicate};
+        use LogicalExpression::{And, Not, Or};
 
         match self {
             Logical(l) => match l.as_ref() {
@@ -36,8 +36,8 @@ impl FieldCounter for Expression {
     }
 
     fn remove_from_counter(&self, map: &mut ValidationHashMap) {
-        use Expression::*;
-        use LogicalExpression::*;
+        use Expression::{Logical, Predicate};
+        use LogicalExpression::{And, Not, Or};
 
         match self {
             Logical(l) => match l.as_ref() {
@@ -79,8 +79,8 @@ const MSG_CONTAINS_ONLY_FOR_CIDR: &str = "Contains operator only supports string
 
 impl Validate for Expression {
     fn validate(&self, schema: &Schema) -> ValidationResult {
-        use Expression::*;
-        use LogicalExpression::*;
+        use Expression::{Logical, Predicate};
+        use LogicalExpression::{And, Not, Or};
 
         match self {
             Logical(l) => {
@@ -97,7 +97,10 @@ impl Validate for Expression {
                 Ok(())
             }
             Predicate(p) => {
-                use BinaryOperator::*;
+                use BinaryOperator::{
+                    Contains, Equals, Greater, GreaterOrEqual, In, Less, LessOrEqual, NotEquals,
+                    NotIn, Postfix, Prefix, Regex,
+                };
 
                 // lhs and rhs must be the same type
                 let Some(lhs_type) = p.lhs.my_type(schema) else {
