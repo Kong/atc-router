@@ -16,34 +16,40 @@ pub trait FieldCounter {
 
 impl FieldCounter for Expression {
     fn add_to_counter(&self, map: &mut ValidationHashMap) {
+        use Expression::*;
+        use LogicalExpression::*;
+
         match self {
-            Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
+            Logical(l) => match l.as_ref() {
+                And(l, r) | Or(l, r) => {
                     l.add_to_counter(map);
                     r.add_to_counter(map);
                 }
-                LogicalExpression::Not(r) => {
+                Not(r) => {
                     r.add_to_counter(map);
                 }
             },
-            Expression::Predicate(p) => {
+            Predicate(p) => {
                 *map.entry(p.lhs.var_name.clone()).or_default() += 1;
             }
         }
     }
 
     fn remove_from_counter(&self, map: &mut ValidationHashMap) {
+        use Expression::*;
+        use LogicalExpression::*;
+
         match self {
-            Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
+            Logical(l) => match l.as_ref() {
+                And(l, r) | Or(l, r) => {
                     l.remove_from_counter(map);
                     r.remove_from_counter(map);
                 }
-                LogicalExpression::Not(r) => {
+                Not(r) => {
                     r.remove_from_counter(map);
                 }
             },
-            Expression::Predicate(p) => {
+            Predicate(p) => {
                 let val = map.get_mut(&p.lhs.var_name).unwrap();
                 *val -= 1;
 
@@ -73,21 +79,24 @@ const MSG_CONTAINS_ONLY_FOR_CIDR: &str = "Contains operator only supports string
 
 impl Validate for Expression {
     fn validate(&self, schema: &Schema) -> ValidationResult {
+        use Expression::*;
+        use LogicalExpression::*;
+
         match self {
-            Expression::Logical(l) => {
+            Logical(l) => {
                 match l.as_ref() {
-                    LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
+                    And(l, r) | Or(l, r) => {
                         l.validate(schema)?;
                         r.validate(schema)?;
                     }
-                    LogicalExpression::Not(r) => {
+                    Not(r) => {
                         r.validate(schema)?;
                     }
                 }
 
                 Ok(())
             }
-            Expression::Predicate(p) => {
+            Predicate(p) => {
                 use BinaryOperator::*;
 
                 // lhs and rhs must be the same type
@@ -111,30 +120,30 @@ impl Validate for Expression {
                 }
 
                 match p.op {
-                    BinaryOperator::Equals | BinaryOperator::NotEquals => Ok(()),
-                    BinaryOperator::Regex => {
+                    Equals | NotEquals => Ok(()),
+                    Regex => {
                         // unchecked path above
                         match lhs_type {
                             Type::String => Ok(()),
                             _ => raise_err(MSG_REGEX_ONLY_FOR_STRING),
                         }
                     }
-                    BinaryOperator::Prefix | BinaryOperator::Postfix => match p.rhs {
+                    Prefix | Postfix => match p.rhs {
                         Value::String(_) => Ok(()),
                         _ => raise_err(MSG_PREFIX_POSTFIX_ONLY_FOR_STRING),
                     },
-                    BinaryOperator::Greater | BinaryOperator::GreaterOrEqual | BinaryOperator::Less | BinaryOperator::LessOrEqual => match p.rhs {
+                    Greater | GreaterOrEqual | Less | LessOrEqual => match p.rhs {
                         Value::Int(_) => Ok(()),
                         _ => raise_err(MSG_ONLY_FOR_INT),
                     },
-                    BinaryOperator::In | BinaryOperator::NotIn => {
+                    In | NotIn => {
                         // unchecked path above
                         match (lhs_type, &p.rhs) {
                             (Type::IpAddr, Value::IpCidr(_)) => Ok(()),
                             _ => raise_err(MSG_ONLY_FOR_CIDR),
                         }
                     }
-                    BinaryOperator::Contains => match p.rhs {
+                    Contains => match p.rhs {
                         Value::String(_) => Ok(()),
                         _ => raise_err(MSG_CONTAINS_ONLY_FOR_CIDR),
                     },
