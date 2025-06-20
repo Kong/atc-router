@@ -7,8 +7,8 @@ pub trait Execute {
 
 impl Execute for Expression {
     fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
-        use Expression::*;
-        use LogicalExpression::*;
+        use Expression::{Logical, Predicate};
+        use LogicalExpression::{And, Not, Or};
 
         match self {
             Logical(l) => match l.as_ref() {
@@ -57,7 +57,10 @@ impl Execute for Predicate {
                 };
             }
 
-            use BinaryOperator::*;
+            use BinaryOperator::{
+                Contains, Equals, Greater, GreaterOrEqual, In, Less, LessOrEqual, NotEquals, NotIn,
+                Postfix, Prefix, Regex,
+            };
 
             match self.op {
                 Equals => {
