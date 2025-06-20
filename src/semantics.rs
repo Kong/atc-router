@@ -97,6 +97,11 @@ impl Validate for Expression {
                 Ok(())
             }
             Predicate(p) => {
+                use BinaryOperator::{
+                    Contains, Equals, Greater, GreaterOrEqual, In, Less, LessOrEqual, NotEquals,
+                    NotIn, Postfix, Prefix, Regex,
+                };
+
                 // lhs and rhs must be the same type
                 let Some(lhs_type) = p.lhs.my_type(schema) else {
                     return raise_err(MSG_UNKNOWN_LHS);
@@ -116,11 +121,6 @@ impl Validate for Expression {
                 if lower && lhs_type != &Type::String {
                     return raise_err(MSG_LOWER_ONLY_FOR_STRING);
                 }
-
-                use BinaryOperator::{
-                    Contains, Equals, Greater, GreaterOrEqual, In, Less, LessOrEqual, NotEquals,
-                    NotIn, Postfix, Prefix, Regex,
-                };
 
                 match p.op {
                     Equals | NotEquals => Ok(()),
