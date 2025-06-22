@@ -35,8 +35,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("Build Router", |b| {
         b.iter_with_large_drop(|| {
             let mut router = Router::new(&schema);
-            for i in 0..N {
-                let v = &data[i];
+            for v in &data {
                 router.add_matcher(v.0, v.1, &v.2).unwrap();
             }
             router
