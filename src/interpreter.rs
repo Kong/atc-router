@@ -32,7 +32,7 @@ impl Execute for Predicate {
         // can only be "all" or "any" mode.
         // - all: all values must match (default)
         // - any: ok if any any matched
-        for mut lhs_value in lhs_values.iter() {
+        for mut lhs_value in lhs_values {
             let lhs_value_transformed;
 
             if lower {
