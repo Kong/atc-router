@@ -1,5 +1,4 @@
-use atc_router::ast::{Type, Value};
-use atc_router::context::Context;
+use atc_router::ast::Type;
 use atc_router::router::Router;
 use atc_router::schema::Schema;
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -19,9 +18,6 @@ fn make_uuid(a: usize) -> String {
 fn criterion_benchmark(c: &mut Criterion) {
     let mut schema = Schema::default();
     schema.add_field("a", Type::Int);
-
-    let mut context = Context::new(&schema);
-    context.add_value("a", Value::Int(N as i64));
 
     // prepare test data
     let mut data = Vec::new();
