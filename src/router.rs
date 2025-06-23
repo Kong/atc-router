@@ -7,7 +7,7 @@ use crate::semantics::{FieldCounter, Validate};
 use regex::Regex;
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, HashMap};
-use std::rc::Rc;
+use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -18,7 +18,7 @@ pub struct Router<S> {
     schema: S,
     matchers: BTreeMap<MatcherKey, Expression>,
     pub fields: HashMap<String, usize>,
-    regex_cache: HashMap<String, Rc<Regex>>,
+    regex_cache: HashMap<String, Arc<Regex>>,
 }
 
 fn release_cache<S>(expr: &Expression, router: &mut Router<S>) {
@@ -31,10 +31,10 @@ fn release_cache<S>(expr: &Expression, router: &mut Router<S>) {
             LogicalExpression::Not(r) => release_cache(r, router),
         },
         Expression::Predicate(p) => {
-            if let Value::Regex(rc) = &p.rhs {
-                if Rc::strong_count(rc) == 2 {
+            if let Value::Regex(arc) = &p.rhs {
+                if Arc::strong_count(arc) == 2 {
                     // about to be dropped and the only Rc left is in the map
-                    router.regex_cache.remove(rc.as_str());
+                    router.regex_cache.remove(arc.as_str());
                 }
             }
         }
@@ -254,5 +254,14 @@ mod tests {
         let mut ctx = Context::new(router.schema());
         ctx.add_value("http.path", "/dev".to_owned().into());
         router.try_match(&ctx).expect("matches");
+    }
+
+    // Router might be used in async context therefore we need to assert that it implements Send and Sync traits.
+    fn _assert_send<T: Send>() {}
+    fn _assert_sync<T: Sync>() {}
+
+    fn _assertions<S: Send + Sync>() {
+        _assert_send::<Router<S>>();
+        _assert_sync::<Router<S>>();
     }
 }

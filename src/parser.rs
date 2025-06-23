@@ -13,7 +13,7 @@ use pest::Parser;
 use regex::Regex;
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use std::rc::Rc;
+use std::sync::Arc;
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
 
@@ -66,7 +66,7 @@ impl ATCParser {
     fn parse_matcher(
         &mut self,
         source: &str,
-        regex_cache: &mut HashMap<String, Rc<Regex>>,
+        regex_cache: &mut HashMap<String, Arc<Regex>>,
     ) -> ParseResult<Expression> {
         let pairs = ATCParser::parse(Rule::matcher, source)?;
         let expr_pair = pairs.peek().unwrap().into_inner().peek().unwrap();
@@ -212,7 +212,7 @@ fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_predicate(
     pair: Pair<Rule>,
-    regex_cache: &mut HashMap<String, Rc<Regex>>,
+    regex_cache: &mut HashMap<String, Arc<Regex>>,
 ) -> ParseResult<Predicate> {
     let mut pairs = pair.into_inner();
     let lhs = parse_lhs(pairs.next().unwrap())?;
@@ -236,7 +236,7 @@ fn parse_predicate(
                 None => {
                     let r = Regex::new(&s).into_parse_result(&rhs_pair)?;
 
-                    let rc = Rc::new(r);
+                    let rc = Arc::new(r);
 
                     regex_cache.insert(s, rc.clone());
                     rc
@@ -302,7 +302,7 @@ fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
 fn parse_parenthesised_expression(
     pair: Pair<Rule>,
     pratt: &PrattParser<Rule>,
-    regex_cache: &mut HashMap<String, Rc<Regex>>,
+    regex_cache: &mut HashMap<String, Arc<Regex>>,
 ) -> ParseResult<Expression> {
     let mut pairs = pair.into_inner();
     let pair = pairs.next().unwrap();
@@ -321,7 +321,7 @@ fn parse_parenthesised_expression(
 fn parse_term(
     pair: Pair<Rule>,
     pratt: &PrattParser<Rule>,
-    regex_cache: &mut HashMap<String, Rc<Regex>>,
+    regex_cache: &mut HashMap<String, Arc<Regex>>,
 ) -> ParseResult<Expression> {
     let pairs = pair.into_inner();
     let inner_rule = pairs.peek().unwrap();
@@ -343,7 +343,7 @@ fn parse_term(
 fn parse_expression(
     pair: Pair<Rule>,
     pratt: &PrattParser<Rule>,
-    regex_cache: &mut HashMap<String, Rc<Regex>>,
+    regex_cache: &mut HashMap<String, Arc<Regex>>,
 ) -> ParseResult<Expression> {
     let pairs = pair.into_inner();
     pratt
@@ -364,7 +364,7 @@ fn parse_expression(
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 pub fn parse(
     source: &str,
-    regex_cache: &mut HashMap<String, Rc<Regex>>,
+    regex_cache: &mut HashMap<String, Arc<Regex>>,
 ) -> ParseResult<Expression> {
     ATCParser::new().parse_matcher(source, regex_cache)
 }
