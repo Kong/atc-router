@@ -35,7 +35,7 @@ pub struct Context<'a> {
 
 impl<'a> Context<'a> {
     pub fn new(schema: &'a Schema) -> Self {
-        Context {
+        Self {
             schema,
             values: FnvHashMap::with_hasher(Default::default()),
             result: None,
