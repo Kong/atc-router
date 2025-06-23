@@ -1,7 +1,7 @@
 use crate::schema::Schema;
 use cidr::IpCidr;
 use regex::Regex;
-use std::{net::IpAddr, rc::Rc};
+use std::{net::IpAddr, sync::Arc};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -53,7 +53,7 @@ pub enum Value {
     IpAddr(IpAddr),
     Int(i64),
     #[cfg_attr(feature = "serde", serde(with = "serde_regex"))]
-    Regex(Rc<Regex>),
+    Regex(Arc<Regex>),
 }
 
 impl PartialEq for Value {
