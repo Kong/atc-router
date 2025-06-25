@@ -29,7 +29,7 @@ impl Execute for Predicate {
 
         // can only be "all" or "any" mode.
         // - all: all values must match (default)
-        // - any: ok if any any matched
+        // - any: ok if any value matches
         for mut lhs_value in lhs_values.iter() {
             let lhs_value_transformed;
 
@@ -280,7 +280,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![],
+            transformations: vec![ast::LhsTransformations::Any],
         },
         rhs: Value::String("foo".to_string()),
         op: BinaryOperator::Prefix,
