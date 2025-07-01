@@ -19,7 +19,7 @@ impl Match {
         }
     }
 
-    pub fn reset(&mut self) {
+    pub(crate) fn reset(&mut self) {
         self.matches.clear();
         self.captures.clear();
     }
