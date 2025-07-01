@@ -248,7 +248,7 @@ fn test_predicate() {
         op: BinaryOperator::Prefix,
     };
 
-    assert!(!p.execute(&mut ctx, &mut mat));
+    assert!(!p.execute(&ctx, &mut mat));
 
     // check if any value matches starts_with foo -- should be false
     let p = Predicate {
@@ -260,7 +260,7 @@ fn test_predicate() {
         op: BinaryOperator::Prefix,
     };
 
-    assert!(!p.execute(&mut ctx, &mut mat));
+    assert!(!p.execute(&ctx, &mut mat));
 
     // test any mode
     let lhs_values = vec![
@@ -284,7 +284,7 @@ fn test_predicate() {
         op: BinaryOperator::Prefix,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if all values match ends_with foo -- should be false
     let p = Predicate {
@@ -296,7 +296,7 @@ fn test_predicate() {
         op: BinaryOperator::Postfix,
     };
 
-    assert!(!p.execute(&mut ctx, &mut mat));
+    assert!(!p.execute(&ctx, &mut mat));
 
     // check if any value matches ends_with foo -- should be true
     let p = Predicate {
@@ -308,7 +308,7 @@ fn test_predicate() {
         op: BinaryOperator::Postfix,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if any value matches starts_with foo -- should be true
     let p = Predicate {
@@ -320,7 +320,7 @@ fn test_predicate() {
         op: BinaryOperator::Prefix,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if any value matches ends_with nar -- should be false
     let p = Predicate {
@@ -332,7 +332,7 @@ fn test_predicate() {
         op: BinaryOperator::Postfix,
     };
 
-    assert!(!p.execute(&mut ctx, &mut mat));
+    assert!(!p.execute(&ctx, &mut mat));
 
     // check if any value matches ends_with empty string -- should be true
     let p = Predicate {
@@ -344,7 +344,7 @@ fn test_predicate() {
         op: BinaryOperator::Postfix,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if any value matches starts_with empty string -- should be true
     let p = Predicate {
@@ -356,7 +356,7 @@ fn test_predicate() {
         op: BinaryOperator::Prefix,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if any value matches contains `ob` -- should be true
     let p = Predicate {
@@ -368,7 +368,7 @@ fn test_predicate() {
         op: BinaryOperator::Contains,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if any value matches contains `ok` -- should be false
     let p = Predicate {
@@ -380,5 +380,5 @@ fn test_predicate() {
         op: BinaryOperator::Contains,
     };
 
-    assert!(!p.execute(&mut ctx, &mut mat));
+    assert!(!p.execute(&ctx, &mut mat));
 }
