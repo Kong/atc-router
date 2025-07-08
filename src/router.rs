@@ -5,6 +5,7 @@ use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
 use std::collections::{BTreeMap, HashMap};
+use std::ops::Deref;
 use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -13,14 +14,16 @@ struct MatcherKey(usize, Uuid);
 #[derive(Debug)]
 enum SchemaOwnedOrRef<'a> {
     Ref(&'a Schema),
-    Owned(Schema),
+    Owned(Box<Schema>),
 }
 
-impl AsRef<Schema> for SchemaOwnedOrRef<'_> {
-    fn as_ref(&self) -> &Schema {
+impl Deref for SchemaOwnedOrRef<'_> {
+    type Target = Schema;
+
+    fn deref(&self) -> &Self::Target {
         match self {
-            SchemaOwnedOrRef::Ref(s) => s,
-            SchemaOwnedOrRef::Owned(s) => s,
+            Self::Ref(s) => s,
+            Self::Owned(s) => s,
         }
     }
 }
@@ -43,14 +46,14 @@ impl<'a> Router<'a> {
 
     pub fn new_owning(schema: Schema) -> Self {
         Self {
-            schema: SchemaOwnedOrRef::Owned(schema),
+            schema: SchemaOwnedOrRef::Owned(Box::new(schema)),
             matchers: BTreeMap::new(),
             fields: HashMap::new(),
         }
     }
 
     pub fn schema(&self) -> &Schema {
-        self.schema.as_ref()
+        &self.schema
     }
 
     pub fn add_matcher(&mut self, priority: usize, uuid: Uuid, atc: &str) -> Result<(), String> {
@@ -62,7 +65,7 @@ impl<'a> Router<'a> {
 
         let ast = parse(atc).map_err(|e| e.to_string())?;
 
-        ast.validate(self.schema.as_ref())?;
+        ast.validate(&self.schema)?;
         ast.add_to_counter(&mut self.fields);
 
         assert!(self.matchers.insert(key, ast).is_none());
