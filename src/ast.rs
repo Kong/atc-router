@@ -7,14 +7,14 @@ use std::net::IpAddr;
 use serde::{Deserialize, Serialize};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
     Logical(Box<LogicalExpression>),
     Predicate(Predicate),
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum LogicalExpression {
     And(Expression, Expression),
     Or(Expression, Expression),
@@ -70,6 +70,8 @@ impl PartialEq for Value {
         }
     }
 }
+
+impl Eq for Value {}
 
 impl Value {
     pub fn my_type(&self) -> Type {
@@ -138,7 +140,7 @@ pub enum Type {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Lhs {
     pub var_name: String,
     pub transformations: Vec<LhsTransformations>,
@@ -163,7 +165,7 @@ impl Lhs {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Predicate {
     pub lhs: Lhs,
     pub rhs: Value,
