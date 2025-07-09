@@ -19,6 +19,8 @@ use uuid::fmt::Hyphenated;
 /// Violating any of the following constraints will result in undefined behavior:
 ///
 /// - `schema` must be a valid pointer returned by [`schema_new`].
+///
+/// [`schema_new`]: crate::ffi::schema::schema_new
 #[no_mangle]
 pub unsafe extern "C" fn context_new(schema: &Schema) -> *mut Context {
     Box::into_raw(Box::new(Context::new(schema)))
@@ -181,6 +183,8 @@ pub unsafe extern "C" fn context_reset(context: &mut Context) {
 ///
 /// Note: You should get the `<captures>` by calling this function and set every pointer
 /// except the `context` to `NULL` to get the number of captures.
+///
+/// [`router_execute`]: crate::ffi::router::router_execute
 #[no_mangle]
 pub unsafe extern "C" fn context_get_result(
     context: &Context,
