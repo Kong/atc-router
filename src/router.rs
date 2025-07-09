@@ -28,7 +28,8 @@ pub struct Router<'a> {
 #[derive(Debug)]
 enum SchemaOwnedOrRef<'a> {
     Ref(&'a Schema),
-    Owned(Box<Schema>),
+    Boxed(Box<Schema>),
+    Owned(Schema),
 }
 
 impl Deref for SchemaOwnedOrRef<'_> {
@@ -38,6 +39,7 @@ impl Deref for SchemaOwnedOrRef<'_> {
         match self {
             Self::Ref(s) => s,
             Self::Owned(s) => s,
+            Self::Boxed(s) => s,
         }
     }
 }
@@ -61,7 +63,15 @@ impl<'a> Router<'a> {
     /// making it easier to use as a standalone component.
     pub fn new_owning(schema: Schema) -> Self {
         Self {
-            schema: SchemaOwnedOrRef::Owned(Box::new(schema)),
+            schema: SchemaOwnedOrRef::Owned(schema),
+            matchers: BTreeMap::new(),
+            fields: HashMap::new(),
+        }
+    }
+
+    pub fn new_boxing(schema: Schema) -> Self {
+        Self {
+            schema: SchemaOwnedOrRef::Boxed(Box::new(schema)),
             matchers: BTreeMap::new(),
             fields: HashMap::new(),
         }
