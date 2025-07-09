@@ -23,6 +23,8 @@ use uuid::Uuid;
 /// Violating any of the following constraints will result in undefined behavior:
 ///
 /// - `schema` must be a valid pointer returned by [`schema_new`].
+///
+/// [`schema_new`]: crate::ffi::schema::schema_new
 #[no_mangle]
 pub unsafe extern "C" fn router_new(schema: &Schema) -> *mut Router {
     Box::into_raw(Box::new(Router::new(schema)))
@@ -167,6 +169,9 @@ pub unsafe extern "C" fn router_remove_matcher(
 /// - `context` must be a valid pointer returned by [`context_new`],
 ///   and must be reset by [`context_reset`] before calling this function
 ///   if you want to reuse the same context for multiple matches.
+///
+/// [`context_new`]: crate::ffi::context::context_new
+/// [`context_reset`]: crate::ffi::context::context_reset
 #[no_mangle]
 pub unsafe extern "C" fn router_execute(router: &Router, context: &mut Context) -> bool {
     router.execute(context)
