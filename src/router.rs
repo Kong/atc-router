@@ -12,6 +12,20 @@ use uuid::Uuid;
 struct MatcherKey(usize, Uuid);
 
 #[derive(Debug)]
+pub struct Router<'a> {
+    schema: SchemaOwnedOrRef<'a>,
+    matchers: BTreeMap<MatcherKey, Expression>,
+    pub fields: HashMap<String, usize>,
+}
+
+/// A smart pointer over a [`Schema`], which may be either borrowed or owned.
+///
+/// Used by [`Router`] to support both externally managed and self-contained schemas.
+/// Owning the schema is especially useful when the router is used outside of the FFI context,
+/// making it fully independent.
+///
+/// Implements [`Deref`] for ergonomic access to the underlying [`Schema`].
+#[derive(Debug)]
 enum SchemaOwnedOrRef<'a> {
     Ref(&'a Schema),
     Owned(Box<Schema>),
@@ -28,14 +42,11 @@ impl Deref for SchemaOwnedOrRef<'_> {
     }
 }
 
-#[derive(Debug)]
-pub struct Router<'a> {
-    schema: SchemaOwnedOrRef<'a>,
-    matchers: BTreeMap<MatcherKey, Expression>,
-    pub fields: HashMap<String, usize>,
-}
-
 impl<'a> Router<'a> {
+    /// Creates a new [`Router`] that holds a shared reference to a [`Schema`].
+    ///
+    /// This is useful when the schema is managed outside the router and/or shared
+    /// across multiple components.
     pub fn new(schema: &'a Schema) -> Self {
         Self {
             schema: SchemaOwnedOrRef::Ref(schema),
@@ -44,6 +55,10 @@ impl<'a> Router<'a> {
         }
     }
 
+    /// Creates a new [`Router`] that owns its [`Schema`].
+    ///
+    /// This allows the router to be self contained,
+    /// making it easier to use as a standalone component.
     pub fn new_owning(schema: Schema) -> Self {
         Self {
             schema: SchemaOwnedOrRef::Owned(Box::new(schema)),
@@ -52,6 +67,12 @@ impl<'a> Router<'a> {
         }
     }
 
+    /// Returns a reference to the [`Schema`] used by this router.
+    ///
+    /// Especially useful if the router owns the schema internally ([`new_owning`]),
+    /// but you still need to pass a reference to other components like [`Context`].
+    ///
+    /// [`new_owning`]: Router::new_owning
     pub fn schema(&self) -> &Schema {
         &self.schema
     }
