@@ -1,10 +1,12 @@
-use crate::ast::Expression;
+use crate::ast::{Expression, LogicalExpression, Value};
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
 use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
+use regex::Regex;
 use std::collections::{BTreeMap, HashMap};
+use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -15,6 +17,27 @@ pub struct Router<'a> {
     schema: &'a Schema,
     matchers: BTreeMap<MatcherKey, Expression>,
     pub fields: HashMap<String, usize>,
+    regex_cache: HashMap<String, Arc<Regex>>,
+}
+
+fn release_cache(expr: &Expression, router: &mut Router) {
+    match expr {
+        Expression::Logical(l) => match l.as_ref() {
+            LogicalExpression::And(l, r) | LogicalExpression::Or(l, r) => {
+                release_cache(l, router);
+                release_cache(r, router);
+            }
+            LogicalExpression::Not(r) => release_cache(r, router),
+        },
+        Expression::Predicate(p) => {
+            if let Value::Regex(arc) = &p.rhs {
+                if Arc::strong_count(arc) == 2 {
+                    // about to be dropped and the only Rc left is in the map
+                    router.regex_cache.remove(arc.as_str());
+                }
+            }
+        }
+    };
 }
 
 impl<'a> Router<'a> {
@@ -23,6 +46,7 @@ impl<'a> Router<'a> {
             schema,
             matchers: BTreeMap::new(),
             fields: HashMap::new(),
+            regex_cache: HashMap::new(),
         }
     }
 
@@ -33,7 +57,7 @@ impl<'a> Router<'a> {
             return Err("UUID already exists".to_string());
         }
 
-        let ast = parse(atc).map_err(|e| e.to_string())?;
+        let ast = parse(atc, &mut self.regex_cache).map_err(|e| e.to_string())?;
 
         ast.validate(self.schema)?;
         ast.add_to_counter(&mut self.fields);
@@ -50,6 +74,7 @@ impl<'a> Router<'a> {
             return false;
         };
 
+        release_cache(&ast, self);
         ast.remove_from_counter(&mut self.fields);
         true
     }
@@ -144,5 +169,14 @@ mod tests {
         let mut ctx = Context::new(&schema);
         ctx.add_value("http.path", "/not-dev".to_owned().into());
         router.try_match(&ctx).ok_or(()).expect_err("should fail");
+    }
+
+    // Router might be used in async context therefore we need to assert that it implements Send and Sync traits.
+    fn _assert_send<T: Send>() {}
+    fn _assert_sync<T: Sync>() {}
+
+    fn _assertions() {
+        _assert_send::<Router>();
+        _assert_sync::<Router>();
     }
 }
