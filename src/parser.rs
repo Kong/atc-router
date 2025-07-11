@@ -253,7 +253,7 @@ fn parse_transform_func(pair: Pair<Rule>) -> ParseResult<Lhs> {
         unknown => {
             return Err(ParseError::new_from_span(
                 ErrorVariant::CustomError {
-                    message: format!("unknown transformation function: {}", unknown),
+                    message: format!("unknown transformation function: {unknown}"),
                 },
                 span,
             ));
