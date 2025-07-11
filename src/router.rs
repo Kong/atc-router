@@ -27,18 +27,27 @@ impl<'a> Router<'a> {
     }
 
     pub fn add_matcher(&mut self, priority: usize, uuid: Uuid, atc: &str) -> Result<(), String> {
+        let expr = parse(atc).map_err(|e| e.to_string())?;
+
+        self.add_matcher_expr(priority, uuid, expr)
+    }
+
+    pub fn add_matcher_expr(
+        &mut self,
+        priority: usize,
+        uuid: Uuid,
+        expr: Expression,
+    ) -> Result<(), String> {
         let key = MatcherKey(priority, uuid);
 
         if self.matchers.contains_key(&key) {
             return Err("UUID already exists".to_string());
         }
 
-        let ast = parse(atc).map_err(|e| e.to_string())?;
+        expr.validate(self.schema)?;
+        expr.add_to_counter(&mut self.fields);
 
-        ast.validate(self.schema)?;
-        ast.add_to_counter(&mut self.fields);
-
-        assert!(self.matchers.insert(key, ast).is_none());
+        assert!(self.matchers.insert(key, expr).is_none());
 
         Ok(())
     }
