@@ -27,10 +27,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     for i in 0..N {
         let expr = format!(
             r#"(http.path == "hello{}" && http.version == "1.1") || {} || {} || {}"#,
-            i,
-            "!((a == 2) && (a == 9))",
-            "!(a == 1)",
-            "(a == 3 && a == 4) && !(a == 5)"
+            i, "!((a == 2) && (a == 9))", "!(a == 1)", "(a == 3 && a == 4) && !(a == 5)"
         );
 
         let uuid = make_uuid(i);
@@ -40,14 +37,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     }
 
     let mut ctx = Context::new(&schema);
-    ctx.add_value(
-        "http.path",
-        Value::String("hello49999".to_string()),
-    );
-    ctx.add_value(
-        "http.version",
-        Value::String("1.1".to_string()),
-    );
+    ctx.add_value("http.path", Value::String("hello49999".to_string()));
+    ctx.add_value("http.version", Value::String("1.1".to_string()));
     ctx.add_value("a", Value::Int(3_i64));
 
     c.bench_function("Match", |b| {
