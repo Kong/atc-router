@@ -42,7 +42,3 @@ harness = false
 [[bench]]
 name = "match_mix"
 harness = false
-
-[[bench]]
-name = "not_match_mix"
-harness = false

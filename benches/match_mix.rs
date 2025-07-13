@@ -37,6 +37,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     }
 
     let mut ctx = Context::new(&schema);
+
+    // match benchmark
     ctx.add_value("http.path", Value::String("hello49999".to_string()));
     ctx.add_value("http.version", Value::String("1.1".to_string()));
     ctx.add_value("a", Value::Int(3_i64));
@@ -45,6 +47,20 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             let is_match = router.execute(&mut ctx);
             assert!(is_match);
+        });
+    });
+
+    ctx.reset();
+
+    // not match benchmark
+    ctx.add_value("http.path", Value::String("hello49999".to_string()));
+    ctx.add_value("http.version", Value::String("1.1".to_string()));
+    ctx.add_value("a", Value::Int(5_i64)); // not match
+
+    c.bench_function("Doesn't Match", |b| {
+        b.iter(|| {
+            let not_match = !router.execute(&mut ctx);
+            assert!(not_match);
         });
     });
 }
