@@ -52,8 +52,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("Doesn't Match", |b| {
         b.iter(|| {
-            let is_match = router.execute(&mut ctx);
-            assert!(!is_match);
+            let not_match = !router.execute(&mut ctx);
+            assert!(not_match);
         });
     });
 }
