@@ -90,7 +90,7 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
                 cir.instructions.push(CirInstruction::Or(left, right));
             }
             Not(r) => {
-                let right: CirOperand = match r {
+                let right = match r {
                     Logical(_) => CirOperand::Index(cir_translate_helper(r, cir)),
                     Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
