@@ -124,15 +124,15 @@ fn execute_helper(
     m: &mut Match,
 ) -> bool {
     match &instructions[index] {
-        CirInstruction::And(left, right) => {
-            operand_execute_helper(left, instructions, ctx, m)
-                && operand_execute_helper(right, instructions, ctx, m)
+        CirInstruction::And(l, r) => {
+            operand_execute_helper(l, instructions, ctx, m)
+                && operand_execute_helper(r, instructions, ctx, m)
         }
-        CirInstruction::Or(left, right) => {
-            operand_execute_helper(left, instructions, ctx, m)
-                || operand_execute_helper(right, instructions, ctx, m)
+        CirInstruction::Or(l, r) => {
+            operand_execute_helper(l, instructions, ctx, m)
+                || operand_execute_helper(r, instructions, ctx, m)
         }
-        CirInstruction::Not(right) => !operand_execute_helper(right, instructions, ctx, m),
+        CirInstruction::Not(r) => !operand_execute_helper(r, instructions, ctx, m),
         CirInstruction::Predicate(p) => p.execute(ctx, m),
     }
 }
@@ -164,12 +164,12 @@ impl FieldCounter for CirOperand {
 impl FieldCounter for CirInstruction {
     fn add_to_counter(&self, map: &mut ValidationHashMap) {
         match self {
-            CirInstruction::And(left, right) | CirInstruction::Or(left, right) => {
-                left.add_to_counter(map);
-                right.add_to_counter(map);
+            CirInstruction::And(l, r) | CirInstruction::Or(l, r) => {
+                l.add_to_counter(map);
+                r.add_to_counter(map);
             }
-            CirInstruction::Not(right) => {
-                right.add_to_counter(map);
+            CirInstruction::Not(r) => {
+                r.add_to_counter(map);
             }
             CirInstruction::Predicate(p) => {
                 p.add_to_counter(map);
@@ -178,12 +178,12 @@ impl FieldCounter for CirInstruction {
     }
     fn remove_from_counter(&self, map: &mut ValidationHashMap) {
         match self {
-            CirInstruction::And(left, right) | CirInstruction::Or(left, right) => {
-                left.remove_from_counter(map);
-                right.remove_from_counter(map);
+            CirInstruction::And(l, r) | CirInstruction::Or(l, r) => {
+                l.remove_from_counter(map);
+                r.remove_from_counter(map);
             }
-            CirInstruction::Not(right) => {
-                right.remove_from_counter(map);
+            CirInstruction::Not(r) => {
+                r.remove_from_counter(map);
             }
             CirInstruction::Predicate(p) => {
                 p.remove_from_counter(map);
