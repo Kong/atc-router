@@ -244,3 +244,44 @@ impl FieldCounter for CirProgram {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::{Type, Value};
+    use crate::schema::Schema;
+
+    #[test]
+    fn verify_translate_execute() {
+        let mut schema = Schema::default();
+        schema.add_field("a", Type::Int);
+        schema.add_field("http.path", Type::String);
+        schema.add_field("http.version", Type::String);
+
+        let exprs = vec![
+            r#"a == 5 "#,
+            r#"!(!(a == 1 && a == 2) || a == 3 && !(a == 4))"#,
+            r#"!(( a == 2) && ( a == 9 )) || !(a == 1) || (http.path == "hello" && http.version == "1.1") || ( a == 3 && a == 4) && !(a == 5)"#,
+            r#"(http.path == "hello" && http.version == "1.1") || !(( a == 2) && ( a == 9 )) || !(a == 1) || ( a == 5 && a == 4) && !(a == 3)"#,
+            r#"(http.path == "hello" && http.version == "1.1") || ( a == 3 && a == 4) && !(a == 5)"#,
+            r#"http.path == "hello" && http.version == "1.1""#,
+        ];
+
+        let mut context = Context::new(&schema);
+        context.add_value("http.path", Value::String("hello".to_string()));
+        context.add_value("http.version", Value::String("1.1".to_string()));
+        context.add_value("a", Value::Int(3_i64));
+
+        for expr in exprs {
+            let ast = crate::parser::parse(expr)
+                .map_err(|e| e.to_string())
+                .unwrap();
+
+            let mut mat = Match::new();
+            let ast_result = ast.execute(&mut context, &mut mat);
+
+            let cir_result = ast.translate().execute(&mut context, &mut mat);
+            assert_eq!(ast_result, cir_result);
+        }
+    }
+}
