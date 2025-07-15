@@ -23,6 +23,12 @@ impl Default for CirProgram {
     }
 }
 
+impl Default for CirProgram {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug)]
 pub enum CirInstruction {
     And(CirOperand, CirOperand),
