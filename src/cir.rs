@@ -161,17 +161,12 @@ impl Execute for CirProgram {
 impl FieldCounter for CirOperand {
     fn add_to_counter(&self, map: &mut ValidationHashMap) {
         if let CirOperand::Predicate(p) = &self {
-            *map.entry(p.lhs.var_name.clone()).or_default() += 1
+            p.add_to_counter(map);
         }
     }
     fn remove_from_counter(&self, map: &mut ValidationHashMap) {
         if let CirOperand::Predicate(p) = &self {
-            let val = map.get_mut(&p.lhs.var_name).unwrap();
-            *val -= 1;
-
-            if *val == 0 {
-                assert!(map.remove(&p.lhs.var_name).is_some());
-            }
+            p.remove_from_counter(map);
         }
     }
 }
@@ -187,7 +182,7 @@ impl FieldCounter for CirInstruction {
                 right.add_to_counter(map);
             }
             CirInstruction::Predicate(p) => {
-                *map.entry(p.lhs.var_name.clone()).or_default() += 1;
+                p.add_to_counter(map);
             }
         }
     }
@@ -201,12 +196,7 @@ impl FieldCounter for CirInstruction {
                 right.remove_from_counter(map);
             }
             CirInstruction::Predicate(p) => {
-                let val = map.get_mut(&p.lhs.var_name).unwrap();
-                *val -= 1;
-
-                if *val == 0 {
-                    assert!(map.remove(&p.lhs.var_name).is_some());
-                }
+                p.remove_from_counter(map);
             }
         }
     }
