@@ -40,9 +40,9 @@ impl Translate for Expression {
 
     fn translate(&self) -> Self::Output {
         let mut instructions = Vec::new();
-        let len = cir_translate_helper(self, &mut instructions);
+        let idx = cir_translate_helper(self, &mut instructions);
 
-        if len > 0 {
+        if idx > 0 {
             return CirProgram::Instructions(instructions.into_boxed_slice());
         }
 
