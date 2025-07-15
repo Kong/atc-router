@@ -213,7 +213,7 @@ impl FieldCounter for CirProgram {
             CirProgram::Instructions(instructions) => {
                 instructions
                     .iter()
-                    .for_each(|instruction: &CirInstruction| instruction.add_to_counter(map));
+                    .for_each(|ins| ins.add_to_counter(map));
             }
             CirProgram::Predicate(p) => p.add_to_counter(map),
         }
@@ -224,7 +224,7 @@ impl FieldCounter for CirProgram {
             CirProgram::Instructions(instructions) => {
                 instructions
                     .iter()
-                    .for_each(|instruction: &CirInstruction| instruction.remove_from_counter(map));
+                    .for_each(|ins| ins.remove_from_counter(map));
             }
             CirProgram::Predicate(p) => p.remove_from_counter(map),
         }
