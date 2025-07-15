@@ -3,7 +3,7 @@ use crate::schema::Schema;
 use std::collections::HashMap;
 
 type ValidationResult = Result<(), String>;
-type ValidationHashMap = HashMap<String, usize>;
+pub type ValidationHashMap = HashMap<String, usize>;
 
 pub trait Validate {
     fn validate(&self, schema: &Schema) -> ValidationResult;
