@@ -211,9 +211,7 @@ impl FieldCounter for CirProgram {
     fn add_to_counter(&self, map: &mut ValidationHashMap) {
         match self {
             CirProgram::Instructions(instructions) => {
-                instructions
-                    .iter()
-                    .for_each(|ins| ins.add_to_counter(map));
+                instructions.iter().for_each(|ins| ins.add_to_counter(map));
             }
             CirProgram::Predicate(p) => p.add_to_counter(map),
         }
