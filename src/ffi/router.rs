@@ -26,7 +26,7 @@ use uuid::Uuid;
 ///
 /// [`schema_new`]: crate::ffi::schema::schema_new
 #[no_mangle]
-pub unsafe extern "C" fn router_new(schema: &Schema) -> *mut Router {
+pub unsafe extern "C" fn router_new(schema: &Schema) -> *mut Router<&Schema> {
     Box::into_raw(Box::new(Router::new(schema)))
 }
 
@@ -42,7 +42,7 @@ pub unsafe extern "C" fn router_new(schema: &Schema) -> *mut Router {
 ///
 /// - `router` must be a valid pointer returned by [`router_new`].
 #[no_mangle]
-pub unsafe extern "C" fn router_free(router: *mut Router) {
+pub unsafe extern "C" fn router_free(router: *mut Router<&Schema>) {
     drop(Box::from_raw(router));
 }
 
@@ -91,7 +91,7 @@ pub unsafe extern "C" fn router_free(router: *mut Router) {
 ///   and it must be properly aligned.
 #[no_mangle]
 pub unsafe extern "C" fn router_add_matcher(
-    router: &mut Router,
+    router: &mut Router<&Schema>,
     priority: usize,
     uuid: *const i8,
     atc: *const i8,
@@ -140,7 +140,7 @@ pub unsafe extern "C" fn router_add_matcher(
 ///   and must not have '\0' in the middle.
 #[no_mangle]
 pub unsafe extern "C" fn router_remove_matcher(
-    router: &mut Router,
+    router: &mut Router<&Schema>,
     priority: usize,
     uuid: *const i8,
 ) -> bool {
@@ -173,7 +173,7 @@ pub unsafe extern "C" fn router_remove_matcher(
 /// [`context_new`]: crate::ffi::context::context_new
 /// [`context_reset`]: crate::ffi::context::context_reset
 #[no_mangle]
-pub unsafe extern "C" fn router_execute(router: &Router, context: &mut Context) -> bool {
+pub unsafe extern "C" fn router_execute(router: &Router<&Schema>, context: &mut Context) -> bool {
     router.execute(context)
 }
 
@@ -221,7 +221,7 @@ pub unsafe extern "C" fn router_execute(router: &Router, context: &mut Context) 
 ///   after it becomes invalid, see the `Lifetimes` section.
 #[no_mangle]
 pub unsafe extern "C" fn router_get_fields(
-    router: &Router,
+    router: &Router<&Schema>,
     fields: *mut *const u8,
     fields_len: *mut usize,
 ) -> usize {

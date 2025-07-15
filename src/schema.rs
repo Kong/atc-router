@@ -19,6 +19,12 @@ impl Schema {
     }
 }
 
+impl AsRef<Schema> for Schema {
+    fn as_ref(&self) -> &Schema {
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
