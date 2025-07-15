@@ -125,16 +125,14 @@ fn execute_helper(
 ) -> bool {
     match &instructions[index] {
         CirInstruction::And(left, right) => {
-            operand_execute_helper(left, instructions, ctx, m) &&
-            operand_execute_helper(right, instructions, ctx, m)
+            operand_execute_helper(left, instructions, ctx, m)
+                && operand_execute_helper(right, instructions, ctx, m)
         }
         CirInstruction::Or(left, right) => {
-            operand_execute_helper(left, instructions, ctx, m) ||
-            operand_execute_helper(right, instructions, ctx, m)
+            operand_execute_helper(left, instructions, ctx, m)
+                || operand_execute_helper(right, instructions, ctx, m)
         }
-        CirInstruction::Not(right) => {
-            !operand_execute_helper(right, instructions, ctx, m)
-        }
+        CirInstruction::Not(right) => !operand_execute_helper(right, instructions, ctx, m),
         CirInstruction::Predicate(p) => p.execute(ctx, m),
     }
 }
