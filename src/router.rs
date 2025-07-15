@@ -1,4 +1,5 @@
 use crate::ast::Expression;
+use crate::cir::{CirProgram, Translate};
 use crate::context::{Context, Match};
 use crate::interpreter::Execute;
 use crate::parser::parse;
@@ -14,7 +15,7 @@ struct MatcherKey(usize, Uuid);
 #[derive(Debug)]
 pub struct Router<'a> {
     schema: SchemaOwnedOrRef<'a>,
-    matchers: BTreeMap<MatcherKey, Expression>,
+    matchers: BTreeMap<MatcherKey, CirProgram>,
     pub fields: HashMap<String, usize>,
 }
 
@@ -72,9 +73,11 @@ impl<'a> Router<'a> {
         }
 
         expr.validate(&self.schema)?;
-        expr.add_to_counter(&mut self.fields);
 
-        assert!(self.matchers.insert(key, expr).is_none());
+        let cir = expr.translate();
+        cir.add_to_counter(&mut self.fields);
+
+        assert!(self.matchers.insert(key, cir).is_none());
 
         Ok(())
     }
@@ -82,11 +85,11 @@ impl<'a> Router<'a> {
     pub fn remove_matcher(&mut self, priority: usize, uuid: Uuid) -> bool {
         let key = MatcherKey(priority, uuid);
 
-        let Some(ast) = self.matchers.remove(&key) else {
+        let Some(cir) = self.matchers.remove(&key) else {
             return false;
         };
 
-        ast.remove_from_counter(&mut self.fields);
+        cir.remove_from_counter(&mut self.fields);
         true
     }
 

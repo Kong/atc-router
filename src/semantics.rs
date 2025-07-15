@@ -3,7 +3,7 @@ use crate::schema::Schema;
 use std::collections::HashMap;
 
 type ValidationResult = Result<(), String>;
-type ValidationHashMap = HashMap<String, usize>;
+pub type ValidationHashMap = HashMap<String, usize>;
 
 pub trait Validate {
     fn validate(&self, schema: &Schema) -> ValidationResult;
@@ -30,7 +30,7 @@ impl FieldCounter for Expression {
                 }
             },
             Predicate(p) => {
-                *map.entry(p.lhs.var_name.clone()).or_default() += 1;
+                p.add_to_counter(map);
             }
         }
     }
@@ -50,12 +50,7 @@ impl FieldCounter for Expression {
                 }
             },
             Predicate(p) => {
-                let val = map.get_mut(&p.lhs.var_name).unwrap();
-                *val -= 1;
-
-                if *val == 0 {
-                    assert!(map.remove(&p.lhs.var_name).is_some());
-                }
+                p.remove_from_counter(map);
             }
         }
     }
