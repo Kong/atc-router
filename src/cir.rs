@@ -1,7 +1,7 @@
 // cir:  compact intermediate representation
 use crate::ast::{Expression, LogicalExpression, Predicate};
-//use crate::context::{Context, Match};
-//use crate::interpreter::Execute;
+use crate::context::{Context, Match};
+use crate::interpreter::Execute;
 //use crate::semantics::FieldCounter;
 //use std::collections::HashMap;
 
@@ -104,4 +104,50 @@ fn cir_translate_helper(exp: &Expression, cir: &mut CirProgram) -> usize {
     }
 
     cir.instructions.len() - 1
+}
+
+fn execute_helper(
+    cir_instructions: &[CirInstruction],
+    index: usize,
+    ctx: &Context,
+    m: &mut Match,
+) -> bool {
+    match &cir_instructions[index] {
+        CirInstruction::And(left, right) => {
+            let left_val = match &left {
+                CirOperand::Index(index) => execute_helper(cir_instructions, *index, ctx, m),
+                CirOperand::Predicate(p) => p.execute(ctx, m),
+            };
+            left_val
+                && match &right {
+                    CirOperand::Index(index) => execute_helper(cir_instructions, *index, ctx, m),
+                    CirOperand::Predicate(p) => p.execute(ctx, m),
+                }
+        }
+        CirInstruction::Or(left, right) => {
+            let left_val = match &left {
+                CirOperand::Index(index) => execute_helper(cir_instructions, *index, ctx, m),
+                CirOperand::Predicate(p) => p.execute(ctx, m),
+            };
+            left_val
+                || match &right {
+                    CirOperand::Index(index) => execute_helper(cir_instructions, *index, ctx, m),
+                    CirOperand::Predicate(p) => p.execute(ctx, m),
+                }
+        }
+        CirInstruction::Not(right) => {
+            let right_val = match &right {
+                CirOperand::Index(index) => execute_helper(cir_instructions, *index, ctx, m),
+                CirOperand::Predicate(p) => p.execute(ctx, m),
+            };
+            !right_val
+        }
+        CirInstruction::Predicate(p) => p.execute(ctx, m),
+    }
+}
+
+impl Execute for CirProgram {
+    fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
+        execute_helper(&self.instructions, self.instructions.len() - 1, ctx, m)
+    }
 }
