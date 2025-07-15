@@ -58,6 +58,15 @@ impl Translate for Expression {
     }
 }
 
+fn cir_translate_to_operand(exp: &Expression, cir: &mut Vec<CirInstruction>) -> CirOperand {
+    use Expression::{Logical, Predicate};
+
+    match exp {
+        Logical(_) => CirOperand::Index(cir_translate_helper(exp, cir)),
+        Predicate(p) => CirOperand::Predicate(p.clone()),
+    }
+}
+
 /// Helper function for translation from AST to CIR.
 /// Parameters:
 ///   * reference to AST
@@ -71,36 +80,19 @@ fn cir_translate_helper(exp: &Expression, cir: &mut Vec<CirInstruction>) -> usiz
     match exp {
         Logical(logic_exp) => match logic_exp.as_ref() {
             And(l, r) => {
-                let left = match l {
-                    Logical(_) => CirOperand::Index(cir_translate_helper(l, cir)),
-                    Predicate(p) => CirOperand::Predicate(p.clone()),
-                };
-
-                let right = match r {
-                    Logical(_) => CirOperand::Index(cir_translate_helper(r, cir)),
-                    Predicate(p) => CirOperand::Predicate(p.clone()),
-                };
+                let left = cir_translate_to_operand(l, cir);
+                let right = cir_translate_to_operand(r, cir);
 
                 cir.push(CirInstruction::And(left, right));
             }
             Or(l, r) => {
-                let left = match l {
-                    Logical(_) => CirOperand::Index(cir_translate_helper(l, cir)),
-                    Predicate(p) => CirOperand::Predicate(p.clone()),
-                };
-
-                let right = match r {
-                    Logical(_) => CirOperand::Index(cir_translate_helper(r, cir)),
-                    Predicate(p) => CirOperand::Predicate(p.clone()),
-                };
+                let left = cir_translate_to_operand(l, cir);
+                let right = cir_translate_to_operand(r, cir);
 
                 cir.push(CirInstruction::Or(left, right));
             }
             Not(r) => {
-                let right = match r {
-                    Logical(_) => CirOperand::Index(cir_translate_helper(r, cir)),
-                    Predicate(p) => CirOperand::Predicate(p.clone()),
-                };
+                let right = cir_translate_to_operand(r, cir);
 
                 cir.push(CirInstruction::Not(right));
             }
