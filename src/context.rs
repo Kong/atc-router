@@ -20,12 +20,6 @@ impl Match {
     }
 }
 
-impl Default for Match {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 #[derive(Debug)]
 pub struct Context<'a> {
     schema: &'a Schema,
