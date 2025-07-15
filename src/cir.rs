@@ -48,7 +48,11 @@ impl Translate for Expression {
 
         // Avoid unnecessary cloning
         match &instructions[0] {
-            CirInstruction::Predicate(p) => CirProgram::Predicate(p.clone()),
+            // Unwrap is safe here because we know that there is one and only one instruction
+            CirInstruction::Predicate(_) => match instructions.pop().unwrap() {
+                CirInstruction::Predicate(p) => CirProgram::Predicate(p),
+                _ => unreachable!(),
+            },
             _ => CirProgram::Instructions(instructions.into_boxed_slice()),
         }
     }
