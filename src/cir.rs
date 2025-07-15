@@ -93,6 +93,7 @@ fn cir_translate_helper(exp: &Expression, cir: &mut Vec<CirInstruction>) -> usiz
                     Logical(_) => CirOperand::Index(cir_translate_helper(r, cir)),
                     Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
+
                 cir.push(CirInstruction::Or(left, right));
             }
             Not(r) => {
@@ -100,6 +101,7 @@ fn cir_translate_helper(exp: &Expression, cir: &mut Vec<CirInstruction>) -> usiz
                     Logical(_) => CirOperand::Index(cir_translate_helper(r, cir)),
                     Predicate(p) => CirOperand::Predicate(p.clone()),
                 };
+
                 cir.push(CirInstruction::Not(right));
             }
         },
@@ -123,6 +125,7 @@ fn execute_helper(
                 CirOperand::Index(index) => execute_helper(instructions, *index, ctx, m),
                 CirOperand::Predicate(p) => p.execute(ctx, m),
             };
+
             left_val
                 && match &right {
                     CirOperand::Index(index) => execute_helper(instructions, *index, ctx, m),
@@ -134,6 +137,7 @@ fn execute_helper(
                 CirOperand::Index(index) => execute_helper(instructions, *index, ctx, m),
                 CirOperand::Predicate(p) => p.execute(ctx, m),
             };
+
             left_val
                 || match &right {
                     CirOperand::Index(index) => execute_helper(instructions, *index, ctx, m),
@@ -145,6 +149,7 @@ fn execute_helper(
                 CirOperand::Index(index) => execute_helper(instructions, *index, ctx, m),
                 CirOperand::Predicate(p) => p.execute(ctx, m),
             };
+
             !right_val
         }
         CirInstruction::Predicate(p) => p.execute(ctx, m),
