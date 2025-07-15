@@ -172,11 +172,7 @@ impl FieldCounter for CirOperand {
 impl FieldCounter for CirInstruction {
     fn add_to_counter(&self, map: &mut ValidationHashMap) {
         match self {
-            CirInstruction::And(left, right) => {
-                left.add_to_counter(map);
-                right.add_to_counter(map);
-            }
-            CirInstruction::Or(left, right) => {
+            CirInstruction::And(left, right) | CirInstruction::Or(left, right) => {
                 left.add_to_counter(map);
                 right.add_to_counter(map);
             }
@@ -190,11 +186,7 @@ impl FieldCounter for CirInstruction {
     }
     fn remove_from_counter(&self, map: &mut ValidationHashMap) {
         match self {
-            CirInstruction::And(left, right) => {
-                left.remove_from_counter(map);
-                right.remove_from_counter(map);
-            }
-            CirInstruction::Or(left, right) => {
+            CirInstruction::And(left, right) | CirInstruction::Or(left, right) => {
                 left.remove_from_counter(map);
                 right.remove_from_counter(map);
             }
