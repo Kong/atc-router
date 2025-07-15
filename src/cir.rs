@@ -105,6 +105,18 @@ fn cir_translate_helper(exp: &Expression, cir: &mut Vec<CirInstruction>) -> usiz
     cir.len() - 1
 }
 
+fn operand_execute_helper(
+    op: &CirOperand,
+    instructions: &[CirInstruction],
+    ctx: &Context,
+    m: &mut Match,
+) -> bool {
+    match op {
+        CirOperand::Index(index) => execute_helper(instructions, *index, ctx, m),
+        CirOperand::Predicate(p) => p.execute(ctx, m),
+    }
+}
+
 fn execute_helper(
     instructions: &[CirInstruction],
     index: usize,
@@ -113,36 +125,15 @@ fn execute_helper(
 ) -> bool {
     match &instructions[index] {
         CirInstruction::And(left, right) => {
-            let left_val = match &left {
-                CirOperand::Index(index) => execute_helper(instructions, *index, ctx, m),
-                CirOperand::Predicate(p) => p.execute(ctx, m),
-            };
-
-            left_val
-                && match &right {
-                    CirOperand::Index(index) => execute_helper(instructions, *index, ctx, m),
-                    CirOperand::Predicate(p) => p.execute(ctx, m),
-                }
+            operand_execute_helper(left, instructions, ctx, m) &&
+            operand_execute_helper(right, instructions, ctx, m)
         }
         CirInstruction::Or(left, right) => {
-            let left_val = match &left {
-                CirOperand::Index(index) => execute_helper(instructions, *index, ctx, m),
-                CirOperand::Predicate(p) => p.execute(ctx, m),
-            };
-
-            left_val
-                || match &right {
-                    CirOperand::Index(index) => execute_helper(instructions, *index, ctx, m),
-                    CirOperand::Predicate(p) => p.execute(ctx, m),
-                }
+            operand_execute_helper(left, instructions, ctx, m) ||
+            operand_execute_helper(right, instructions, ctx, m)
         }
         CirInstruction::Not(right) => {
-            let right_val = match &right {
-                CirOperand::Index(index) => execute_helper(instructions, *index, ctx, m),
-                CirOperand::Predicate(p) => p.execute(ctx, m),
-            };
-
-            !right_val
+            !operand_execute_helper(right, instructions, ctx, m)
         }
         CirInstruction::Predicate(p) => p.execute(ctx, m),
     }
