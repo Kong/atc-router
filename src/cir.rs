@@ -283,9 +283,9 @@ mod tests {
                 .unwrap();
 
             let mut mat = Match::new();
-            let ast_result = ast.execute(&mut context, &mut mat);
+            let ast_result = ast.execute(&context, &mut mat);
 
-            let cir_result = ast.translate().execute(&mut context, &mut mat);
+            let cir_result = ast.translate().execute(&context, &mut mat);
             assert_eq!(ast_result, cir_result);
         }
     }
