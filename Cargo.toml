@@ -33,3 +33,12 @@ crate-type = ["lib", "cdylib", "staticlib"]
 default = ["ffi"]
 ffi = ["dep:bitflags"]
 serde = ["cidr/serde", "dep:serde", "dep:serde_regex"]
+
+
+[[bench]]
+name = "build"
+harness = false
+
+[[bench]]
+name = "match_mix"
+harness = false
