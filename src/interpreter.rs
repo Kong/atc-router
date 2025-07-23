@@ -34,13 +34,13 @@ impl Execute for Predicate {
             let lhs_value_transformed;
 
             if lower {
-                match lhs_value {
-                    Value::String(s) => {
-                        lhs_value_transformed = Value::String(s.to_lowercase());
-                        lhs_value = &lhs_value_transformed;
-                    }
-                    _ => unreachable!(),
-                }
+                // SAFETY: this only panic if and only if
+                // the semantic checking didn't catch the mismatched types,
+                // which is a bug.
+                let s = lhs_value.as_str().unwrap();
+
+                lhs_value_transformed = Value::String(s.to_lowercase());
+                lhs_value = &lhs_value_transformed;
             }
 
             let mut matched = false;
@@ -67,14 +67,11 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Regex => {
-                    let rhs = match &self.rhs {
-                        Value::Regex(r) => r,
-                        _ => unreachable!(),
-                    };
-                    let lhs = match lhs_value {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
+                    let lhs = lhs_value.as_str().unwrap();
+                    let rhs = self.rhs.as_regex().unwrap();
 
                     if rhs.is_match(lhs) {
                         let reg_cap = rhs.captures(lhs).unwrap();
@@ -105,14 +102,11 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Prefix => {
-                    let rhs = match &self.rhs {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
-                    let lhs = match lhs_value {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
+                    let lhs = lhs_value.as_str().unwrap();
+                    let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.starts_with(rhs) {
                         m.matches
@@ -125,14 +119,11 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Postfix => {
-                    let rhs = match &self.rhs {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
-                    let lhs = match lhs_value {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
+                    let lhs = lhs_value.as_str().unwrap();
+                    let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.ends_with(rhs) {
                         m.matches
@@ -145,14 +136,11 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Greater => {
-                    let rhs = match &self.rhs {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
-                    let lhs = match lhs_value {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
+                    let lhs = lhs_value.as_int().unwrap();
+                    let rhs = self.rhs.as_int().unwrap();
 
                     if lhs > rhs {
                         if any {
@@ -163,14 +151,11 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::GreaterOrEqual => {
-                    let rhs = match &self.rhs {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
-                    let lhs = match lhs_value {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
+                    let lhs = lhs_value.as_int().unwrap();
+                    let rhs = self.rhs.as_int().unwrap();
 
                     if lhs >= rhs {
                         if any {
@@ -181,14 +166,11 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::Less => {
-                    let rhs = match &self.rhs {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
-                    let lhs = match lhs_value {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
+                    let lhs = lhs_value.as_int().unwrap();
+                    let rhs = self.rhs.as_int().unwrap();
 
                     if lhs < rhs {
                         if any {
@@ -199,14 +181,11 @@ impl Execute for Predicate {
                     }
                 }
                 BinaryOperator::LessOrEqual => {
-                    let rhs = match &self.rhs {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
-                    let lhs = match lhs_value {
-                        Value::Int(i) => i,
-                        _ => unreachable!(),
-                    };
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
+                    let lhs = lhs_value.as_int().unwrap();
+                    let rhs = self.rhs.as_int().unwrap();
 
                     if lhs <= rhs {
                         if any {
@@ -216,37 +195,40 @@ impl Execute for Predicate {
                         matched = true;
                     }
                 }
-                BinaryOperator::In => match (lhs_value, &self.rhs) {
-                    (Value::IpAddr(l), Value::IpCidr(r)) => {
-                        if r.contains(l) {
-                            matched = true;
-                            if any {
-                                return true;
-                            }
+                BinaryOperator::In => {
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
+                    let lhs = lhs_value.as_ipaddr().unwrap();
+                    let rhs = self.rhs.as_ipcidr().unwrap();
+
+                    if rhs.contains(lhs) {
+                        matched = true;
+                        if any {
+                            return true;
                         }
                     }
-                    _ => unreachable!(),
-                },
-                BinaryOperator::NotIn => match (lhs_value, &self.rhs) {
-                    (Value::IpAddr(l), Value::IpCidr(r)) => {
-                        if !r.contains(l) {
-                            matched = true;
-                            if any {
-                                return true;
-                            }
+                }
+                BinaryOperator::NotIn => {
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
+                    let lhs = lhs_value.as_ipaddr().unwrap();
+                    let rhs = self.rhs.as_ipcidr().unwrap();
+
+                    if !rhs.contains(lhs) {
+                        matched = true;
+                        if any {
+                            return true;
                         }
                     }
-                    _ => unreachable!(),
-                },
+                }
                 BinaryOperator::Contains => {
-                    let rhs = match &self.rhs {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
-                    let lhs = match lhs_value {
-                        Value::String(s) => s,
-                        _ => unreachable!(),
-                    };
+                    // SAFETY: this only panic if and only if
+                    // the semantic checking didn't catch the mismatched types,
+                    // which is a bug.
+                    let lhs = lhs_value.as_str().unwrap();
+                    let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.contains(rhs) {
                         if any {

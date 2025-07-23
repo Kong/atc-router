@@ -7,14 +7,14 @@ use std::net::IpAddr;
 use serde::{Deserialize, Serialize};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Expression {
     Logical(Box<LogicalExpression>),
     Predicate(Predicate),
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LogicalExpression {
     And(Expression, Expression),
     Or(Expression, Expression),
@@ -71,6 +71,8 @@ impl PartialEq for Value {
     }
 }
 
+impl Eq for Value {}
+
 impl Value {
     pub fn my_type(&self) -> Type {
         match self {
@@ -80,6 +82,43 @@ impl Value {
             Value::Int(_) => Type::Int,
             Value::Regex(_) => Type::Regex,
         }
+    }
+}
+
+impl Value {
+    pub fn as_str(&self) -> Option<&str> {
+        let Value::String(s) = self else {
+            return None;
+        };
+        Some(s.as_str())
+    }
+
+    pub fn as_regex(&self) -> Option<&Regex> {
+        let Value::Regex(r) = self else {
+            return None;
+        };
+        Some(r)
+    }
+
+    pub fn as_int(&self) -> Option<i64> {
+        let Value::Int(i) = self else {
+            return None;
+        };
+        Some(*i)
+    }
+
+    pub fn as_ipaddr(&self) -> Option<&IpAddr> {
+        let Value::IpAddr(a) = self else {
+            return None;
+        };
+        Some(a)
+    }
+
+    pub fn as_ipcidr(&self) -> Option<&IpCidr> {
+        let Value::IpCidr(c) = self else {
+            return None;
+        };
+        Some(c)
     }
 }
 
@@ -101,7 +140,7 @@ pub enum Type {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Lhs {
     pub var_name: String,
     pub transformations: Vec<LhsTransformations>,
@@ -126,7 +165,7 @@ impl Lhs {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Predicate {
     pub lhs: Lhs,
     pub rhs: Value,

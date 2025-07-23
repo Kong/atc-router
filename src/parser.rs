@@ -213,31 +213,32 @@ fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
     Ok(Predicate {
         lhs,
         rhs: if op == BinaryOperator::Regex {
-            if let Value::String(s) = rhs {
-                let r = Regex::new(&s).map_err(|e| {
-                    ParseError::new_from_span(
-                        ErrorVariant::CustomError {
-                            message: e.to_string(),
-                        },
-                        rhs_pair.as_span(),
-                    )
-                })?;
-
-                Value::Regex(r)
-            } else {
+            let Value::String(s) = rhs else {
                 return Err(ParseError::new_from_span(
                     ErrorVariant::CustomError {
                         message: "regex operator can only be used with String operands".to_string(),
                     },
                     rhs_pair.as_span(),
                 ));
-            }
+            };
+
+            let r = Regex::new(&s).map_err(|e| {
+                ParseError::new_from_span(
+                    ErrorVariant::CustomError {
+                        message: e.to_string(),
+                    },
+                    rhs_pair.as_span(),
+                )
+            })?;
+
+            Value::Regex(r)
         } else {
             rhs
         },
         op,
     })
 }
+
 // transform_func = { ident ~ "(" ~ lhs ~ ")" }
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_transform_func(pair: Pair<Rule>) -> ParseResult<Lhs> {
@@ -252,7 +253,7 @@ fn parse_transform_func(pair: Pair<Rule>) -> ParseResult<Lhs> {
         unknown => {
             return Err(ParseError::new_from_span(
                 ErrorVariant::CustomError {
-                    message: format!("unknown transformation function: {}", unknown),
+                    message: format!("unknown transformation function: {unknown}"),
                 },
                 span,
             ));

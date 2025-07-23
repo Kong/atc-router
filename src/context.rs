@@ -12,11 +12,16 @@ pub struct Match {
 
 impl Match {
     pub fn new() -> Self {
-        Match {
+        Self {
             uuid: Uuid::default(),
             matches: FnvHashMap::default(),
             captures: FnvHashMap::default(),
         }
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.matches.clear();
+        self.captures.clear();
     }
 }
 
@@ -35,7 +40,7 @@ pub struct Context<'a> {
 
 impl<'a> Context<'a> {
     pub fn new(schema: &'a Schema) -> Self {
-        Context {
+        Self {
             schema,
             values: FnvHashMap::with_hasher(Default::default()),
             result: None,
