@@ -8,10 +8,10 @@ use std::collections::{BTreeMap, HashMap};
 use std::ops::Deref;
 use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct MatcherKey(usize, Uuid);
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Router<'a> {
     schema: SchemaOwnedOrRef<'a>,
     matchers: BTreeMap<MatcherKey, Expression>,
