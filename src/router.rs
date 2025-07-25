@@ -4,40 +4,30 @@ use crate::interpreter::Execute;
 use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
+use std::borrow::Borrow;
 use std::collections::{BTreeMap, HashMap};
-use std::ops::Deref;
 use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct MatcherKey(usize, Uuid);
 
 #[derive(Debug)]
-pub struct Router<'a> {
-    schema: SchemaOwnedOrRef<'a>,
+pub struct Router<S> {
+    schema: S,
     matchers: BTreeMap<MatcherKey, Expression>,
     pub fields: HashMap<String, usize>,
 }
 
-impl<'a> Router<'a> {
-    /// Creates a new [`Router`] that holds a shared reference to a [`Schema`].
+impl<S> Router<S>
+where
+    S: Borrow<Schema>,
+{
+    /// Creates a new [`Router`] that holds [`Borrow`]<[`Schema`]>.
     ///
-    /// This is useful when the schema is managed outside the router and/or shared
-    /// across multiple components.
-    pub fn new(schema: &'a Schema) -> Self {
+    /// This provides flexibility to use different types of schema providers.
+    pub fn new(schema: S) -> Self {
         Self {
-            schema: SchemaOwnedOrRef::Ref(schema),
-            matchers: BTreeMap::new(),
-            fields: HashMap::new(),
-        }
-    }
-
-    /// Creates a new [`Router`] that owns its [`Schema`].
-    ///
-    /// This allows the router to be self contained,
-    /// making it easier to use as a standalone component.
-    pub fn new_owning(schema: Schema) -> Self {
-        Self {
-            schema: SchemaOwnedOrRef::Owned(schema),
+            schema,
             matchers: BTreeMap::new(),
             fields: HashMap::new(),
         }
@@ -45,12 +35,10 @@ impl<'a> Router<'a> {
 
     /// Returns a reference to the [`Schema`] used by this router.
     ///
-    /// Especially useful if the router owns the schema internally ([`new_owning`]),
-    /// but you still need to pass a reference to other components like [`Context`].
-    ///
-    /// [`new_owning`]: Router::new_owning
+    /// Especially useful when the router owns or wraps the schema,
+    /// and you need to pass a reference to other components like [`Context`].
     pub fn schema(&self) -> &Schema {
-        &self.schema
+        self.schema.borrow()
     }
 
     pub fn add_matcher(&mut self, priority: usize, uuid: Uuid, atc: &str) -> Result<(), String> {
@@ -71,7 +59,7 @@ impl<'a> Router<'a> {
             return Err("UUID already exists".to_string());
         }
 
-        expr.validate(&self.schema)?;
+        expr.validate(self.schema())?;
         expr.add_to_counter(&mut self.fields);
 
         assert!(self.matchers.insert(key, expr).is_none());
@@ -117,30 +105,6 @@ impl<'a> Router<'a> {
     }
 }
 
-/// A smart pointer over a [`Schema`], which may be either borrowed or owned.
-///
-/// Used by [`Router`] to support both externally managed and self-contained schemas.
-/// Owning the schema is especially useful when the router is used outside of the FFI context,
-/// making it fully independent.
-///
-/// Implements [`Deref`] for ergonomic access to the underlying [`Schema`].
-#[derive(Debug)]
-enum SchemaOwnedOrRef<'a> {
-    Ref(&'a Schema),
-    Owned(Schema),
-}
-
-impl Deref for SchemaOwnedOrRef<'_> {
-    type Target = Schema;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Ref(s) => s,
-            Self::Owned(s) => s,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use uuid::Uuid;
@@ -148,6 +112,8 @@ mod tests {
     use crate::{ast::Type, context::Context, schema::Schema};
 
     use super::Router;
+
+    use std::sync::Arc;
 
     #[test]
     fn execute_succeeds() {
@@ -210,11 +176,53 @@ mod tests {
     }
 
     #[test]
-    fn test_basic_owned_schema() {
+    fn test_shared_schema_instantiation() {
         let mut schema = Schema::default();
         schema.add_field("http.path", Type::String);
 
-        let mut router: Router<'static> = Router::new_owning(schema);
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
+            .expect("should add");
+        let mut ctx = Context::new(router.schema());
+        ctx.add_value("http.path", "/dev".to_owned().into());
+        router.try_match(&ctx).expect("matches");
+    }
+
+    #[test]
+    fn test_owned_schema_instantiation() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(schema);
+        router
+            .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
+            .expect("should add");
+        let mut ctx = Context::new(router.schema());
+        ctx.add_value("http.path", "/dev".to_owned().into());
+        router.try_match(&ctx).expect("matches");
+    }
+
+    #[test]
+    fn test_arc_schema_instantiation() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(Arc::new(schema));
+        router
+            .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
+            .expect("should add");
+        let mut ctx = Context::new(router.schema());
+        ctx.add_value("http.path", "/dev".to_owned().into());
+        router.try_match(&ctx).expect("matches");
+    }
+
+    #[test]
+    fn test_box_schema_instantiation() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(Box::new(schema));
         router
             .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
             .expect("should add");
