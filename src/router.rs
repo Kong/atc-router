@@ -3,7 +3,7 @@ use crate::context::{Context, Match};
 use crate::interpreter::Execute;
 use crate::parser::parse;
 use crate::schema::Schema;
-use crate::semantics::{FieldCounter, Validate};
+use crate::semantics::{FieldCounter, Validate, ValidationHashMap, ValidationResult};
 use std::collections::{BTreeMap, HashMap};
 use std::ops::Deref;
 use uuid::Uuid;
@@ -15,7 +15,7 @@ struct MatcherKey(usize, Uuid);
 pub struct Router<'a> {
     schema: SchemaOwnedOrRef<'a>,
     matchers: BTreeMap<MatcherKey, Expression>,
-    pub fields: HashMap<String, usize>,
+    pub fields: ValidationHashMap,
 }
 
 impl<'a> Router<'a> {
@@ -53,7 +53,7 @@ impl<'a> Router<'a> {
         &self.schema
     }
 
-    pub fn add_matcher(&mut self, priority: usize, uuid: Uuid, atc: &str) -> Result<(), String> {
+    pub fn add_matcher(&mut self, priority: usize, uuid: Uuid, atc: &str) -> ValidationResult {
         let expr = parse(atc).map_err(|e| e.to_string())?;
 
         self.add_matcher_expr(priority, uuid, expr)
@@ -64,7 +64,7 @@ impl<'a> Router<'a> {
         priority: usize,
         uuid: Uuid,
         expr: Expression,
-    ) -> Result<(), String> {
+    ) -> ValidationResult {
         let key = MatcherKey(priority, uuid);
 
         if self.matchers.contains_key(&key) {
