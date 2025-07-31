@@ -7,22 +7,24 @@ pub trait Execute {
 
 impl Execute for Expression {
     fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
+        use Expression::{Logical, Predicate};
+        use LogicalExpression::{And, Not, Or};
+
         match self {
-            Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
-                LogicalExpression::Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
-                LogicalExpression::Not(r) => !r.execute(ctx, m),
+            Logical(l) => match l.as_ref() {
+                And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
+                Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
+                Not(r) => !r.execute(ctx, m),
             },
-            Expression::Predicate(p) => p.execute(ctx, m),
+            Predicate(p) => p.execute(ctx, m),
         }
     }
 }
 
 impl Execute for Predicate {
     fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
-        let lhs_values = match ctx.value_of(&self.lhs.var_name) {
-            None => return false,
-            Some(v) => v,
+        let Some(lhs_values) = ctx.value_of(&self.lhs.var_name) else {
+            return false;
         };
 
         let (lower, any) = self.lhs.get_transformations();
@@ -30,7 +32,7 @@ impl Execute for Predicate {
         // can only be "all" or "any" mode.
         // - all: all values must match (default)
         // - any: ok if any any matched
-        for mut lhs_value in lhs_values.iter() {
+        for mut lhs_value in lhs_values {
             let lhs_value_transformed;
 
             if lower {
@@ -44,29 +46,37 @@ impl Execute for Predicate {
             }
 
             let mut matched = false;
+
+            // if any exists we will return immediatelly
+            macro_rules! check_any {
+                () => {
+                    if any {
+                        return true;
+                    }
+                    matched = true;
+                };
+            }
+
+            use BinaryOperator::{
+                Contains, Equals, Greater, GreaterOrEqual, In, Less, LessOrEqual, NotEquals, NotIn,
+                Postfix, Prefix, Regex,
+            };
+
             match self.op {
-                BinaryOperator::Equals => {
+                Equals => {
                     if lhs_value == &self.rhs {
                         m.matches
                             .insert(self.lhs.var_name.clone(), self.rhs.clone());
 
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
-                BinaryOperator::NotEquals => {
+                NotEquals => {
                     if lhs_value != &self.rhs {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
-                BinaryOperator::Regex => {
+                Regex => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -94,14 +104,10 @@ impl Execute for Predicate {
                             }
                         }
 
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
-                BinaryOperator::Prefix => {
+                Prefix => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -111,14 +117,11 @@ impl Execute for Predicate {
                     if lhs.starts_with(rhs) {
                         m.matches
                             .insert(self.lhs.var_name.clone(), self.rhs.clone());
-                        if any {
-                            return true;
-                        }
 
-                        matched = true;
+                        check_any!();
                     }
                 }
-                BinaryOperator::Postfix => {
+                Postfix => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -128,14 +131,11 @@ impl Execute for Predicate {
                     if lhs.ends_with(rhs) {
                         m.matches
                             .insert(self.lhs.var_name.clone(), self.rhs.clone());
-                        if any {
-                            return true;
-                        }
 
-                        matched = true;
+                        check_any!();
                     }
                 }
-                BinaryOperator::Greater => {
+                Greater => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -143,14 +143,10 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_int().unwrap();
 
                     if lhs > rhs {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
-                BinaryOperator::GreaterOrEqual => {
+                GreaterOrEqual => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -158,14 +154,10 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_int().unwrap();
 
                     if lhs >= rhs {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
-                BinaryOperator::Less => {
+                Less => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -173,14 +165,10 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_int().unwrap();
 
                     if lhs < rhs {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
-                BinaryOperator::LessOrEqual => {
+                LessOrEqual => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -188,14 +176,10 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_int().unwrap();
 
                     if lhs <= rhs {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
-                BinaryOperator::In => {
+                In => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -203,13 +187,10 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_ipcidr().unwrap();
 
                     if rhs.contains(lhs) {
-                        matched = true;
-                        if any {
-                            return true;
-                        }
+                        check_any!();
                     }
                 }
-                BinaryOperator::NotIn => {
+                NotIn => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -217,13 +198,10 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_ipcidr().unwrap();
 
                     if !rhs.contains(lhs) {
-                        matched = true;
-                        if any {
-                            return true;
-                        }
+                        check_any!();
                     }
                 }
-                BinaryOperator::Contains => {
+                Contains => {
                     // SAFETY: this only panic if and only if
                     // the semantic checking didn't catch the mismatched types,
                     // which is a bug.
@@ -231,11 +209,7 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.contains(rhs) {
-                        if any {
-                            return true;
-                        }
-
-                        matched = true;
+                        check_any!();
                     }
                 }
             } // match
@@ -274,7 +248,7 @@ fn test_predicate() {
         op: BinaryOperator::Prefix,
     };
 
-    assert!(!p.execute(&mut ctx, &mut mat));
+    assert!(!p.execute(&ctx, &mut mat));
 
     // check if any value matches starts_with foo -- should be false
     let p = Predicate {
@@ -286,7 +260,7 @@ fn test_predicate() {
         op: BinaryOperator::Prefix,
     };
 
-    assert!(!p.execute(&mut ctx, &mut mat));
+    assert!(!p.execute(&ctx, &mut mat));
 
     // test any mode
     let lhs_values = vec![
@@ -310,7 +284,7 @@ fn test_predicate() {
         op: BinaryOperator::Prefix,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if all values match ends_with foo -- should be false
     let p = Predicate {
@@ -322,7 +296,7 @@ fn test_predicate() {
         op: BinaryOperator::Postfix,
     };
 
-    assert!(!p.execute(&mut ctx, &mut mat));
+    assert!(!p.execute(&ctx, &mut mat));
 
     // check if any value matches ends_with foo -- should be true
     let p = Predicate {
@@ -334,7 +308,7 @@ fn test_predicate() {
         op: BinaryOperator::Postfix,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if any value matches starts_with foo -- should be true
     let p = Predicate {
@@ -346,7 +320,7 @@ fn test_predicate() {
         op: BinaryOperator::Prefix,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if any value matches ends_with nar -- should be false
     let p = Predicate {
@@ -358,7 +332,7 @@ fn test_predicate() {
         op: BinaryOperator::Postfix,
     };
 
-    assert!(!p.execute(&mut ctx, &mut mat));
+    assert!(!p.execute(&ctx, &mut mat));
 
     // check if any value matches ends_with empty string -- should be true
     let p = Predicate {
@@ -370,7 +344,7 @@ fn test_predicate() {
         op: BinaryOperator::Postfix,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if any value matches starts_with empty string -- should be true
     let p = Predicate {
@@ -382,7 +356,7 @@ fn test_predicate() {
         op: BinaryOperator::Prefix,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if any value matches contains `ob` -- should be true
     let p = Predicate {
@@ -394,7 +368,7 @@ fn test_predicate() {
         op: BinaryOperator::Contains,
     };
 
-    assert!(p.execute(&mut ctx, &mut mat));
+    assert!(p.execute(&ctx, &mut mat));
 
     // check if any value matches contains `ok` -- should be false
     let p = Predicate {
@@ -406,5 +380,5 @@ fn test_predicate() {
         op: BinaryOperator::Contains,
     };
 
-    assert!(!p.execute(&mut ctx, &mut mat));
+    assert!(!p.execute(&ctx, &mut mat));
 }
