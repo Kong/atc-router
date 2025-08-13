@@ -20,6 +20,7 @@ pub enum CValue {
     IpCidr(*const u8),
     IpAddr(*const u8),
     Int(i64),
+    Bool(bool),
 }
 
 impl TryFrom<&CValue> for Value {
@@ -53,6 +54,7 @@ impl TryFrom<&CValue> for Value {
                 .map_err(|e| e.to_string())?,
             ),
             CValue::Int(i) => Self::Int(*i),
+            CValue::Bool(b) => Self::Bool(*b),
         })
     }
 }

@@ -7,3 +7,5 @@
 
 t/servroot
 Cargo.lock
+
+.idea/

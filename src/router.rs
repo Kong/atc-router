@@ -114,6 +114,7 @@ mod tests {
     use super::Router;
 
     use std::sync::Arc;
+    use crate::ast::Value;
 
     #[test]
     fn execute_succeeds() {
@@ -228,6 +229,21 @@ mod tests {
             .expect("should add");
         let mut ctx = Context::new(router.schema());
         ctx.add_value("http.path", "/dev".to_owned().into());
+        router.try_match(&ctx).expect("matches");
+    }
+
+    #[test]
+    fn test_bool() {
+        let mut schema = Schema::default();
+        schema.add_field("kafka.record.value.validated", Type::Bool);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(0, Uuid::default(), "kafka.record.value.validated == true")
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("kafka.record.value.validated", Value::Bool(true));
         router.try_match(&ctx).expect("matches");
     }
 }
