@@ -41,7 +41,7 @@ impl<'a> Iterator for PredicateIterator<'a> {
 }
 
 impl Expression {
-    fn iter_predicates(&self) -> PredicateIterator {
+    fn iter_predicates(&self) -> PredicateIterator<'_> {
         PredicateIterator::new(self)
     }
 }

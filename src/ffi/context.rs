@@ -21,7 +21,7 @@ use uuid::fmt::Hyphenated;
 ///
 /// [`schema_new`]: crate::ffi::schema::schema_new
 #[no_mangle]
-pub unsafe extern "C" fn context_new(schema: &Schema) -> *mut Context {
+pub unsafe extern "C" fn context_new(schema: &Schema) -> *mut Context<'_> {
     Box::into_raw(Box::new(Context::new(schema)))
 }
 
