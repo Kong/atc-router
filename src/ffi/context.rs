@@ -158,9 +158,9 @@ pub unsafe extern "C" fn context_reset(context: &mut Context) {
 ///   must be passed to [`router_execute`] before calling this function,
 ///   and must not be reset by [`context_reset`] before calling this function.
 /// - If `uuid_hex` is not `NULL`, `uuid_hex` must be valid to read and write for
-///   `16 * size_of::<u8>()` bytes, and it must be properly aligned.
+///   `36` bytes.
 /// - If `matched_field` is not `NULL`,
-///   `matched_field` must be a vlaid pointer to a C-style string,
+///   `matched_field` must be a valid pointer to a C-style string,
 ///   must be properly aligned, and must not have '\0' in the middle.
 /// - If `matched_value` is not `NULL`,
 ///   `matched_value` must be valid to read and write for
