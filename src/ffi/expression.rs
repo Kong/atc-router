@@ -136,11 +136,11 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 ///
 /// - `atc` must be a valid pointer to a C-style string, properly aligned, and must not contain an internal `\0`.
 /// - `schema` must be a valid pointer returned by [`schema_new`].
-/// - `fields_buf`, must be valid for writing `fields_buf_len * size_of::<u8>()` bytes and properly aligned.
+/// - `fields_buf`, must be valid for writing `*fields_buf_len` bytes.
 /// - `fields_buf_len` must be a valid pointer to write `size_of::<usize>()` bytes and properly aligned.
 /// - `fields_total` must be a valid pointer to write `size_of::<usize>()` bytes and properly aligned.
 /// - `operators` must be a valid pointer to write `size_of::<u64>()` bytes and properly aligned.
-/// - `errbuf` must be valid for reading and writing `errbuf_len * size_of::<u8>()` bytes and properly aligned.
+/// - `errbuf` must be valid for reading and writing `*errbuf_len` bytes.
 /// - `errbuf_len` must be a valid pointer for reading and writing `size_of::<usize>()` bytes and properly aligned.
 ///
 /// [`schema_new`]: crate::ffi::schema::schema_new
@@ -153,7 +153,7 @@ pub unsafe extern "C" fn expression_validate(
     fields_total: *mut usize,
     operators: *mut u64,
     errbuf: *mut u8,
-    errbuf_len: *mut usize,
+    errbuf_len: &mut usize,
 ) -> i64 {
     use std::collections::HashSet;
 
@@ -236,7 +236,7 @@ mod tests {
 
         let result = unsafe {
             expression_validate(
-                atc.as_bytes().as_ptr(),
+                atc.as_ptr().cast(),
                 schema,
                 fields_buf.as_mut_ptr(),
                 &mut fields_buf_len,
@@ -262,9 +262,8 @@ mod tests {
                 Ok((fields, fields_buf_len, operators))
             }
             ATC_ROUTER_EXPRESSION_VALIDATE_FAILED => {
-                let err = ffi::CStr::from_bytes_with_nul(&errbuf[..errbuf_len])
-                    .expect("error message is not null-terminated");
-                Err((result, err.to_string_lossy().to_string()))
+                let err = String::from_utf8(errbuf[..errbuf_len].to_vec()).unwrap();
+                Err((result, err))
             }
             ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL => Err((result, String::new())),
             _ => panic!("Unknown error code"),

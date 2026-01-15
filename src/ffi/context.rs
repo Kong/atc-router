@@ -75,9 +75,8 @@ pub unsafe extern "C" fn context_free(context: *mut Context) {
 /// * `field` must be a valid pointer to a C-style string,
 ///   must be properply aligned, and must not have '\0' in the middle.
 /// * `value` must be a valid pointer to a [`CValue`].
-/// * `errbuf` must be valid to read and write for `errbuf_len * size_of::<u8>()` bytes,
-///   and it must be properly aligned.
-/// * `errbuf_len` must be vlaid to read and write for `size_of::<usize>()` bytes,
+/// * `errbuf` must be valid to read and write for `*errbuf_len` bytes.
+/// * `errbuf_len` must be valid to read and write for `size_of::<usize>()` bytes,
 ///   and it must be properly aligned.
 #[no_mangle]
 pub unsafe extern "C" fn context_add_value(
@@ -85,7 +84,7 @@ pub unsafe extern "C" fn context_add_value(
     field: *const i8,
     value: &CValue,
     errbuf: *mut u8,
-    errbuf_len: *mut usize,
+    errbuf_len: &mut usize,
 ) -> bool {
     let field = ffi::CStr::from_ptr(field as *const c_char)
         .to_str()
