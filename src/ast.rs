@@ -59,9 +59,7 @@ pub enum Value {
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Regex(_), _) | (_, Self::Regex(_)) => {
-                panic!("Regexes can not be compared using eq")
-            }
+            (Self::Regex(re1), Self::Regex(re2)) => re1.as_str() == re2.as_str(),
             (Self::String(s1), Self::String(s2)) => s1 == s2,
             (Self::IpCidr(i1), Self::IpCidr(i2)) => i1 == i2,
             (Self::IpAddr(i1), Self::IpAddr(i2)) => i1 == i2,
