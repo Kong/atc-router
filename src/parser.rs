@@ -1,343 +1,365 @@
-extern crate pest;
-
-use crate::ast::{
-    BinaryOperator, Expression, Lhs, LhsTransformations, LogicalExpression, Predicate, Value,
-};
-use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
-use pest::error::Error as ParseError;
-use pest::error::ErrorVariant;
-use pest::iterators::Pair;
-use pest::pratt_parser::Assoc as AssocNew;
-use pest::pratt_parser::{Op, PrattParser};
-use pest::Parser;
+use crate::ast;
+use crate::ast::BinaryOperator;
+use cidr::IpCidr;
 use regex::Regex;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::borrow::Cow;
+use std::net::IpAddr;
+use winnow::ascii::{digit1, escaped, hex_digit1, oct_digit0};
+use winnow::combinator::Infix::Left;
+use winnow::combinator::{
+    alt, backtrack_err, cut_err, delimited, eof, fail, opt, peek, preceded, repeat, separated,
+    separated_pair, terminated, trace,
+};
+use winnow::dispatch;
+use winnow::error::{AddContext, ContextError, ParserError, StrContext, StrContextValue};
+use winnow::prelude::*;
+use winnow::stream::AsChar;
+use winnow::token::{any, one_of, take, take_until, take_while};
 
-type ParseResult<T> = Result<T, ParseError<Rule>>;
-
-/// cbindgen:ignore
-// Bug: https://github.com/eqrion/cbindgen/issues/286
-trait IntoParseResult<T> {
-    #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-    fn into_parse_result(self, pair: &Pair<Rule>) -> ParseResult<T>;
-}
-
-impl<T, E> IntoParseResult<T> for Result<T, E>
+fn expect_char<'a, E: ParserError<&'a str>>(ch: char) -> impl Parser<&'a str, char, E>
 where
-    E: ToString,
+    E: AddContext<&'a str, StrContext>,
 {
-    fn into_parse_result(self, pair: &Pair<Rule>) -> ParseResult<T> {
-        self.map_err(|e| {
-            let span = pair.as_span();
+    ch.context(StrContext::Expected(StrContextValue::CharLiteral(ch)))
+}
 
-            let err_var = ErrorVariant::CustomError {
-                message: e.to_string(),
-            };
+fn whitespace<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> Result<&'a str, E> {
+    trace("whitespace", take_while(0.., (' ', '\t', '\r', '\n'))).parse_next(input)
+}
 
-            ParseError::new_from_span(err_var, span)
-        })
+fn ws<'a, F, O, E: ParserError<&'a str>>(inner: F) -> impl Parser<&'a str, O, E>
+where
+    F: Parser<&'a str, O, E>,
+{
+    delimited(whitespace, inner, whitespace)
+}
+
+fn ident<'a>(input: &mut &'a str) -> ModalResult<&'a str> {
+    (
+        one_of(|c: char| c.is_ascii_alphabetic()),
+        take_while(0.., |c: char| {
+            c.is_ascii_alphanumeric() || c == '_' || c == '.'
+        }),
+    )
+        .take()
+        .parse_next(input)
+}
+
+fn int_literal(input: &mut &str) -> ModalResult<i64> {
+    fn inner(input: &mut &str) -> ModalResult<i64> {
+        let sign = opt("-").parse_next(input)?;
+
+        let hex = preceded("0x", cut_err(hex_digit1))
+            .try_map(|s| i64::from_str_radix(s, 16))
+            .context(StrContext::Label("hexadecimal integer"));
+
+        // TODO: the pest grammar accepts `09` as decimal (but fails with 009), because it
+        //       only requires at least one octal digit after `0` before it
+        //       commits to parsing as octal
+        let octal = preceded(
+            "0",
+            (one_of(AsChar::is_oct_digit), cut_err(oct_digit0)).take(),
+        )
+        .try_map(|s: &str| i64::from_str_radix(s, 8))
+        .context(StrContext::Label("octal integer"));
+        let decimal = digit1
+            .parse_to()
+            .context(StrContext::Label("decimal integer"));
+
+        let value = alt((hex, octal, decimal)).parse_next(input)?;
+
+        let value = match sign {
+            Some(_) => -value,
+            None => value,
+        };
+
+        Ok(value)
     }
+    inner.context(StrContext::Label("int")).parse_next(input)
 }
 
-#[derive(Parser)]
-#[grammar = "atc_grammar.pest"]
-struct ATCParser {
-    pratt_parser: PrattParser<Rule>,
+fn str_literal(input: &mut &str) -> ModalResult<String> {
+    delimited(
+        '"',
+        cut_err(escaped(
+            take_until(1.., ('"', '\\')),
+            '\\',
+            alt((
+                '\\'.value("\\"),
+                '"'.value("\""),
+                'n'.value("\n"),
+                'r'.value("\r"),
+                't'.value("\t"),
+                fail.context(StrContext::Label("escape sequence"))
+                    .context_with(|| {
+                        ['\\', '"', 'n', 'r', 't']
+                            .into_iter()
+                            .map(|ch| StrContext::Expected(StrContextValue::CharLiteral(ch)))
+                    }),
+            )),
+        )),
+        cut_err(expect_char('"')),
+    )
+    .context(StrContext::Label("string"))
+    .parse_next(input)
 }
 
-macro_rules! parse_num {
-    ($node:expr, $ty:ident, $radix:expr) => {
-        $ty::from_str_radix($node.as_str(), $radix).into_parse_result(&$node)
-    };
+fn rawstr_literal<'a>(input: &mut &'a str) -> ModalResult<&'a str> {
+    // TODO: arbitrary number of #
+    delimited("r#\"", cut_err(take_until(0.., "\"#")), cut_err("\"#"))
+        .context(StrContext::Label("raw string"))
+        .parse_next(input)
 }
 
-impl ATCParser {
-    fn new() -> Self {
-        Self {
-            pratt_parser: PrattParser::new()
-                .op(Op::infix(Rule::and_op, AssocNew::Left))
-                .op(Op::infix(Rule::or_op, AssocNew::Left)),
-        }
-    }
-    // matcher = { SOI ~ expression ~ EOI }
-    #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-    fn parse_matcher(&mut self, source: &str) -> ParseResult<Expression> {
-        let pairs = ATCParser::parse(Rule::matcher, source)?;
-        let expr_pair = pairs.peek().unwrap().into_inner().peek().unwrap();
-        let rule = expr_pair.as_rule();
-        match rule {
-            Rule::expression => parse_expression(expr_pair, &self.pratt_parser),
-            _ => unreachable!(),
-        }
-    }
+fn anystr_literal<'a>(input: &mut &'a str) -> ModalResult<Cow<'a, str>> {
+    dispatch!(peek(any);
+        '"' => cut_err(str_literal.map(Cow::Owned)),
+        'r' => cut_err(rawstr_literal.map(Cow::Borrowed)),
+        _ => fail.context(StrContext::Label("string")),
+    )
+    .parse_next(input)
 }
 
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_ident(pair: Pair<Rule>) -> ParseResult<String> {
-    Ok(pair.as_str().into())
+fn ipv4_literal(input: &mut &str) -> ModalResult<std::net::Ipv4Addr> {
+    let octet = || take_while(1..=3, AsChar::is_dec_digit);
+
+    (
+        octet(),
+        '.',
+        cut_err(separated(3, octet(), '.').map(|()| ())),
+    )
+        .take()
+        .parse_to()
+        .context(StrContext::Label("ipv4 address"))
+        .parse_next(input)
 }
 
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_lhs(pair: Pair<Rule>) -> ParseResult<Lhs> {
-    let pairs = pair.into_inner();
-    let pair = pairs.peek().unwrap();
-    let rule = pair.as_rule();
-    Ok(match rule {
-        Rule::transform_func => parse_transform_func(pair)?,
-        Rule::ident => {
-            let var = parse_ident(pair)?;
-            Lhs {
-                var_name: var,
-                transformations: Vec::new(),
-            }
-        }
-        _ => unreachable!(),
-    })
+fn ipv6_literal(input: &mut &str) -> ModalResult<std::net::Ipv6Addr> {
+    // TODO: ipv4 mapped addresses
+    let segment = || take_while(1..=4, |c: char| c.is_ascii_hexdigit()).void();
+    (
+        alt((':'.void(), segment())),
+        ':',
+        cut_err(repeat(0.., alt((':'.void(), segment()))).map(|()| ())),
+    )
+        .take()
+        .parse_to()
+        .context(StrContext::Label("ipv6 address"))
+        .parse_next(input)
 }
 
-// rhs = { str_literal | ip_literal | int_literal }
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_rhs(pair: Pair<Rule>) -> ParseResult<Value> {
-    let pairs = pair.into_inner();
-    let pair = pairs.peek().unwrap();
-    let rule = pair.as_rule();
-    Ok(match rule {
-        Rule::str_literal => Value::String(parse_str_literal(pair)?),
-        Rule::rawstr_literal => Value::String(parse_rawstr_literal(pair)?),
-        Rule::ipv4_cidr_literal => Value::IpCidr(IpCidr::V4(parse_ipv4_cidr_literal(pair)?)),
-        Rule::ipv6_cidr_literal => Value::IpCidr(IpCidr::V6(parse_ipv6_cidr_literal(pair)?)),
-        Rule::ipv4_literal => Value::IpAddr(IpAddr::V4(parse_ipv4_literal(pair)?)),
-        Rule::ipv6_literal => Value::IpAddr(IpAddr::V6(parse_ipv6_literal(pair)?)),
-        Rule::int_literal => Value::Int(parse_int_literal(pair)?),
-        _ => unreachable!(),
-    })
+fn ipv4_cidr_literal(input: &mut &str) -> ModalResult<IpCidr> {
+    separated_pair(
+        backtrack_err(ipv4_literal.map(IpAddr::V4)),
+        expect_char('/'),
+        cut_err(take_while(1..=2, |c: char| c.is_ascii_digit()).parse_to()),
+    )
+    .try_map(|(addr, prefix)| IpCidr::new(addr, prefix))
+    .context(StrContext::Label("ipv4 cidr"))
+    .parse_next(input)
 }
 
-// str_literal = ${ "\"" ~ str_inner ~ "\"" }
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_str_literal(pair: Pair<Rule>) -> ParseResult<String> {
-    let char_pairs = pair.into_inner();
-    let mut s = String::new();
-    for char_pair in char_pairs {
-        let rule = char_pair.as_rule();
-        match rule {
-            Rule::str_esc => s.push(parse_str_esc(char_pair)),
-            Rule::str_char => s.push(parse_str_char(char_pair)),
-            _ => unreachable!(),
-        }
-    }
-    Ok(s)
+fn ipv6_cidr_literal(input: &mut &str) -> ModalResult<IpCidr> {
+    separated_pair(
+        backtrack_err(ipv6_literal.map(IpAddr::V6)),
+        expect_char('/'),
+        cut_err(take_while(1..=3, |c: char| c.is_ascii_digit()).parse_to()),
+    )
+    .try_map(|(addr, prefix)| IpCidr::new(addr, prefix))
+    .context(StrContext::Label("ipv6 cidr"))
+    .parse_next(input)
 }
 
-// rawstr_literal = ${ "r#\"" ~ rawstr_char* ~ "\"#" }
-// rawstr_char = { !"\"#" ~ ANY }
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_rawstr_literal(pair: Pair<Rule>) -> ParseResult<String> {
-    let char_pairs = pair.into_inner();
-    let mut s = String::new();
-    for char_pair in char_pairs {
-        let rule = char_pair.as_rule();
-        match rule {
-            Rule::rawstr_char => s.push(parse_str_char(char_pair)),
-            _ => unreachable!(),
-        }
-    }
-    Ok(s)
+fn rhs(input: &mut &str) -> ModalResult<ast::Value> {
+    alt((
+        anystr_literal.map(Cow::into_owned).map(ast::Value::String),
+        ipv4_cidr_literal.map(ast::Value::IpCidr),
+        ipv6_cidr_literal.map(ast::Value::IpCidr),
+        ipv4_literal.map(IpAddr::V4).map(ast::Value::IpAddr),
+        ipv6_literal.map(IpAddr::V6).map(ast::Value::IpAddr),
+        int_literal.map(ast::Value::Int),
+    ))
+    .parse_next(input)
 }
 
-fn parse_str_esc(pair: Pair<Rule>) -> char {
-    match pair.as_str() {
-        r#"\""# => '"',
-        r#"\\"# => '\\',
-        r#"\n"# => '\n',
-        r#"\r"# => '\r',
-        r#"\t"# => '\t',
-
-        _ => unreachable!(),
-    }
-}
-fn parse_str_char(pair: Pair<Rule>) -> char {
-    pair.as_str().chars().next().unwrap()
+fn lhs(input: &mut &str) -> ModalResult<ast::Lhs> {
+    alt((
+        transform_func,
+        ident.map(|ident| ast::Lhs {
+            var_name: ident.to_string(),
+            transformations: vec![],
+        }),
+    ))
+    .context(StrContext::Label("lhs"))
+    .parse_next(input)
 }
 
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_ipv4_cidr_literal(pair: Pair<Rule>) -> ParseResult<Ipv4Cidr> {
-    pair.as_str().parse().into_parse_result(&pair)
-}
+fn transform_func(input: &mut &str) -> ModalResult<ast::Lhs> {
+    let start = input.checkpoint();
+    let func_name = ident.parse_next(input)?;
+    _ = ws('(').parse_next(input)?;
 
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_ipv6_cidr_literal(pair: Pair<Rule>) -> ParseResult<Ipv6Cidr> {
-    pair.as_str().parse().into_parse_result(&pair)
-}
-
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_ipv4_literal(pair: Pair<Rule>) -> ParseResult<Ipv4Addr> {
-    pair.as_str().parse().into_parse_result(&pair)
-}
-
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_ipv6_literal(pair: Pair<Rule>) -> ParseResult<Ipv6Addr> {
-    pair.as_str().parse().into_parse_result(&pair)
-}
-
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
-    let is_neg = pair.as_str().starts_with('-');
-    let pairs = pair.into_inner();
-    let pair = pairs.peek().unwrap(); // digits
-    let rule = pair.as_rule();
-    let radix = match rule {
-        Rule::hex_digits => 16,
-        Rule::oct_digits => 8,
-        Rule::dec_digits => 10,
-        _ => unreachable!(),
-    };
-
-    let mut num = parse_num!(pair, i64, radix)?;
-
-    if is_neg {
-        num = -num;
-    }
-
-    Ok(num)
-}
-
-// predicate = { lhs ~ binary_operator ~ rhs }
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
-    let mut pairs = pair.into_inner();
-    let lhs = parse_lhs(pairs.next().unwrap())?;
-    let op = parse_binary_operator(pairs.next().unwrap());
-    let rhs_pair = pairs.next().unwrap();
-    let rhs = parse_rhs(rhs_pair.clone())?;
-    Ok(Predicate {
+    // We found a transform function call for sure
+    let mut lhs_val = cut_err(terminated(
         lhs,
-        rhs: if op == BinaryOperator::Regex {
-            let Value::String(s) = rhs else {
-                return Err(ParseError::new_from_span(
-                    ErrorVariant::CustomError {
-                        message: "regex operator can only be used with String operands".to_string(),
-                    },
-                    rhs_pair.as_span(),
-                ));
-            };
+        ws(')'.context(StrContext::Expected(StrContextValue::CharLiteral(')')))),
+    ))
+    .parse_next(input)?;
 
-            let r = Regex::new(&s).map_err(|e| {
-                ParseError::new_from_span(
-                    ErrorVariant::CustomError {
-                        message: e.to_string(),
-                    },
-                    rhs_pair.as_span(),
-                )
-            })?;
-
-            Value::Regex(r)
-        } else {
-            rhs
-        },
-        op,
-    })
-}
-
-// transform_func = { ident ~ "(" ~ lhs ~ ")" }
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_transform_func(pair: Pair<Rule>) -> ParseResult<Lhs> {
-    let span = pair.as_span();
-    let pairs = pair.into_inner();
-    let mut pairs = pairs.peekable();
-    let func_name = pairs.next().unwrap().as_str().to_string();
-    let mut lhs = parse_lhs(pairs.next().unwrap())?;
-    lhs.transformations.push(match func_name.as_str() {
-        "lower" => LhsTransformations::Lower,
-        "any" => LhsTransformations::Any,
-        unknown => {
-            return Err(ParseError::new_from_span(
-                ErrorVariant::CustomError {
-                    message: format!("unknown transformation function: {unknown}"),
-                },
-                span,
-            ));
+    let transform = match func_name {
+        "lower" => ast::LhsTransformations::Lower,
+        "any" => ast::LhsTransformations::Any,
+        _ => {
+            input.reset(&start);
+            return cut_err(fail)
+                .context(StrContext::Label("transform function"))
+                .context_with(|| {
+                    ["lower", "any"]
+                        .into_iter()
+                        .map(|s| StrContext::Expected(StrContextValue::StringLiteral(s)))
+                })
+                .parse_next(input);
         }
-    });
+    };
 
-    Ok(lhs)
+    lhs_val.transformations.push(transform);
+    Ok(lhs_val)
 }
 
-// binary_operator = { "==" | "!=" | "~" | "^=" | "=^" | ">=" |
-//                     ">" | "<=" | "<" | "in" | "not" ~ "in" | "contains" }
-fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
-    let rule = pair.as_str();
-    use BinaryOperator as BinaryOp;
-    match rule {
-        "==" => BinaryOp::Equals,
-        "!=" => BinaryOp::NotEquals,
-        "~" => BinaryOp::Regex,
-        "^=" => BinaryOp::Prefix,
-        "=^" => BinaryOp::Postfix,
-        ">=" => BinaryOp::GreaterOrEqual,
-        ">" => BinaryOp::Greater,
-        "<=" => BinaryOp::LessOrEqual,
-        "<" => BinaryOp::Less,
-        "in" => BinaryOp::In,
-        "not in" => BinaryOp::NotIn,
-        "contains" => BinaryOp::Contains,
-        _ => unreachable!(),
-    }
+fn not_in<'a>(input: &mut &'a str) -> ModalResult<&'a str> {
+    ("not", whitespace, "in").take().parse_next(input)
 }
 
-// parenthesised_expression = { not_op? ~ "(" ~ expression ~ ")" }
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_parenthesised_expression(
-    pair: Pair<Rule>,
-    pratt: &PrattParser<Rule>,
-) -> ParseResult<Expression> {
-    let mut pairs = pair.into_inner();
-    let pair = pairs.next().unwrap();
-    let rule = pair.as_rule();
-    match rule {
-        Rule::expression => parse_expression(pair, pratt),
-        Rule::not_op => Ok(Expression::Logical(Box::new(LogicalExpression::Not(
-            parse_expression(pairs.next().unwrap(), pratt)?,
-        )))),
-        _ => unreachable!(),
-    }
+fn binary_operator(input: &mut &str) -> ModalResult<ast::BinaryOperator> {
+    use ast::BinaryOperator::*;
+    alt((
+        "==".value(Equals),
+        "!=".value(NotEquals),
+        "~".value(Regex),
+        "^=".value(Prefix),
+        "=^".value(Postfix),
+        ">=".value(GreaterOrEqual),
+        ">".value(Greater),
+        "<=".value(LessOrEqual),
+        "<".value(Less),
+        not_in.value(NotIn),
+        "in".value(In),
+        "contains".value(Contains),
+        fail.context(StrContext::Label("binary operator"))
+            .context_with(|| {
+                [
+                    "==", "!=", "~", "^=", "=^", ">=", ">", "<=", "<", "not in", "in", "contains",
+                ]
+                .into_iter()
+                .map(|s| StrContext::Expected(StrContextValue::StringLiteral(s)))
+            }),
+    ))
+    .parse_next(input)
 }
 
-// term = { predicate | parenthesised_expression }
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
-    let pairs = pair.into_inner();
-    let inner_rule = pairs.peek().unwrap();
-    let rule = inner_rule.as_rule();
-    match rule {
-        Rule::predicate => Ok(Expression::Predicate(parse_predicate(inner_rule)?)),
-        Rule::parenthesised_expression => parse_parenthesised_expression(inner_rule, pratt),
-        _ => unreachable!(),
-    }
-}
-
-// expression = { term ~ ( logical_operator ~ term )* }
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
-    let pairs = pair.into_inner();
-    pratt
-        .map_primary(|operand| match operand.as_rule() {
-            Rule::term => parse_term(operand, pratt),
-            _ => unreachable!(),
+fn predicate(input: &mut &str) -> ModalResult<ast::Predicate> {
+    fn inner(input: &mut &str) -> ModalResult<ast::Predicate> {
+        let (lhs_value, binary_op) =
+            separated_pair(lhs, whitespace, binary_operator).parse_next(input)?;
+        let _ = whitespace(input)?;
+        // TODO: original parser doesn't validate types with other operators, but we could e.g.
+        //       directly try to only parse an int for `>`
+        let rhs_value = if binary_op == BinaryOperator::Regex {
+            ast::Value::Regex(
+                anystr_literal
+                    .try_map(|s| Regex::new(&s))
+                    .context(StrContext::Label("regex"))
+                    .parse_next(input)?,
+            )
+        } else {
+            rhs.parse_next(input)?
+        };
+        /*
+        let rhs_value = match binary_op {
+            BinaryOperator::Equals | BinaryOperator::NotEquals => rhs.parse_next(input)?,
+            BinaryOperator::Regex => ast::Value::Regex(
+                anystr_literal
+                    .try_map(|s| Regex::new(&s))
+                    .context(StrContext::Label("regex literal"))
+                    .parse_next(input)?,
+            ),
+            BinaryOperator::Prefix | BinaryOperator::Postfix | BinaryOperator::Contains => {
+                let rhs_str = anystr_literal.parse_next(input)?;
+                ast::Value::String(rhs_str.into_owned())
+            }
+            BinaryOperator::Greater
+            | BinaryOperator::GreaterOrEqual
+            | BinaryOperator::Less
+            | BinaryOperator::LessOrEqual => ast::Value::Int(int_literal.parse_next(input)?),
+            BinaryOperator::In | BinaryOperator::NotIn => alt((
+                ipv4_cidr_literal.map(ast::Value::IpCidr),
+                ipv6_cidr_literal.map(ast::Value::IpCidr),
+            ))
+            .parse_next(input)?,
+        };
+         */
+        Ok(ast::Predicate {
+            lhs: lhs_value,
+            op: binary_op,
+            rhs: rhs_value,
         })
-        .map_infix(|lhs, op, rhs| {
-            Ok(match op.as_rule() {
-                Rule::and_op => Expression::Logical(Box::new(LogicalExpression::And(lhs?, rhs?))),
-                Rule::or_op => Expression::Logical(Box::new(LogicalExpression::Or(lhs?, rhs?))),
-                _ => unreachable!(),
-            })
-        })
-        .parse(pairs)
+    }
+
+    cut_err(inner)
+        .context(StrContext::Label("predicate"))
+        .parse_next(input)
 }
 
-#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-pub fn parse(source: &str) -> ParseResult<Expression> {
-    ATCParser::new().parse_matcher(source)
+fn parenthesised_expression(input: &mut &str) -> ModalResult<ast::Expression> {
+    (
+        opt('!').map(|opt| opt.is_some()),
+        whitespace,
+        cut_err(delimited(
+            '('.context(StrContext::Expected(StrContextValue::CharLiteral('('))),
+            ws(expression),
+            ')'.context(StrContext::Expected(StrContextValue::CharLiteral(')'))),
+        )),
+    )
+        .map(|(invert, _, expr)| {
+            if invert {
+                ast::Expression::Logical(Box::new(ast::LogicalExpression::Not(expr)))
+            } else {
+                expr
+            }
+        })
+        .context(StrContext::Label("parenthesised expression"))
+        .parse_next(input)
+}
+
+fn term(input: &mut &str) -> ModalResult<ast::Expression> {
+    dispatch!(peek(any);
+        '!' | '(' => parenthesised_expression,
+        _ => predicate.map(ast::Expression::Predicate),
+    )
+    .context(StrContext::Label("term"))
+    .parse_next(input)
+}
+fn expression(input: &mut &str) -> ModalResult<ast::Expression> {
+    winnow::combinator::expression(ws(term))
+        .infix(dispatch!(take(2usize);
+            "&&" => Left(1, |_, lhs, rhs| Ok(ast::Expression::Logical(Box::new(ast::LogicalExpression::And(lhs, rhs))))),
+            "||" => Left(2, |_, lhs, rhs| Ok(ast::Expression::Logical(Box::new(ast::LogicalExpression::Or(lhs, rhs))))),
+            _ => fail,
+        ))
+        .context(StrContext::Label("expression"))
+        .parse_next(input)
+}
+
+pub fn parse(
+    input: &str,
+) -> Result<ast::Expression, winnow::error::ParseError<&str, ContextError>> {
+    terminated(
+        expression,
+        eof.context(StrContext::Expected(StrContextValue::Description("eof")))
+            .context(StrContext::Expected(StrContextValue::StringLiteral("&&")))
+            .context(StrContext::Expected(StrContextValue::StringLiteral("||"))),
+    )
+    .parse(input)
 }
 
 #[cfg(test)]
@@ -346,19 +368,71 @@ mod tests {
 
     #[test]
     fn test_bad_syntax() {
-        assert_eq!(
-            parse("! a == 1").unwrap_err().to_string(),
-            " --> 1:1\n  |\n1 | ! a == 1\n  | ^---\n  |\n  = expected term"
+        insta::assert_snapshot!(
+            parse("! a == 1").unwrap_err(),
+            @"
+        ! a == 1
+          ^
+        invalid parenthesised expression
+        expected `(`
+        "
         );
-        assert_eq!(
-            parse("a == 1 || ! b == 2").unwrap_err().to_string(),
-            " --> 1:11\n  |\n1 | a == 1 || ! b == 2\n  |           ^---\n  |\n  = expected term"
+        insta::assert_snapshot!(
+            parse("a == 1 || ! b == 2").unwrap_err(),
+            @"
+        a == 1 || ! b == 2
+                    ^
+        invalid parenthesised expression
+        expected `(`
+        "
         );
-        assert_eq!(
+        insta::assert_snapshot!(
             parse("(a == 1 || b == 2) && ! c == 3")
-                .unwrap_err()
-                .to_string(),
-                " --> 1:23\n  |\n1 | (a == 1 || b == 2) && ! c == 3\n  |                       ^---\n  |\n  = expected term"
+                .unwrap_err(),
+            @"
+        (a == 1 || b == 2) && ! c == 3
+                                ^
+        invalid parenthesised expression
+        expected `(`
+        "
         );
+
+        insta::assert_snapshot!(
+            parse(r##"a ~ "[""##).unwrap_err(),
+            @r#"
+        a ~ "["
+            ^
+        invalid regex
+        regex parse error:
+            [
+            ^
+        error: unclosed character class
+        "#
+        );
+    }
+
+    #[test]
+    fn unclosed_parens() {
+        insta::assert_snapshot!(
+        parse(r#"lower(abc"#).unwrap_err(),
+        @"
+        lower(abc
+                 ^
+        invalid lhs
+        expected `)`
+        "
+        );
+    }
+
+    #[test]
+    fn trailing_garbage() {
+        insta::assert_snapshot!(
+            parse(r#"a == 1 garbage"#).unwrap_err(),
+            @"
+        a == 1 garbage
+               ^
+        expected eof, `&&`, `||`
+        "
+        )
     }
 }
