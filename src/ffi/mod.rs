@@ -15,6 +15,7 @@ pub const ERR_BUF_MAX_LEN: usize = 4096;
 
 #[derive(Debug)]
 #[repr(C)]
+/// cbindgen:prefix-with-name
 pub enum CValue {
     Str(*const u8, usize),
     IpCidr(*const u8),
