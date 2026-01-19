@@ -17,6 +17,7 @@ use std::slice::from_raw_parts_mut;
 ///
 /// This value is actually not used for anything in this library,
 /// any length can be passed.
+#[deprecated]
 pub const ERR_BUF_MAX_LEN: usize = 4096;
 
 #[derive(Debug)]
