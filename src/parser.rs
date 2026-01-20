@@ -11,7 +11,9 @@ use pest::pratt_parser::Assoc as AssocNew;
 use pest::pratt_parser::{Op, PrattParser};
 use pest::Parser;
 use regex::Regex;
+use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::sync::Arc;
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
 
@@ -61,12 +63,16 @@ impl ATCParser {
     }
     // matcher = { SOI ~ expression ~ EOI }
     #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-    fn parse_matcher(&mut self, source: &str) -> ParseResult<Expression> {
+    fn parse_matcher(
+        &mut self,
+        source: &str,
+        regex_cache: &mut HashMap<String, Arc<Regex>>,
+    ) -> ParseResult<Expression> {
         let pairs = ATCParser::parse(Rule::matcher, source)?;
         let expr_pair = pairs.peek().unwrap().into_inner().peek().unwrap();
         let rule = expr_pair.as_rule();
         match rule {
-            Rule::expression => parse_expression(expr_pair, &self.pratt_parser),
+            Rule::expression => parse_expression(expr_pair, &self.pratt_parser, regex_cache),
             _ => unreachable!(),
         }
     }
@@ -204,7 +210,10 @@ fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
 
 // predicate = { lhs ~ binary_operator ~ rhs }
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
+fn parse_predicate(
+    pair: Pair<Rule>,
+    regex_cache: &mut HashMap<String, Arc<Regex>>,
+) -> ParseResult<Predicate> {
     let mut pairs = pair.into_inner();
     let lhs = parse_lhs(pairs.next().unwrap())?;
     let op = parse_binary_operator(pairs.next().unwrap());
@@ -222,16 +231,19 @@ fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
                 ));
             };
 
-            let r = Regex::new(&s).map_err(|e| {
-                ParseError::new_from_span(
-                    ErrorVariant::CustomError {
-                        message: e.to_string(),
-                    },
-                    rhs_pair.as_span(),
-                )
-            })?;
+            let regex_rc = match regex_cache.get(&s) {
+                Some(stored_regex_rc) => stored_regex_rc.clone(),
+                None => {
+                    let r = Regex::new(&s).into_parse_result(&rhs_pair)?;
 
-            Value::Regex(r)
+                    let rc = Arc::new(r);
+
+                    regex_cache.insert(s, rc.clone());
+                    rc
+                }
+            };
+
+            Value::Regex(regex_rc)
         } else {
             rhs
         },
@@ -290,14 +302,15 @@ fn parse_binary_operator(pair: Pair<Rule>) -> BinaryOperator {
 fn parse_parenthesised_expression(
     pair: Pair<Rule>,
     pratt: &PrattParser<Rule>,
+    regex_cache: &mut HashMap<String, Arc<Regex>>,
 ) -> ParseResult<Expression> {
     let mut pairs = pair.into_inner();
     let pair = pairs.next().unwrap();
     let rule = pair.as_rule();
     match rule {
-        Rule::expression => parse_expression(pair, pratt),
+        Rule::expression => parse_expression(pair, pratt, regex_cache),
         Rule::not_op => Ok(Expression::Logical(Box::new(LogicalExpression::Not(
-            parse_expression(pairs.next().unwrap(), pratt)?,
+            parse_expression(pairs.next().unwrap(), pratt, regex_cache)?,
         )))),
         _ => unreachable!(),
     }
@@ -305,24 +318,37 @@ fn parse_parenthesised_expression(
 
 // term = { predicate | parenthesised_expression }
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_term(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
+fn parse_term(
+    pair: Pair<Rule>,
+    pratt: &PrattParser<Rule>,
+    regex_cache: &mut HashMap<String, Arc<Regex>>,
+) -> ParseResult<Expression> {
     let pairs = pair.into_inner();
     let inner_rule = pairs.peek().unwrap();
     let rule = inner_rule.as_rule();
     match rule {
-        Rule::predicate => Ok(Expression::Predicate(parse_predicate(inner_rule)?)),
-        Rule::parenthesised_expression => parse_parenthesised_expression(inner_rule, pratt),
+        Rule::predicate => Ok(Expression::Predicate(parse_predicate(
+            inner_rule,
+            regex_cache,
+        )?)),
+        Rule::parenthesised_expression => {
+            parse_parenthesised_expression(inner_rule, pratt, regex_cache)
+        }
         _ => unreachable!(),
     }
 }
 
 // expression = { term ~ ( logical_operator ~ term )* }
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<Expression> {
+fn parse_expression(
+    pair: Pair<Rule>,
+    pratt: &PrattParser<Rule>,
+    regex_cache: &mut HashMap<String, Arc<Regex>>,
+) -> ParseResult<Expression> {
     let pairs = pair.into_inner();
     pratt
         .map_primary(|operand| match operand.as_rule() {
-            Rule::term => parse_term(operand, pratt),
+            Rule::term => parse_term(operand, pratt, regex_cache),
             _ => unreachable!(),
         })
         .map_infix(|lhs, op, rhs| {
@@ -336,8 +362,11 @@ fn parse_expression(pair: Pair<Rule>, pratt: &PrattParser<Rule>) -> ParseResult<
 }
 
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-pub fn parse(source: &str) -> ParseResult<Expression> {
-    ATCParser::new().parse_matcher(source)
+pub fn parse(
+    source: &str,
+    regex_cache: &mut HashMap<String, Arc<Regex>>,
+) -> ParseResult<Expression> {
+    ATCParser::new().parse_matcher(source, regex_cache)
 }
 
 #[cfg(test)]
@@ -346,16 +375,19 @@ mod tests {
 
     #[test]
     fn test_bad_syntax() {
+        let mut regex_cache = HashMap::new();
         assert_eq!(
-            parse("! a == 1").unwrap_err().to_string(),
+            parse("! a == 1", &mut regex_cache).unwrap_err().to_string(),
             " --> 1:1\n  |\n1 | ! a == 1\n  | ^---\n  |\n  = expected term"
         );
         assert_eq!(
-            parse("a == 1 || ! b == 2").unwrap_err().to_string(),
+            parse("a == 1 || ! b == 2", &mut regex_cache)
+                .unwrap_err()
+                .to_string(),
             " --> 1:11\n  |\n1 | a == 1 || ! b == 2\n  |           ^---\n  |\n  = expected term"
         );
         assert_eq!(
-            parse("(a == 1 || b == 2) && ! c == 3")
+            parse("(a == 1 || b == 2) && ! c == 3", &mut regex_cache)
                 .unwrap_err()
                 .to_string(),
                 " --> 1:23\n  |\n1 | (a == 1 || b == 2) && ! c == 3\n  |                       ^---\n  |\n  = expected term"

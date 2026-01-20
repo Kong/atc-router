@@ -3,6 +3,7 @@ use crate::ffi::ERR_BUF_MAX_LEN;
 use crate::schema::Schema;
 use bitflags::bitflags;
 use std::cmp::min;
+use std::collections::HashMap;
 use std::ffi;
 use std::os::raw::c_char;
 use std::slice::from_raw_parts_mut;
@@ -165,7 +166,7 @@ pub unsafe extern "C" fn expression_validate(
     let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
 
     // Parse the expression
-    let result = parse(atc).map_err(|e| e.to_string());
+    let result = parse(atc, &mut HashMap::new()).map_err(|e| e.to_string());
     if let Err(e) = result {
         let errlen = min(e.len(), *errbuf_len);
         errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
