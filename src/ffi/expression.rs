@@ -1,8 +1,7 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate};
-use crate::ffi::ERR_BUF_MAX_LEN;
+use crate::ffi::write_errbuf;
 use crate::schema::Schema;
 use bitflags::bitflags;
-use std::cmp::min;
 use std::ffi;
 use std::os::raw::c_char;
 use std::slice::from_raw_parts_mut;
@@ -162,24 +161,19 @@ pub unsafe extern "C" fn expression_validate(
     use crate::semantics::Validate;
 
     let atc = ffi::CStr::from_ptr(atc as *const c_char).to_str().unwrap();
-    let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
 
     // Parse the expression
-    let result = parse(atc).map_err(|e| e.to_string());
+    let result = parse(atc);
     if let Err(e) = result {
-        let errlen = min(e.len(), *errbuf_len);
-        errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
-        *errbuf_len = errlen;
+        write_errbuf(e, errbuf, errbuf_len);
         return ATC_ROUTER_EXPRESSION_VALIDATE_FAILED;
     }
     // Unwrap is safe since we've already checked for error
     let ast = result.unwrap();
 
     // Validate expression with schema
-    if let Err(e) = ast.validate(schema).map_err(|e| e.to_string()) {
-        let errlen = min(e.len(), *errbuf_len);
-        errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
-        *errbuf_len = errlen;
+    if let Err(e) = ast.validate(schema) {
+        write_errbuf(e, errbuf, errbuf_len);
         return ATC_ROUTER_EXPRESSION_VALIDATE_FAILED;
     }
 
@@ -224,6 +218,7 @@ pub unsafe extern "C" fn expression_validate(
 mod tests {
     use super::*;
     use crate::ast::Type;
+    use crate::ffi::ERR_BUF_MAX_LEN;
 
     fn expr_validate_on(
         schema: &Schema,
@@ -267,8 +262,9 @@ mod tests {
                 Ok((fields, fields_buf_len, operators))
             }
             ATC_ROUTER_EXPRESSION_VALIDATE_FAILED => {
-                let err = String::from_utf8(errbuf[..errbuf_len].to_vec()).unwrap();
-                Err((result, err))
+                let err = ffi::CStr::from_bytes_with_nul(&errbuf[..errbuf_len])
+                    .expect("error message is not null-terminated");
+                Err((result, err.to_string_lossy().to_string()))
             }
             ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL => Err((result, String::new())),
             _ => panic!("Unknown error code"),

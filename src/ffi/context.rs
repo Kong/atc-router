@@ -1,8 +1,7 @@
 use crate::ast::Value;
 use crate::context::Context;
-use crate::ffi::{CValue, ERR_BUF_MAX_LEN};
+use crate::ffi::{write_errbuf, CValue};
 use crate::schema::Schema;
-use std::cmp::min;
 use std::ffi;
 use std::os::raw::c_char;
 use std::slice::from_raw_parts_mut;
@@ -91,13 +90,10 @@ pub unsafe extern "C" fn context_add_value(
     let field = ffi::CStr::from_ptr(field as *const c_char)
         .to_str()
         .unwrap();
-    let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
 
     let value: Result<Value, _> = value.try_into();
     if let Err(e) = value {
-        let errlen = min(e.len(), *errbuf_len);
-        errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
-        *errbuf_len = errlen;
+        write_errbuf(e, errbuf, errbuf_len);
         return false;
     }
 
