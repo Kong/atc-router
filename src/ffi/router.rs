@@ -23,6 +23,8 @@ use uuid::Uuid;
 /// Violating any of the following constraints will result in undefined behavior:
 ///
 /// - `schema` must be a valid pointer returned by [`schema_new`].
+/// - `schema` must be alive, and unmodified at least until [`router_free`] is called on the
+///   returned `*mut Router`.
 ///
 /// [`schema_new`]: crate::ffi::schema::schema_new
 #[no_mangle]
