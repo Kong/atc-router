@@ -95,7 +95,7 @@ fn parse_lhs(pair: Pair<Rule>) -> ParseResult<Lhs> {
     })
 }
 
-// rhs = { str_literal | ip_literal | int_literal }
+// rhs = { str_literal | rawstr_literal | ip_literal | int_literal | bool_literal }
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_rhs(pair: Pair<Rule>) -> ParseResult<Value> {
     let pairs = pair.into_inner();
@@ -109,6 +109,7 @@ fn parse_rhs(pair: Pair<Rule>) -> ParseResult<Value> {
         Rule::ipv4_literal => Value::IpAddr(IpAddr::V4(parse_ipv4_literal(pair)?)),
         Rule::ipv6_literal => Value::IpAddr(IpAddr::V6(parse_ipv6_literal(pair)?)),
         Rule::int_literal => Value::Int(parse_int_literal(pair)?),
+        Rule::bool_literal => Value::Bool(parse_bool_literal(pair)?),
         _ => unreachable!(),
     })
 }
@@ -200,6 +201,15 @@ fn parse_int_literal(pair: Pair<Rule>) -> ParseResult<i64> {
     }
 
     Ok(num)
+}
+
+#[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
+fn parse_bool_literal(pair: Pair<Rule>) -> ParseResult<bool> {
+    match pair.as_str() {
+        "true" => Ok(true),
+        "false" => Ok(false),
+        _ => unreachable!(),
+    }
 }
 
 // predicate = { lhs ~ binary_operator ~ rhs }
