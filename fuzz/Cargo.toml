@@ -1,0 +1,25 @@
+[package]
+name = "atc-router-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+pest = "2.7"
+pest_derive = "2.7"
+cidr = "0.3"
+regex = "1"
+
+[dependencies.atc-router]
+path = ".."
+
+[[bin]]
+name = "compare_parser"
+path = "fuzz_targets/compare_parser.rs"
+test = false
+doc = false
+bench = false
