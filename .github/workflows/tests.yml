@@ -37,13 +37,6 @@ jobs:
     steps:
     - name: Checkout source code
       uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        token: ${{ secrets.GHA_KONG_BOT_READ_TOKEN }}
-
-    - name: Make sure Cargo can clone private repositories
-      run: |
-        git config --global url."https://${{ secrets.GHA_KONG_BOT_READ_TOKEN }}@github.com".insteadOf https://github.com
 
     - name: Setup cache
       uses: actions/cache@v4
