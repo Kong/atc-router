@@ -45,6 +45,17 @@ fn criterion_benchmark(c: &mut Criterion) {
             router
         });
     });
+
+    c.bench_function("Build Router with Prefilter", |b| {
+        b.iter_with_large_drop(|| {
+            let mut router = Router::new(&schema);
+            router.enable_prefilter("b");
+            for v in &data {
+                router.add_matcher(v.0, v.1, &v.2).unwrap();
+            }
+            router
+        });
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

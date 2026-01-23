@@ -57,11 +57,15 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     }
 
+    router.enable_prefilter("http.path");
+    g.finish();
 
-    // not match benchmark
-    ctx.add_value("http.path", Value::String("hello49999".to_string()));
-    ctx.add_value("http.version", Value::String("1.1".to_string()));
-    ctx.add_value("a", Value::Int(5_i64)); // not match
+    let mut g = c.benchmark_group("match_mix with prefilter");
+    for i in [0, 10, 49999, N - 1, N + 1] {
+        ctx.reset();
+        ctx.add_value("http.path", Value::String(format!("hello{}", i)));
+        ctx.add_value("http.version", Value::String("1.1".to_string()));
+        ctx.add_value("a", Value::Int(3_i64));
 
         let expected_match = i < N;
         let name = if expected_match { "match" } else { "no match" };
