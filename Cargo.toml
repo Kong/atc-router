@@ -1,0 +1,10 @@
+[package]
+name = "router_prefilter"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+regex-syntax = "0.8"
+regex-automata = "0.4"
+aho-corasick = "1.1"
+roaring = "0.11"
