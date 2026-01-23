@@ -73,24 +73,19 @@ impl Execute for Predicate {
                     let lhs = lhs_value.as_str().unwrap();
                     let rhs = self.rhs.as_regex().unwrap();
 
-                    if rhs.is_match(lhs) {
-                        let reg_cap = rhs.captures(lhs).unwrap();
-
+                    if let Some(reg_cap) = rhs.captures(lhs) {
                         m.matches.insert(
                             self.lhs.var_name.clone(),
                             Value::String(reg_cap.get(0).unwrap().as_str().to_string()),
                         );
 
-                        for (i, c) in reg_cap.iter().enumerate() {
-                            if let Some(c) = c {
-                                m.captures.insert(i.to_string(), c.as_str().to_string());
-                            }
-                        }
-
-                        // named captures
-                        for n in rhs.capture_names().flatten() {
-                            if let Some(value) = reg_cap.name(n) {
-                                m.captures.insert(n.to_string(), value.as_str().to_string());
+                        for (i, name) in rhs.capture_names().enumerate() {
+                            if let Some(value) = reg_cap.get(i) {
+                                let value = value.as_str();
+                                m.captures.insert(i.to_string(), value.to_string());
+                                if let Some(name) = name {
+                                    m.captures.insert(name.to_string(), value.to_string());
+                                }
                             }
                         }
 
