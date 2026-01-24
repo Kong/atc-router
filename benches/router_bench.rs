@@ -74,7 +74,7 @@ fn generate_path_set(
 struct PathMatch(Option<String>);
 
 impl Matcher for PathMatch {
-    fn visit<V: MatcherVisitor>(&self, visitor: &mut V) {
+    fn visit(&self, visitor: &mut MatcherVisitor) {
         if let Some(path_regex) = &self.0 {
             visitor.visit_match_regex(path_regex);
         }

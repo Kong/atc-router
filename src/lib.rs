@@ -1,7 +1,6 @@
 use regex_syntax::hir::{Hir, literal};
 use roaring::RoaringBitmap;
 use roaring::bitmap::IntoIter;
-use smallvec::SmallVec;
 use std::collections::BTreeSet;
 use std::convert::Infallible;
 use std::mem;
@@ -12,27 +11,12 @@ pub enum Case {
     Insensitive,
 }
 
-pub trait MatcherVisitor {
-    fn visit_nested_start(&mut self);
-    fn visit_nested_finish(&mut self);
-
-    /// This method should be called between children of an `or` expression
-    ///
-    /// It is valid to call this even if no matches (regex, starts with) were visited:
-    /// this can be the case if e.g. an `or` node is checking some other fields only.
-    fn visit_or_in(&mut self);
-
-    fn visit_match_regex(&mut self, regex: &str);
-    fn visit_match_equals(&mut self, equals: &str, case: Case);
-    fn visit_match_starts_with(&mut self, prefix: &str, case: Case);
-}
-
 pub trait Matcher {
-    fn visit<V: MatcherVisitor>(&self, visitor: &mut V);
+    fn visit(&self, visitor: &mut MatcherVisitor);
 }
 
 impl<M: Matcher> Matcher for &M {
-    fn visit<V: MatcherVisitor>(&self, visitor: &mut V) {
+    fn visit(&self, visitor: &mut MatcherVisitor) {
         M::visit(self, visitor);
     }
 }
@@ -55,7 +39,7 @@ impl RouterPrefilter {
         let max_unfiltered = Idx::try_from(max_unfiltered).unwrap_or(Idx::MAX);
 
         let mut matchers = matchers.into_iter().enumerate();
-        let mut extractor = PrefixExtractorVisitor::new();
+        let mut extractor = MatcherVisitor::new();
         let mut num_unfiltered = 0;
         let (idx, first_prefixes) = loop {
             let (i, m) = matchers.next()?;
@@ -272,8 +256,8 @@ impl Frame {
 }
 
 #[derive(Debug)]
-struct PrefixExtractorVisitor {
-    frames: SmallVec<[Frame; 4]>,
+pub struct MatcherVisitor {
+    frames: Vec<Frame>,
 }
 
 fn union_prefixes_limited(
@@ -345,10 +329,10 @@ fn intersect_prefix_expansions(
     *lhs = result;
 }
 
-impl PrefixExtractorVisitor {
+impl MatcherVisitor {
     fn new() -> Self {
         Self {
-            frames: smallvec::smallvec![Frame::default()],
+            frames: vec![Frame::default()],
         }
     }
 
@@ -370,14 +354,12 @@ impl PrefixExtractorVisitor {
             })
             .unwrap_or_else(literal::Seq::infinite)
     }
-}
 
-impl MatcherVisitor for PrefixExtractorVisitor {
-    fn visit_nested_start(&mut self) {
+    pub fn visit_nested_start(&mut self) {
         self.frames.push(Frame::default());
     }
 
-    fn visit_nested_finish(&mut self) {
+    pub fn visit_nested_finish(&mut self) {
         let frame = self
             .frames
             .pop()
@@ -386,13 +368,13 @@ impl MatcherVisitor for PrefixExtractorVisitor {
         intersect_prefix_expansions(&mut self.current_frame().and_literal_prefixes, new_inner);
     }
 
-    fn visit_or_in(&mut self) {
+    pub fn visit_or_in(&mut self) {
         let frame = self.current_frame();
         let new_and = frame.and_literal_prefixes.take();
         union_prefixes_limited(&mut frame.or_literal_prefixes, new_and, 100);
     }
 
-    fn visit_match_regex(&mut self, regex: &str) {
+    pub fn visit_match_regex(&mut self, regex: &str) {
         // TODO: Should we return an error? Or panic instead?
         let hir = regex_syntax::parse(regex).unwrap_or_else(|_| Hir::fail());
         let current = &mut self.frames.last_mut().unwrap().and_literal_prefixes;
@@ -400,12 +382,12 @@ impl MatcherVisitor for PrefixExtractorVisitor {
         intersect_prefix_expansions(current, new_prefixes);
     }
 
-    fn visit_match_equals(&mut self, equals: &str, case: Case) {
+    pub fn visit_match_equals(&mut self, equals: &str, case: Case) {
         // for our purposes, equality and starting with are the same
         self.visit_match_starts_with(equals, case);
     }
 
-    fn visit_match_starts_with(&mut self, prefix: &str, case: Case) {
+    pub fn visit_match_starts_with(&mut self, prefix: &str, case: Case) {
         if case != Case::Sensitive {
             // in the future, we might want to see if we can use aho-corasick's ability to do
             // ascii case-insensitive matching, but for now, we can't optimize it
@@ -423,7 +405,7 @@ mod tests {
 
     #[test]
     fn extractor() {
-        let mut extractor = PrefixExtractorVisitor::new();
+        let mut extractor = MatcherVisitor::new();
         extractor.visit_match_starts_with("/opt/123", Case::Sensitive);
         extractor.visit_match_starts_with("/opt/123", Case::Sensitive);
         extractor.visit_or_in();
