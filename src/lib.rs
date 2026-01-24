@@ -1,3 +1,6 @@
+mod inner_prefilter;
+
+use inner_prefilter::AhoCorasickPrefilter;
 use regex_syntax::hir::{Hir, literal};
 use roaring::RoaringBitmap;
 use roaring::bitmap::IntoIter;
@@ -26,8 +29,7 @@ type Idx = u32;
 #[derive(Debug, Clone)]
 pub struct RouterPrefilter {
     always_possible_indexes: RoaringBitmap,
-    prefilter: aho_corasick::AhoCorasick,
-    pattern_to_index: Vec<Idx>,
+    prefilter: AhoCorasickPrefilter,
 }
 
 impl RouterPrefilter {
@@ -83,20 +85,16 @@ impl RouterPrefilter {
                 }
             }
         }
-        let prefilter = aho_corasick::AhoCorasickBuilder::new()
-            .start_kind(aho_corasick::StartKind::Anchored)
-            .build(&patterns)
-            .ok()?;
+        let prefilter = AhoCorasickPrefilter::new(&patterns, pattern_indexes)?;
         Some(Self {
             always_possible_indexes: unfiltered,
             prefilter,
-            pattern_to_index: pattern_indexes,
         })
     }
 
     pub fn possible_matches<'a>(&'a self, value: &'a str) -> RouterPrefilterIter<'a> {
         let value = value.as_bytes();
-        let first_filtered_idx = self.pattern_to_index.first().copied().unwrap();
+        let first_filtered_idx = self.prefilter.first_index();
         if self.always_possible_indexes.min().unwrap_or(0) >= first_filtered_idx {
             RouterPrefilterIter(RouterPrefilterIterState::Both(
                 make_combined_prefilter_iter(&self, value),
@@ -109,27 +107,6 @@ impl RouterPrefilter {
             })
         }
     }
-}
-
-fn prefilter_indexes(
-    s: &[u8],
-    prefilter: &aho_corasick::AhoCorasick,
-    map_idx: &[Idx],
-) -> RoaringBitmap {
-    let mut possible_indexes = RoaringBitmap::new();
-    let mut state = aho_corasick::automaton::OverlappingState::start();
-    let input = aho_corasick::Input::new(s).anchored(aho_corasick::Anchored::Yes);
-
-    loop {
-        prefilter.find_overlapping(input.clone(), &mut state);
-        match state.get_match() {
-            Some(m) => {
-                possible_indexes.insert(map_idx[m.pattern().as_usize()]);
-            }
-            None => break,
-        }
-    }
-    possible_indexes
 }
 
 pub struct RouterPrefilterIter<'a>(RouterPrefilterIterState<'a>);
@@ -191,12 +168,8 @@ impl Iterator for RouterPrefilterIter<'_> {
     }
 }
 fn make_combined_prefilter_iter(router_prefilter: &RouterPrefilter, s: &[u8]) -> IntoIter {
-    let first_idx = router_prefilter.pattern_to_index[0];
-    let mut indexes = prefilter_indexes(
-        s,
-        &router_prefilter.prefilter,
-        &router_prefilter.pattern_to_index,
-    );
+    let first_idx = router_prefilter.prefilter.first_index();
+    let mut indexes = router_prefilter.prefilter.check(s);
     if router_prefilter
         .always_possible_indexes
         .max()
