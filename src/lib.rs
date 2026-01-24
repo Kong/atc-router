@@ -4,6 +4,7 @@ use std::collections::{BTreeSet, HashMap};
 use std::convert::Infallible;
 use std::marker::PhantomData;
 use std::mem;
+use smallvec::SmallVec;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Case {
@@ -191,7 +192,7 @@ impl Frame {
 
 #[derive(Debug)]
 struct PrefixExtractorVisitor {
-    frames: Vec<Frame>,
+    frames: SmallVec<[Frame; 4]>,
 }
 
 fn union_prefixes_limited(
@@ -266,7 +267,7 @@ fn intersect_prefix_expansions(
 impl PrefixExtractorVisitor {
     fn new() -> Self {
         Self {
-            frames: vec![Frame::default()],
+            frames: smallvec::smallvec![Frame::default()],
         }
     }
 
@@ -278,12 +279,14 @@ impl PrefixExtractorVisitor {
         let Self { mut frames } = self;
         assert_eq!(frames.len(), 1);
         let frame = frames.pop().unwrap();
-        let mut seq = frame
+        frame
             .finish()
-            .map(|set| literal::Seq::new(set))
-            .unwrap_or_else(literal::Seq::infinite);
-        seq.optimize_for_prefix_by_preference();
-        seq
+            .map(|set| {
+                let mut seq = literal::Seq::new(set);
+                seq.optimize_for_prefix_by_preference();
+                seq
+            })
+            .unwrap_or_else(literal::Seq::infinite)
     }
 }
 
