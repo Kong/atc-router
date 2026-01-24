@@ -1,10 +1,10 @@
 use regex_syntax::hir::{Hir, literal};
 use roaring::RoaringBitmap;
-use std::collections::{BTreeSet, HashMap};
-use std::convert::Infallible;
-use std::marker::PhantomData;
-use std::mem;
+use roaring::bitmap::IntoIter;
 use smallvec::SmallVec;
+use std::collections::BTreeSet;
+use std::convert::Infallible;
+use std::mem;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Case {
@@ -31,124 +31,205 @@ pub trait Matcher {
     fn visit<V: MatcherVisitor>(&self, visitor: &mut V);
 }
 
+impl<M: Matcher> Matcher for &M {
+    fn visit<V: MatcherVisitor>(&self, visitor: &mut V) {
+        M::visit(self, visitor);
+    }
+}
+
 type Idx = u32;
-
-#[derive(Debug, Default)]
-pub struct RouterPrefilterBuilder {
-    next_idx: Idx,
-    always_possible_indexes: RoaringBitmap,
-    possible_matches: Vec<(String, Idx)>,
-}
-
-impl RouterPrefilterBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn add_matcher<M: Matcher>(&mut self, matcher: &M) {
-        let idx = self.next_idx;
-        self.next_idx += 1;
-
-        let mut extractor = PrefixExtractorVisitor::new();
-        matcher.visit(&mut extractor);
-        let extracted_prefixes = extractor.finish();
-
-        if let Some(prefixes) = extracted_prefixes.literals() {
-            for prefix in prefixes {
-                self.possible_matches
-                    .push((str::from_utf8(prefix.as_bytes()).unwrap().to_owned(), idx));
-            }
-        } else {
-            self.always_possible_indexes.insert(idx);
-        }
-    }
-
-    pub fn build(self) -> Option<RouterPrefilter> {
-        let Self {
-            next_idx: _,
-            always_possible_indexes,
-            possible_matches,
-        } = self;
-        if possible_matches.is_empty() {
-            return None;
-        }
-        let pattern_to_key = possible_matches
-            .iter()
-            .enumerate()
-            .map(|(i, &(_, idx))| (aho_corasick::PatternID::must(i), idx))
-            .collect();
-        let prefilter = aho_corasick::AhoCorasickBuilder::new()
-            .start_kind(aho_corasick::StartKind::Anchored)
-            .build(possible_matches.iter().map(|(pat, _)| pat));
-        let prefilter = match prefilter {
-            Ok(prefilter) => prefilter,
-            Err(_) => return None,
-        };
-        Some(RouterPrefilter {
-            always_possible_indexes,
-            prefilter,
-            pattern_to_index: pattern_to_key,
-        })
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct RouterPrefilter {
     always_possible_indexes: RoaringBitmap,
     prefilter: aho_corasick::AhoCorasick,
-    pattern_to_index: HashMap<aho_corasick::PatternID, Idx>,
+    pattern_to_index: Vec<Idx>,
 }
 
 impl RouterPrefilter {
-    pub fn possible_matches<'a>(&'a self, value: &'a str) -> RouterPrefilterIter<'a> {
-        let mut possible_indexes = self.always_possible_indexes.clone();
-        let mut state = aho_corasick::automaton::OverlappingState::start();
+    pub fn new<M, I>(matchers: I, max_unfiltered: usize) -> Option<Self>
+    where
+        M: Matcher,
+        I: IntoIterator<Item = M>,
+    {
+        let max_unfiltered = Idx::try_from(max_unfiltered).unwrap_or(Idx::MAX);
 
-        loop {
-            self.prefilter.find_overlapping(
-                aho_corasick::Input::new(value).anchored(aho_corasick::Anchored::Yes),
-                &mut state,
-            );
-            match state.get_match() {
-                Some(m) => {
-                    possible_indexes.insert(self.pattern_to_index[&m.pattern()]);
-                }
-                None => break,
+        let mut matchers = matchers.into_iter().enumerate();
+        let mut extractor = PrefixExtractorVisitor::new();
+        let mut num_unfiltered = 0;
+        let (idx, first_prefixes) = loop {
+            let (i, m) = matchers.next()?;
+            m.visit(&mut extractor);
+            let extracted_prefixes = extractor.finish();
+            if extracted_prefixes.is_finite() {
+                break (i, extracted_prefixes);
             }
+            num_unfiltered += 1;
+            if num_unfiltered >= max_unfiltered {
+                return None;
+            }
+        };
+        let mut unfiltered = RoaringBitmap::new();
+        unfiltered.insert_range(..num_unfiltered);
+
+        let mut patterns = Vec::new();
+        let mut pattern_indexes = Vec::new();
+
+        for prefix in first_prefixes.literals().unwrap_or_default() {
+            patterns.push(prefix.as_bytes().to_vec());
+            pattern_indexes.push(Idx::try_from(idx).unwrap());
         }
 
-        RouterPrefilterIter {
-            indexes: possible_indexes.into_iter(),
-            _phantom: PhantomData,
+        for (i, m) in matchers {
+            m.visit(&mut extractor);
+            let extracted_prefixes = extractor.finish();
+
+            if let Some(prefixes) = extracted_prefixes.literals() {
+                patterns.reserve(prefixes.len());
+                pattern_indexes.reserve(prefixes.len());
+                for prefix in prefixes {
+                    patterns.push(prefix.as_bytes().to_vec());
+                    pattern_indexes.push(Idx::try_from(i).unwrap());
+                }
+            } else {
+                unfiltered.insert(i as u32);
+                num_unfiltered += 1;
+                if num_unfiltered >= max_unfiltered {
+                    return None;
+                }
+            }
+        }
+        let prefilter = aho_corasick::AhoCorasickBuilder::new()
+            .start_kind(aho_corasick::StartKind::Anchored)
+            .build(&patterns)
+            .ok()?;
+        Some(Self {
+            always_possible_indexes: unfiltered,
+            prefilter,
+            pattern_to_index: pattern_indexes,
+        })
+    }
+
+    pub fn possible_matches<'a>(&'a self, value: &'a str) -> RouterPrefilterIter<'a> {
+        let value = value.as_bytes();
+        let first_filtered_idx = self.pattern_to_index.first().copied().unwrap();
+        if self.always_possible_indexes.min().unwrap_or(0) >= first_filtered_idx {
+            RouterPrefilterIter(RouterPrefilterIterState::Both(
+                make_combined_prefilter_iter(&self, value),
+            ))
+        } else {
+            RouterPrefilterIter(RouterPrefilterIterState::BeforePrefilter {
+                unfiltered_it: self.always_possible_indexes.range(..first_filtered_idx),
+                router_prefilter: self,
+                s: value,
+            })
         }
     }
 }
 
-pub struct RouterPrefilterIter<'a> {
-    indexes: roaring::bitmap::IntoIter,
-    // We don't currently borrow anything, but make sure we could without a backward incompatible change
-    _phantom: PhantomData<(&'a RouterPrefilter, &'a str)>,
+fn prefilter_indexes(
+    s: &[u8],
+    prefilter: &aho_corasick::AhoCorasick,
+    map_idx: &[Idx],
+) -> RoaringBitmap {
+    let mut possible_indexes = RoaringBitmap::new();
+    let mut state = aho_corasick::automaton::OverlappingState::start();
+    let input = aho_corasick::Input::new(s).anchored(aho_corasick::Anchored::Yes);
+
+    loop {
+        prefilter.find_overlapping(input.clone(), &mut state);
+        match state.get_match() {
+            Some(m) => {
+                possible_indexes.insert(map_idx[m.pattern().as_usize()]);
+            }
+            None => break,
+        }
+    }
+    possible_indexes
 }
+
+pub struct RouterPrefilterIter<'a>(RouterPrefilterIterState<'a>);
 
 impl Iterator for RouterPrefilterIter<'_> {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.indexes.next().map(|idx| usize::try_from(idx).unwrap())
+        match self.0 {
+            RouterPrefilterIterState::BeforePrefilter {
+                ref mut unfiltered_it,
+                router_prefilter,
+                s,
+            } => {
+                let Some(idx) = unfiltered_it.next() else {
+                    let mut it = make_combined_prefilter_iter(&router_prefilter, s);
+                    let result = it.next().map(|i| usize::try_from(i).unwrap());
+                    self.0 = RouterPrefilterIterState::Both(it);
+                    return result;
+                };
+                Some(usize::try_from(idx).unwrap())
+            }
+            RouterPrefilterIterState::Both(ref mut inner) => {
+                inner.next().map(|i| usize::try_from(i).unwrap())
+            }
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.indexes.size_hint()
+        match self.0 {
+            RouterPrefilterIterState::BeforePrefilter {
+                ref unfiltered_it, ..
+            } => (unfiltered_it.len(), None),
+            RouterPrefilterIterState::Both(ref inner) => inner.size_hint(),
+        }
     }
 
-    fn fold<B, F>(self, init: B, mut f: F) -> B
+    fn fold<B, F>(self, mut init: B, mut f: F) -> B
     where
         Self: Sized,
         F: FnMut(B, Self::Item) -> B,
     {
-        self.indexes
-            .fold(init, move |acc, idx| f(acc, usize::try_from(idx).unwrap()))
+        let both_iter = match self.0 {
+            RouterPrefilterIterState::BeforePrefilter {
+                unfiltered_it,
+                router_prefilter,
+                s,
+            } => {
+                init = unfiltered_it
+                    .map(|idx| usize::try_from(idx).unwrap())
+                    .fold(init, &mut f);
+                make_combined_prefilter_iter(router_prefilter, s)
+            }
+            RouterPrefilterIterState::Both(it) => it,
+        };
+        both_iter
+            .map(|idx| usize::try_from(idx).unwrap())
+            .fold(init, &mut f)
     }
+}
+fn make_combined_prefilter_iter(router_prefilter: &RouterPrefilter, s: &[u8]) -> IntoIter {
+    let first_idx = router_prefilter.pattern_to_index[0];
+    let mut indexes = prefilter_indexes(
+        s,
+        &router_prefilter.prefilter,
+        &router_prefilter.pattern_to_index,
+    );
+    if router_prefilter
+        .always_possible_indexes
+        .max()
+        .is_some_and(|max| max > first_idx)
+    {
+        indexes |= &router_prefilter.always_possible_indexes;
+    }
+    indexes.into_range(first_idx..)
+}
+
+enum RouterPrefilterIterState<'a> {
+    BeforePrefilter {
+        unfiltered_it: roaring::bitmap::Iter<'a>,
+        router_prefilter: &'a RouterPrefilter,
+        s: &'a [u8],
+    },
+    Both(roaring::bitmap::IntoIter),
 }
 
 fn extract_prefixes(hir: &Hir) -> Option<BTreeSet<Vec<u8>>> {
@@ -275,10 +356,11 @@ impl PrefixExtractorVisitor {
         self.frames.last_mut().unwrap()
     }
 
-    fn finish(self) -> literal::Seq {
-        let Self { mut frames } = self;
-        assert_eq!(frames.len(), 1);
+    fn finish(&mut self) -> literal::Seq {
+        let Self { frames } = self;
         let frame = frames.pop().unwrap();
+        assert!(frames.is_empty());
+        frames.push(Frame::default());
         frame
             .finish()
             .map(|set| {

@@ -2,7 +2,7 @@ use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_m
 use rand::prelude::*;
 use regex::Regex;
 use regex_automata::util::lazy::Lazy;
-use router_prefilter::{Matcher, MatcherVisitor, RouterPrefilterBuilder};
+use router_prefilter::{Matcher, MatcherVisitor, RouterPrefilter};
 use std::fs;
 use std::hint::black_box;
 
@@ -32,7 +32,7 @@ fn path_to_regex(path: &str) -> String {
 
 /// Generate paths with version prefixes and optional non-path entries
 ///
-/// Takes the base GitHub paths and adds `v{i}/` prefixes to reach at least
+/// Takes the base GitHub paths and adds `/v{i}/` prefixes to reach at least
 /// `expected_paths` total paths. Then converts `non_path_fraction` of the
 /// paths to `None` to simulate matches that don't depend on the path at all.
 fn generate_path_set(
@@ -49,7 +49,7 @@ fn generate_path_set(
     let mut paths: Vec<PathMatch> = Vec::new();
     for version in 0..versions_needed {
         for path in &base_paths {
-            let full_path = format!("v{}{}", version, path);
+            let full_path = format!("/v{}{}", version, path);
             paths.push(PathMatch(Some(path_to_regex(&full_path))));
             if paths.len() >= expected_paths {
                 break;
@@ -70,7 +70,7 @@ fn generate_path_set(
     paths
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct PathMatch(Option<String>);
 
 impl Matcher for PathMatch {
@@ -94,37 +94,45 @@ fn benchmarks(c: &mut Criterion) {
         for (name, frequency) in frequency {
             let paths = generate_path_set(StdRng::seed_from_u64(1234), size, frequency);
             group.bench_with_input(BenchmarkId::new(name, size), &paths[..], |b, paths| {
-                b.iter(|| {
-                    let mut builder = RouterPrefilterBuilder::new();
-                    for path in paths {
-                        builder.add_matcher(path);
-                    }
-                    builder.build()
-                })
+                b.iter(|| RouterPrefilter::new(paths, 3 * size / 4))
             });
         }
     }
     group.finish();
     let mut group = c.benchmark_group("run prefilter");
     for size in [1, 100, 1_000, 10_000] {
-        group.throughput(Throughput::Elements(size as u64));
         for (name, frequency) in frequency {
             let paths = generate_path_set(StdRng::seed_from_u64(1234), size, frequency);
-            let mut builder = RouterPrefilterBuilder::new();
-            for path in &paths {
-                builder.add_matcher(path);
-            }
-            if let Some(prefilter) = builder.build() {
+            if let Some(prefilter) = RouterPrefilter::new(paths, 3 * size / 4) {
                 group.bench_with_input(BenchmarkId::new(name, size), &prefilter, |b, prefilter| {
                     b.iter(|| {
-                        prefilter
-                            .possible_matches("/v1/orgs/MyOrg/attestations/MyAttestation")
-                            .sum::<usize>()
+                        black_box(
+                            prefilter
+                                .possible_matches("/v1/orgs/MyOrg/attestations/MyAttestation")
+                                .count(),
+                        );
                     })
                 });
             }
         }
     }
+    group.finish();
+    let mut group = c.benchmark_group("overlapping matches");
+    let paths = vec![PathMatch(Some("^/all/overlapping".to_string())); 10_000];
+    let prefilter = RouterPrefilter::new(&paths, usize::MAX).unwrap();
+    group.throughput(Throughput::Elements(paths.len() as u64));
+    group.bench_with_input(
+        BenchmarkId::from_parameter(paths.len()),
+        &prefilter,
+        |b, prefilter| {
+            b.iter(|| {
+                prefilter
+                    .possible_matches("/all/overlapping/mypath")
+                    .sum::<usize>()
+            })
+        },
+    );
+    group.finish();
 }
 
 criterion_group!(benches, benchmarks);
