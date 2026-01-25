@@ -1,10 +1,10 @@
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use rand::prelude::*;
 use regex::Regex;
-use regex_automata::util::lazy::Lazy;
 use router_prefilter::{Matcher, MatcherVisitor, RouterPrefilter};
 use std::fs;
 use std::hint::black_box;
+use std::sync::LazyLock;
 
 /// Load GitHub API routes from the paths file
 /// Returns a vector of (method, path) tuples
@@ -25,7 +25,7 @@ fn load_github_paths() -> Vec<(String, String)> {
 }
 
 fn path_to_regex(path: &str) -> String {
-    static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\{[^}]*}").unwrap());
+    static RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\{[^}]*}").unwrap());
     // inaccurate, most segments don't allow `/`
     format!("^{}$", RE.replace_all(path, r"(.*)"))
 }

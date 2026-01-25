@@ -1,11 +1,6 @@
-// Switch between prefilter implementations by changing the path:
-// - "inner_prefilter.rs" - AhoCorasick-based implementation
-// - "inner_prefilter_btree.rs" - BTreeMap-based implementation
-// - "inner_prefilter_fst.rs" - FST-based implementation
-#[path = "inner_prefilter_btree.rs"]
 mod inner_prefilter;
 
-use inner_prefilter::AhoCorasickPrefilter;
+use inner_prefilter::InnerPrefilter;
 use regex_syntax::hir::{Hir, literal};
 use roaring::RoaringBitmap;
 use roaring::bitmap::IntoIter;
@@ -34,7 +29,7 @@ type Idx = u32;
 #[derive(Debug, Clone)]
 pub struct RouterPrefilter {
     always_possible_indexes: RoaringBitmap,
-    prefilter: AhoCorasickPrefilter,
+    prefilter: InnerPrefilter,
 }
 
 impl RouterPrefilter {
@@ -90,7 +85,7 @@ impl RouterPrefilter {
                 }
             }
         }
-        let prefilter = AhoCorasickPrefilter::new(&patterns, pattern_indexes)?;
+        let prefilter = InnerPrefilter::new(&patterns, pattern_indexes)?;
         Some(Self {
             always_possible_indexes: unfiltered,
             prefilter,

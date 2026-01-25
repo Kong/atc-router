@@ -1,15 +1,16 @@
-use aho_corasick;
 use roaring::RoaringBitmap;
+use std::collections::BTreeMap;
+use std::ops::Bound;
 
-type Idx = u32;
+use super::Idx;
 
 #[derive(Debug, Clone)]
-pub struct AhoCorasickPrefilter {
-    automaton: aho_corasick::AhoCorasick,
-    pattern_to_index: Vec<Idx>,
+pub struct InnerPrefilter {
+    prefixes: BTreeMap<Vec<u8>, RoaringBitmap>,
+    first_idx: Idx,
 }
 
-impl AhoCorasickPrefilter {
+impl InnerPrefilter {
     /// Builds a new prefilter from patterns and their corresponding matcher indexes.
     ///
     /// Returns [`None`] if patterns is empty or if the automaton fails to build.
@@ -19,32 +20,55 @@ impl AhoCorasickPrefilter {
             return None;
         }
 
-        let automaton = aho_corasick::AhoCorasickBuilder::new()
-            .start_kind(aho_corasick::StartKind::Anchored)
-            .build(patterns)
-            .ok()?;
+        let first_idx = pattern_indexes[0];
+        let mut prefixes = BTreeMap::new();
+
+        for (pattern, idx) in patterns.iter().zip(pattern_indexes) {
+            prefixes
+                .entry(pattern.clone())
+                .or_insert_with(RoaringBitmap::new)
+                .insert(idx);
+        }
 
         Some(Self {
-            automaton,
-            pattern_to_index: pattern_indexes,
+            prefixes,
+            first_idx,
         })
     }
 
     /// Checks bytes against the prefilter, returning a bitmap of possible matcher indexes.
     pub fn check(&self, bytes: &[u8]) -> RoaringBitmap {
         let mut possible_indexes = RoaringBitmap::new();
-        let mut state = aho_corasick::automaton::OverlappingState::start();
-        let input = aho_corasick::Input::new(bytes).anchored(aho_corasick::Anchored::Yes);
+        let mut search_len = 1;
 
-        loop {
-            self.automaton.find_overlapping(input.clone(), &mut state);
-            match state.get_match() {
-                Some(m) => {
-                    possible_indexes.insert(self.pattern_to_index[m.pattern().as_usize()]);
+        while search_len <= bytes.len() {
+            let search_slice = &bytes[..search_len];
+            // e.g. searching in the range `/ab`..=`/abcdef`
+            // All found values must start with at least `/ab`
+            let mut range = self
+                .prefixes
+                .range::<[u8], _>((Bound::Included(search_slice), Bound::Included(bytes)));
+
+            match range.next() {
+                Some((found_key, indexes)) => {
+                    if bytes.starts_with(found_key) {
+                        possible_indexes |= indexes;
+                        search_len = found_key.len() + 1;
+                    } else {
+                        // The range query guarantees found_key >= search_slice (bytes[..search_len]),
+                        // so the first search_len bytes must match. We only need to compare beyond that.
+                        let common_added_len = bytes[search_len..]
+                            .iter()
+                            .zip(&found_key[search_len..])
+                            .take_while(|&(a, b)| a == b)
+                            .count();
+                        search_len += common_added_len + 1;
+                    }
                 }
                 None => break,
             }
         }
+
         possible_indexes
     }
 
@@ -52,7 +76,7 @@ impl AhoCorasickPrefilter {
     ///
     /// This is guaranteed to exist because the prefilter requires at least one pattern.
     pub fn first_index(&self) -> Idx {
-        self.pattern_to_index[0]
+        self.first_idx
     }
 }
 
@@ -64,18 +88,15 @@ mod tests {
     fn test_empty_patterns() {
         let patterns: Vec<Vec<u8>> = vec![];
         let indexes: Vec<u32> = vec![];
-        let prefilter = AhoCorasickPrefilter::new(&patterns, indexes);
+        let prefilter = InnerPrefilter::new(&patterns, indexes);
         assert!(prefilter.is_none());
     }
 
     #[test]
     fn test_simple_match() {
-        let patterns = vec![
-            b"/api/users".to_vec(),
-            b"/api/posts".to_vec(),
-        ];
+        let patterns = vec![b"/api/users".to_vec(), b"/api/posts".to_vec()];
         let indexes = vec![0, 1];
-        let prefilter = AhoCorasickPrefilter::new(&patterns, indexes).unwrap();
+        let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
 
         let result = prefilter.check(b"/api/users/123");
         assert!(result.contains(0));
@@ -84,15 +105,94 @@ mod tests {
 
     #[test]
     fn test_overlapping_matches() {
-        let patterns = vec![
-            b"/api".to_vec(),
-            b"/api/v1".to_vec(),
-        ];
+        let patterns = vec![b"/api".to_vec(), b"/api/v1".to_vec()];
         let indexes = vec![0, 1];
-        let prefilter = AhoCorasickPrefilter::new(&patterns, indexes).unwrap();
+        let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
 
         let result = prefilter.check(b"/api/v1/users");
         assert!(result.contains(0));
         assert!(result.contains(1));
+    }
+
+    #[test]
+    fn test_multiple_same_prefix() {
+        let patterns = vec![b"/api".to_vec(), b"/api".to_vec(), b"/users".to_vec()];
+        let indexes = vec![0, 1, 2];
+        let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
+
+        let result = prefilter.check(b"/api/v1");
+        assert!(result.contains(0));
+        assert!(result.contains(1));
+        assert!(!result.contains(2));
+    }
+
+    #[test]
+    fn test_nested_prefixes() {
+        let patterns = vec![
+            b"/".to_vec(),
+            b"/a".to_vec(),
+            b"/ab".to_vec(),
+            b"/abc".to_vec(),
+        ];
+        let indexes = vec![0, 1, 2, 3];
+        let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
+
+        let result = prefilter.check(b"/abc/def");
+        assert!(result.contains(0));
+        assert!(result.contains(1));
+        assert!(result.contains(2));
+        assert!(result.contains(3));
+
+        let result = prefilter.check(b"/ab");
+        assert!(result.contains(0));
+        assert!(result.contains(1));
+        assert!(result.contains(2));
+        assert!(!result.contains(3));
+    }
+
+    #[test]
+    fn test_sparse_prefixes_efficiency() {
+        // Create a sparse set with many non-matching prefixes
+        let mut patterns = vec![];
+        let mut indexes = vec![];
+
+        // Add many decoy patterns
+        for i in 0..100 {
+            patterns.push(format!("/decoy{:03}", i).into_bytes());
+            indexes.push(i);
+        }
+
+        // Add actual matching patterns
+        patterns.push(b"/".to_vec());
+        patterns.push(b"/target".to_vec());
+        indexes.push(1000);
+        indexes.push(1001);
+
+        let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
+        let result = prefilter.check(b"/target/resource");
+
+        assert!(result.contains(1000)); // "/" matches
+        assert!(result.contains(1001)); // "/target" matches
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_common_prefix_skipping() {
+        // Test that common prefix analysis works correctly
+        let patterns = vec![
+            b"/".to_vec(),
+            b"/api".to_vec(),
+            b"/api/v999".to_vec(), // Won't match but helps test skipping
+            b"/other".to_vec(),
+        ];
+        let indexes = vec![0, 1, 2, 3];
+        let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
+
+        let result = prefilter.check(b"/api/users/123");
+        assert!(result.contains(0)); // "/" matches
+        assert!(result.contains(1)); // "/api" matches
+        assert!(!result.contains(2)); // "/api/v999" doesn't match
+        assert!(!result.contains(3)); // "/other" doesn't match
+        assert_eq!(result.len(), 2);
     }
 }
