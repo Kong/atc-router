@@ -1,6 +1,7 @@
 // Switch between prefilter implementations by changing the path:
 // - "inner_prefilter.rs" - AhoCorasick-based implementation
 // - "inner_prefilter_btree.rs" - BTreeMap-based implementation
+// - "inner_prefilter_fst.rs" - FST-based implementation
 #[path = "inner_prefilter_btree.rs"]
 mod inner_prefilter;
 
