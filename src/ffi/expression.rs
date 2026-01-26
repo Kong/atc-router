@@ -49,7 +49,7 @@ impl Expression {
 
 bitflags! {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-    #[repr(C)]
+    #[repr(transparent)]
     pub struct BinaryOperatorFlags: u64 /* We can only have no more than 64 BinaryOperators */ {
         const EQUALS = 1 << 0;
         const NOT_EQUALS = 1 << 1;
