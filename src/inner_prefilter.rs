@@ -1,12 +1,12 @@
 use roaring::RoaringBitmap;
 use std::collections::BTreeMap;
 use std::ops::Bound;
-
+use bstr::BString;
 use super::Idx;
 
 #[derive(Debug, Clone)]
 pub struct InnerPrefilter {
-    prefixes: BTreeMap<Vec<u8>, RoaringBitmap>,
+    prefixes: BTreeMap<BString, RoaringBitmap>,
     first_idx: Idx,
 }
 
@@ -26,7 +26,7 @@ impl InnerPrefilter {
 
         for (pattern, idx) in patterns.iter().zip(pattern_indexes) {
             prefixes
-                .entry(pattern.clone())
+                .entry(BString::new(pattern.clone()))
                 .or_insert_with(RoaringBitmap::new)
                 .insert(idx);
         }
