@@ -371,22 +371,3 @@ impl MatcherVisitor {
         intersect_prefix_expansions(current, new_prefixes);
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn extractor() {
-        let mut extractor = MatcherVisitor::new();
-        extractor.visit_match_starts_with("/opt/123", Case::Sensitive);
-        extractor.visit_match_starts_with("/opt/123", Case::Sensitive);
-        extractor.visit_or_in();
-        extractor.visit_match_regex("abc");
-        extractor.visit_match_regex("(^/opt|^/bob)/abcd.*");
-        extractor.visit_match_regex("^/bob");
-
-        let values = extractor.finish();
-        panic!("{:?}", values);
-    }
-}

@@ -15,7 +15,8 @@ impl InnerPrefilter {
     ///
     /// Returns [`None`] if patterns is empty or if the automaton fails to build.
     pub fn new(patterns: &[Vec<u8>], pattern_indexes: Vec<Idx>) -> Option<Self> {
-        assert_eq!(patterns.len(), pattern_indexes.len());
+        debug_assert_eq!(patterns.len(), pattern_indexes.len());
+        debug_assert!(pattern_indexes.is_sorted());
         if patterns.is_empty() {
             return None;
         }
