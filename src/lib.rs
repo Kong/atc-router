@@ -169,7 +169,11 @@ impl Iterator for RouterPrefilterIter<'_> {
 }
 fn make_combined_prefilter_iter(router_prefilter: &RouterPrefilter, s: &[u8]) -> IntoIter {
     let first_idx = router_prefilter.prefilter.first_index();
-    let mut indexes = router_prefilter.prefilter.check(s);
+    let mut indexes: RoaringBitmap = router_prefilter
+        .prefilter
+        .check(s)
+        .cloned()
+        .unwrap_or_default();
     if router_prefilter
         .always_possible_indexes
         .max()

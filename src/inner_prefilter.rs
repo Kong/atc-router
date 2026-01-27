@@ -1,8 +1,8 @@
+use super::Idx;
+use bstr::{BStr, BString};
 use roaring::RoaringBitmap;
 use std::collections::BTreeMap;
 use std::ops::Bound;
-use bstr::BString;
-use super::Idx;
 
 #[derive(Debug, Clone)]
 pub struct InnerPrefilter {
@@ -31,6 +31,8 @@ impl InnerPrefilter {
                 .insert(idx);
         }
 
+        recursively_extend_further_prefixes(&mut prefixes);
+
         Some(Self {
             prefixes,
             first_idx,
@@ -38,39 +40,8 @@ impl InnerPrefilter {
     }
 
     /// Checks bytes against the prefilter, returning a bitmap of possible matcher indexes.
-    pub fn check(&self, bytes: &[u8]) -> RoaringBitmap {
-        let mut possible_indexes = RoaringBitmap::new();
-        let mut search_len = 1;
-
-        while search_len <= bytes.len() {
-            let search_slice = &bytes[..search_len];
-            // e.g. searching in the range `/ab`..=`/abcdef`
-            // All found values must start with at least `/ab`
-            let mut range = self
-                .prefixes
-                .range::<[u8], _>((Bound::Included(search_slice), Bound::Included(bytes)));
-
-            match range.next() {
-                Some((found_key, indexes)) => {
-                    if bytes.starts_with(found_key) {
-                        possible_indexes |= indexes;
-                        search_len = found_key.len() + 1;
-                    } else {
-                        // The range query guarantees found_key >= search_slice (bytes[..search_len]),
-                        // so the first search_len bytes must match. We only need to compare beyond that.
-                        let common_added_len = bytes[search_len..]
-                            .iter()
-                            .zip(&found_key[search_len..])
-                            .take_while(|&(a, b)| a == b)
-                            .count();
-                        search_len += common_added_len + 1;
-                    }
-                }
-                None => break,
-            }
-        }
-
-        possible_indexes
+    pub fn check(&self, bytes: &[u8]) -> Option<&RoaringBitmap> {
+        longest_contained_prefix(BStr::new(bytes), &self.prefixes)
     }
 
     /// Returns the first pattern index.
@@ -78,6 +49,72 @@ impl InnerPrefilter {
     /// This is guaranteed to exist because the prefilter requires at least one pattern.
     pub fn first_index(&self) -> Idx {
         self.first_idx
+    }
+}
+
+fn longest_contained_prefix<'a>(
+    value: &BStr,
+    prefixes: &'a BTreeMap<BString, RoaringBitmap>,
+) -> Option<&'a RoaringBitmap> {
+    let mut upper_bound = value;
+
+    loop {
+        let (found_key, indexes) = prefixes
+            .range::<BStr, _>((Bound::Unbounded, Bound::Included(upper_bound)))
+            .next_back()?;
+
+        let common_len = value
+            .iter()
+            .zip(found_key.iter())
+            .take_while(|(a, b)| a == b)
+            .count();
+
+        if common_len == 0 {
+            return None;
+        }
+        if common_len == found_key.len() {
+            return Some(indexes);
+        }
+
+        upper_bound = &value[..common_len];
+    }
+}
+
+/// Recursively extends the values from shorter prefixes to longer prefixes.
+///
+/// e.g. with the prefixes:
+/// "abc" => [1]
+/// "abcd" => [2]
+/// "abcde" => [3]
+/// "abcz" => [4]
+///
+/// will be merged to:
+/// "abc" => [1]
+/// "abcd" => [1, 2]
+/// "abcde" => [1, 2, 3]
+/// "abcz" => [1, 4]
+fn recursively_extend_further_prefixes(prefixes: &mut BTreeMap<BString, RoaringBitmap>) {
+    let Some(mut current_key) = prefixes.keys().next().cloned() else {
+        return;
+    };
+    loop {
+        if let Some(values) = current_key
+            .len()
+            .checked_sub(1)
+            .and_then(|len| longest_contained_prefix(BStr::new(&current_key[..len]), prefixes))
+        {
+            let values = values.clone();
+            *prefixes.get_mut(&current_key).unwrap() |= values;
+        }
+
+        match prefixes
+            .range((Bound::Excluded(current_key), Bound::Unbounded))
+            .next()
+            .map(|(k, _)| k.clone())
+        {
+            Some(key) => current_key = key,
+            None => break,
+        }
     }
 }
 
@@ -99,7 +136,7 @@ mod tests {
         let indexes = vec![0, 1];
         let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
 
-        let result = prefilter.check(b"/api/users/123");
+        let result = prefilter.check(b"/api/users/123").unwrap();
         assert!(result.contains(0));
         assert!(!result.contains(1));
     }
@@ -110,7 +147,7 @@ mod tests {
         let indexes = vec![0, 1];
         let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
 
-        let result = prefilter.check(b"/api/v1/users");
+        let result = prefilter.check(b"/api/v1/users").unwrap();
         assert!(result.contains(0));
         assert!(result.contains(1));
     }
@@ -121,7 +158,7 @@ mod tests {
         let indexes = vec![0, 1, 2];
         let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
 
-        let result = prefilter.check(b"/api/v1");
+        let result = prefilter.check(b"/api/v1").unwrap();
         assert!(result.contains(0));
         assert!(result.contains(1));
         assert!(!result.contains(2));
@@ -138,13 +175,13 @@ mod tests {
         let indexes = vec![0, 1, 2, 3];
         let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
 
-        let result = prefilter.check(b"/abc/def");
+        let result = prefilter.check(b"/abc/def").unwrap();
         assert!(result.contains(0));
         assert!(result.contains(1));
         assert!(result.contains(2));
         assert!(result.contains(3));
 
-        let result = prefilter.check(b"/ab");
+        let result = prefilter.check(b"/ab").unwrap();
         assert!(result.contains(0));
         assert!(result.contains(1));
         assert!(result.contains(2));
@@ -170,7 +207,7 @@ mod tests {
         indexes.push(1001);
 
         let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
-        let result = prefilter.check(b"/target/resource");
+        let result = prefilter.check(b"/target/resource").unwrap();
 
         assert!(result.contains(1000)); // "/" matches
         assert!(result.contains(1001)); // "/target" matches
@@ -189,7 +226,7 @@ mod tests {
         let indexes = vec![0, 1, 2, 3];
         let prefilter = InnerPrefilter::new(&patterns, indexes).unwrap();
 
-        let result = prefilter.check(b"/api/users/123");
+        let result = prefilter.check(b"/api/users/123").unwrap();
         assert!(result.contains(0)); // "/" matches
         assert!(result.contains(1)); // "/api" matches
         assert!(!result.contains(2)); // "/api/v999" doesn't match
