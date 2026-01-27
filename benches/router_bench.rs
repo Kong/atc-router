@@ -87,6 +87,7 @@ fn benchmarks(c: &mut Criterion) {
         ("all paths", 0.0),
         ("mostly paths", 0.02),
         ("half paths", 0.5),
+        ("rarely paths", 0.99),
         ("no paths", 1.0),
     ];
     for size in [1, 100, 1_000, 10_000] {
@@ -94,7 +95,7 @@ fn benchmarks(c: &mut Criterion) {
         for (name, frequency) in frequency {
             let paths = generate_path_set(StdRng::seed_from_u64(1234), size, frequency);
             group.bench_with_input(BenchmarkId::new(name, size), &paths[..], |b, paths| {
-                b.iter(|| RouterPrefilter::new(paths, 3 * size / 4))
+                b.iter(|| RouterPrefilter::with_max_unfiltered(paths, 3 * size / 4))
             });
         }
     }
@@ -103,7 +104,7 @@ fn benchmarks(c: &mut Criterion) {
     for size in [1, 100, 1_000, 10_000] {
         for (name, frequency) in frequency {
             let paths = generate_path_set(StdRng::seed_from_u64(1234), size, frequency);
-            if let Some(prefilter) = RouterPrefilter::new(paths, 3 * size / 4) {
+            if let Some(prefilter) = RouterPrefilter::new(paths) {
                 group.bench_with_input(BenchmarkId::new(name, size), &prefilter, |b, prefilter| {
                     b.iter(|| {
                         black_box(
@@ -119,7 +120,7 @@ fn benchmarks(c: &mut Criterion) {
     group.finish();
     let mut group = c.benchmark_group("overlapping matches");
     let paths = vec![PathMatch(Some("^/all/overlapping".to_string())); 10_000];
-    let prefilter = RouterPrefilter::new(&paths, usize::MAX).unwrap();
+    let prefilter = RouterPrefilter::new(&paths).unwrap();
     group.throughput(Throughput::Elements(paths.len() as u64));
     group.bench_with_input(
         BenchmarkId::from_parameter(paths.len()),

@@ -4,6 +4,10 @@ use roaring::RoaringBitmap;
 use std::collections::BTreeMap;
 use std::ops::Bound;
 
+/// Internal prefix lookup structure using a BTreeMap for efficient range queries.
+///
+/// Stores prefixes mapped to bitmaps of matcher indexes, with automatic
+/// prefix extension to handle nested prefix relationships.
 #[derive(Debug, Clone)]
 pub struct InnerPrefilter {
     prefixes: BTreeMap<BString, RoaringBitmap>,
