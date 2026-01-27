@@ -3,7 +3,6 @@ mod inner_prefilter;
 use inner_prefilter::InnerPrefilter;
 use regex_syntax::hir::{Hir, literal};
 use roaring::RoaringBitmap;
-use roaring::bitmap::IntoIter;
 use std::collections::BTreeSet;
 use std::convert::Infallible;
 use std::mem;
@@ -28,7 +27,9 @@ type Idx = u32;
 
 #[derive(Debug, Clone)]
 pub struct RouterPrefilter {
+    // Only includes indexes after prefilter starts
     always_possible_indexes: RoaringBitmap,
+    first_prefiltered: Idx,
     prefilter: InnerPrefilter,
 }
 
@@ -55,9 +56,9 @@ impl RouterPrefilter {
                 return None;
             }
         };
-        let mut unfiltered = RoaringBitmap::new();
-        unfiltered.insert_range(..num_unfiltered);
+        let first_prefiltered = num_unfiltered;
 
+        let mut unfiltered = RoaringBitmap::new();
         let mut patterns = Vec::new();
         let mut pattern_indexes = Vec::new();
 
@@ -88,24 +89,18 @@ impl RouterPrefilter {
         let prefilter = InnerPrefilter::new(&patterns, pattern_indexes)?;
         Some(Self {
             always_possible_indexes: unfiltered,
+            first_prefiltered,
             prefilter,
         })
     }
 
     pub fn possible_matches<'a>(&'a self, value: &'a str) -> RouterPrefilterIter<'a> {
         let value = value.as_bytes();
-        let first_filtered_idx = self.prefilter.first_index();
-        if self.always_possible_indexes.min().unwrap_or(0) >= first_filtered_idx {
-            RouterPrefilterIter(RouterPrefilterIterState::Both(
-                make_combined_prefilter_iter(&self, value),
-            ))
-        } else {
-            RouterPrefilterIter(RouterPrefilterIterState::BeforePrefilter {
-                unfiltered_it: self.always_possible_indexes.range(..first_filtered_idx),
-                router_prefilter: self,
-                s: value,
-            })
-        }
+        RouterPrefilterIter(RouterPrefilterIterState::BeforePrefilter {
+            i: 0,
+            router_prefilter: self,
+            s: value,
+        })
     }
 }
 
@@ -117,16 +112,18 @@ impl Iterator for RouterPrefilterIter<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.0 {
             RouterPrefilterIterState::BeforePrefilter {
-                ref mut unfiltered_it,
+                ref mut i,
                 router_prefilter,
                 s,
             } => {
-                let Some(idx) = unfiltered_it.next() else {
+                let idx = *i;
+                if idx >= router_prefilter.first_prefiltered {
                     let mut it = make_combined_prefilter_iter(&router_prefilter, s);
                     let result = it.next().map(|i| usize::try_from(i).unwrap());
                     self.0 = RouterPrefilterIterState::Both(it);
                     return result;
-                };
+                }
+                *i = idx + 1;
                 Some(usize::try_from(idx).unwrap())
             }
             RouterPrefilterIterState::Both(ref mut inner) => {
@@ -138,8 +135,13 @@ impl Iterator for RouterPrefilterIter<'_> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         match self.0 {
             RouterPrefilterIterState::BeforePrefilter {
-                ref unfiltered_it, ..
-            } => (unfiltered_it.len(), None),
+                i,
+                ref router_prefilter,
+                s: _,
+            } => {
+                let min_size = router_prefilter.first_prefiltered - i;
+                (min_size as usize, None)
+            }
             RouterPrefilterIterState::Both(ref inner) => inner.size_hint(),
         }
     }
@@ -151,11 +153,11 @@ impl Iterator for RouterPrefilterIter<'_> {
     {
         let both_iter = match self.0 {
             RouterPrefilterIterState::BeforePrefilter {
-                unfiltered_it,
+                i,
                 router_prefilter,
                 s,
             } => {
-                init = unfiltered_it
+                init = (i..router_prefilter.first_prefiltered)
                     .map(|idx| usize::try_from(idx).unwrap())
                     .fold(init, &mut f);
                 make_combined_prefilter_iter(router_prefilter, s)
@@ -167,26 +169,20 @@ impl Iterator for RouterPrefilterIter<'_> {
             .fold(init, &mut f)
     }
 }
-fn make_combined_prefilter_iter(router_prefilter: &RouterPrefilter, s: &[u8]) -> IntoIter {
-    let first_idx = router_prefilter.prefilter.first_index();
-    let mut indexes: RoaringBitmap = router_prefilter
-        .prefilter
-        .check(s)
-        .cloned()
-        .unwrap_or_default();
-    if router_prefilter
-        .always_possible_indexes
-        .max()
-        .is_some_and(|max| max > first_idx)
-    {
-        indexes |= &router_prefilter.always_possible_indexes;
+fn make_combined_prefilter_iter(
+    router_prefilter: &RouterPrefilter,
+    s: &[u8],
+) -> roaring::bitmap::IntoIter {
+    let mut indexes = router_prefilter.always_possible_indexes.clone();
+    if let Some(prefilter_indexes) = router_prefilter.prefilter.check(s) {
+        indexes |= prefilter_indexes;
     }
-    indexes.into_range(first_idx..)
+    indexes.into_iter()
 }
 
 enum RouterPrefilterIterState<'a> {
     BeforePrefilter {
-        unfiltered_it: roaring::bitmap::Iter<'a>,
+        i: Idx,
         router_prefilter: &'a RouterPrefilter,
         s: &'a [u8],
     },
@@ -373,5 +369,51 @@ impl MatcherVisitor {
         let new_prefixes = Some(BTreeSet::from([prefix.as_bytes().to_vec()]));
         let current = &mut self.frames.last_mut().unwrap().and_literal_prefixes;
         intersect_prefix_expansions(current, new_prefixes);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestMatcher {
+        prefix: Option<&'static str>,
+    }
+
+    impl TestMatcher {
+        fn with_prefix(prefix: &'static str) -> Self {
+            Self {
+                prefix: Some(prefix),
+            }
+        }
+
+        fn without_prefix() -> Self {
+            Self { prefix: None }
+        }
+    }
+
+    impl Matcher for TestMatcher {
+        fn visit(&self, visitor: &mut MatcherVisitor) {
+            if let Some(prefix) = self.prefix {
+                visitor.visit_match_starts_with(prefix, Case::Sensitive);
+            }
+        }
+    }
+
+    #[test]
+    fn test_iterator_no_skips_before_prefilter() {
+        let matchers = vec![
+            TestMatcher::without_prefix(),
+            TestMatcher::without_prefix(),
+            TestMatcher::without_prefix(),
+            TestMatcher::without_prefix(),
+            TestMatcher::with_prefix("/api"),
+            TestMatcher::with_prefix("/users"),
+        ];
+
+        let prefilter = RouterPrefilter::new(matchers, 10).unwrap();
+        let matches: Vec<_> = prefilter.possible_matches("/api/test").collect();
+
+        assert_eq!(matches, vec![0, 1, 2, 3, 4]);
     }
 }

@@ -7,7 +7,6 @@ use std::ops::Bound;
 #[derive(Debug, Clone)]
 pub struct InnerPrefilter {
     prefixes: BTreeMap<BString, RoaringBitmap>,
-    first_idx: Idx,
 }
 
 impl InnerPrefilter {
@@ -21,7 +20,6 @@ impl InnerPrefilter {
             return None;
         }
 
-        let first_idx = pattern_indexes[0];
         let mut prefixes = BTreeMap::new();
 
         for (pattern, idx) in patterns.iter().zip(pattern_indexes) {
@@ -33,22 +31,12 @@ impl InnerPrefilter {
 
         recursively_extend_further_prefixes(&mut prefixes);
 
-        Some(Self {
-            prefixes,
-            first_idx,
-        })
+        Some(Self { prefixes })
     }
 
     /// Checks bytes against the prefilter, returning a bitmap of possible matcher indexes.
     pub fn check(&self, bytes: &[u8]) -> Option<&RoaringBitmap> {
         longest_contained_prefix(BStr::new(bytes), &self.prefixes)
-    }
-
-    /// Returns the first pattern index.
-    ///
-    /// This is guaranteed to exist because the prefilter requires at least one pattern.
-    pub fn first_index(&self) -> Idx {
-        self.first_idx
     }
 }
 
