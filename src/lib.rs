@@ -1,3 +1,8 @@
+// #![warn(missing_docs)]
+#![warn(variant_size_differences)]
+#![deny(unsafe_op_in_unsafe_fn)]
+#![deny(unnameable_types)]
+
 mod inner_prefilter;
 
 use inner_prefilter::InnerPrefilter;
@@ -94,6 +99,7 @@ impl RouterPrefilter {
         })
     }
 
+    #[must_use]
     pub fn possible_matches<'a>(&'a self, value: &'a str) -> RouterPrefilterIter<'a> {
         let value = value.as_bytes();
         RouterPrefilterIter(RouterPrefilterIterState::BeforePrefilter {
@@ -118,7 +124,7 @@ impl Iterator for RouterPrefilterIter<'_> {
             } => {
                 let idx = *i;
                 if idx >= router_prefilter.first_prefiltered {
-                    let mut it = make_combined_prefilter_iter(&router_prefilter, s);
+                    let mut it = make_combined_prefilter_iter(router_prefilter, s);
                     let result = it.next().map(|i| usize::try_from(i).unwrap());
                     self.0 = RouterPrefilterIterState::Both(it);
                     return result;
@@ -136,7 +142,7 @@ impl Iterator for RouterPrefilterIter<'_> {
         match self.0 {
             RouterPrefilterIterState::BeforePrefilter {
                 i,
-                ref router_prefilter,
+                router_prefilter,
                 s: _,
             } => {
                 let min_size = router_prefilter.first_prefiltered - i;
@@ -318,14 +324,11 @@ impl MatcherVisitor {
         let frame = frames.pop().unwrap();
         assert!(frames.is_empty());
         frames.push(Frame::default());
-        frame
-            .finish()
-            .map(|set| {
-                let mut seq = literal::Seq::new(set);
-                seq.optimize_for_prefix_by_preference();
-                seq
-            })
-            .unwrap_or_else(literal::Seq::infinite)
+        frame.finish().map_or_else(literal::Seq::infinite, |set| {
+            let mut seq = literal::Seq::new(set);
+            seq.optimize_for_prefix_by_preference();
+            seq
+        })
     }
 
     pub fn visit_nested_start(&mut self) {
