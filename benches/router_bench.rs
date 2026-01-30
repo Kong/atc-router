@@ -95,7 +95,13 @@ fn benchmarks(c: &mut Criterion) {
         for (name, frequency) in frequency {
             let paths = generate_path_set(StdRng::seed_from_u64(1234), size, frequency);
             group.bench_with_input(BenchmarkId::new(name, size), &paths[..], |b, paths| {
-                b.iter(|| RouterPrefilter::with_max_unfiltered(paths, 3 * size / 4))
+                b.iter(|| {
+                    let mut prefilter = RouterPrefilter::new();
+                    for (i, path) in paths.iter().enumerate() {
+                        prefilter.insert(i, path);
+                    }
+                    prefilter
+                })
             });
         }
     }
@@ -104,32 +110,39 @@ fn benchmarks(c: &mut Criterion) {
     for size in [1, 100, 1_000, 10_000] {
         for (name, frequency) in frequency {
             let paths = generate_path_set(StdRng::seed_from_u64(1234), size, frequency);
-            if let Some(prefilter) = RouterPrefilter::new(paths) {
-                group.bench_with_input(BenchmarkId::new(name, size), &prefilter, |b, prefilter| {
-                    b.iter(|| {
-                        black_box(
-                            prefilter
-                                .possible_matches("/v1/orgs/MyOrg/attestations/MyAttestation")
-                                .count(),
-                        );
-                    })
-                });
+            let mut prefilter = RouterPrefilter::new();
+            for (i, path) in paths.into_iter().enumerate() {
+                prefilter.insert(i, path);
             }
+            group.bench_with_input(BenchmarkId::new(name, size), &prefilter, |b, prefilter| {
+                b.iter(|| {
+                    black_box(
+                        prefilter
+                            .possible_matches("/v1/orgs/MyOrg/attestations/MyAttestation")
+                            .count(),
+                    );
+                })
+            });
         }
     }
     group.finish();
     let mut group = c.benchmark_group("overlapping matches");
     let paths = vec![PathMatch(Some("^/all/overlapping".to_string())); 10_000];
-    let prefilter = RouterPrefilter::new(&paths).unwrap();
+    let mut prefilter = RouterPrefilter::new();
+    for (i, path) in paths.iter().enumerate() {
+        prefilter.insert(i, path);
+    }
     group.throughput(Throughput::Elements(paths.len() as u64));
     group.bench_with_input(
         BenchmarkId::from_parameter(paths.len()),
         &prefilter,
         |b, prefilter| {
             b.iter(|| {
-                prefilter
-                    .possible_matches("/all/overlapping/mypath")
-                    .sum::<usize>()
+                let mut sum = 0;
+                for key in prefilter.possible_matches("/all/overlapping/mypath") {
+                    sum += key;
+                }
+                sum
             })
         },
     );

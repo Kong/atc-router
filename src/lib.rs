@@ -24,9 +24,12 @@
 //!     RoutePattern { prefix: "/users".to_string() },
 //! ];
 //!
-//! let prefilter = RouterPrefilter::new(routes).unwrap();
+//! let mut prefilter = RouterPrefilter::new();
+//! for (i, route) in routes.into_iter().enumerate() {
+//!     prefilter.insert(i, route);
+//! }
 //! let matches: Vec<_> = prefilter.possible_matches("/api/v1").collect();
-//! assert_eq!(matches, vec![0]);
+//! assert_eq!(matches, vec![&0]);
 //! ```
 
 #![warn(variant_size_differences)]
@@ -38,8 +41,7 @@ mod inner_prefilter;
 
 use inner_prefilter::InnerPrefilter;
 use regex_syntax::hir::{Hir, literal};
-use roaring::RoaringBitmap;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, btree_set};
 use std::convert::Infallible;
 use std::mem;
 
@@ -86,8 +88,6 @@ impl<M: Matcher> Matcher for &M {
     }
 }
 
-type Idx = u32;
-
 /// A prefilter for quickly identifying potentially matching route patterns.
 ///
 /// The prefilter analyzes route matchers to extract literal prefixes and builds
@@ -114,147 +114,118 @@ type Idx = u32;
 ///     Route { path: "/users".to_string() },
 /// ];
 ///
-/// let prefilter = RouterPrefilter::new(routes).unwrap();
+/// let mut prefilter = RouterPrefilter::new();
+/// for (i, route) in routes.into_iter().enumerate() {
+///     prefilter.insert(i, route);
+/// }
 /// let matches: Vec<_> = prefilter.possible_matches("/api/posts").collect();
-/// assert!(matches.contains(&0));
+/// assert!(matches.contains(&&0));
 /// ```
-#[derive(Debug, Clone)]
-pub struct RouterPrefilter {
+#[derive(Debug)]
+pub struct RouterPrefilter<K> {
     // Only includes indexes after prefilter starts
-    always_possible_indexes: RoaringBitmap,
-    first_prefiltered: Idx,
-    prefilter: InnerPrefilter,
+    always_possible: BTreeSet<K>,
+    prefilter: InnerPrefilter<K>,
+
+    matcher_visitor: MatcherVisitor,
 }
 
-impl RouterPrefilter {
-    /// Creates a new router prefilter from a collection of matchers.
+impl<K: Clone> Clone for RouterPrefilter<K> {
+    fn clone(&self) -> Self {
+        Self {
+            always_possible: self.always_possible.clone(),
+            prefilter: self.prefilter.clone(),
+
+            matcher_visitor: MatcherVisitor::new(),
+        }
+    }
+}
+
+impl<K> Default for RouterPrefilter<K> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<K> RouterPrefilter<K> {
+    /// Creates a new empty prefilter.
     ///
-    /// See also [`Self::with_max_unfiltered`], to configure a maximum number of unfiltered matchers
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::RouterPrefilter;
+    ///
+    /// let prefilter: RouterPrefilter<usize> = RouterPrefilter::new();
+    /// ```
+    pub fn new() -> Self {
+        Self {
+            always_possible: BTreeSet::new(),
+            prefilter: InnerPrefilter::new(),
+
+            matcher_visitor: MatcherVisitor::new(),
+        }
+    }
+}
+
+impl<K: Ord> RouterPrefilter<K> {
+    /// Inserts a matcher with the given key.
+    ///
+    /// The matcher is analyzed to extract literal prefixes for fast filtering.
+    /// If no prefixes can be extracted, the matcher is tracked as always-possible.
     ///
     /// # Examples
     ///
     /// ```
     /// use router_prefilter::{RouterPrefilter, Matcher, MatcherVisitor, Case};
     ///
-    /// struct SimpleRoute(&'static str);
+    /// struct Route(&'static str);
     ///
-    /// impl Matcher for SimpleRoute {
+    /// impl Matcher for Route {
     ///     fn visit(&self, visitor: &mut MatcherVisitor) {
     ///         visitor.visit_match_starts_with(self.0, Case::Sensitive);
     ///     }
     /// }
     ///
-    /// let routes = vec![
-    ///     SimpleRoute("/api"),
-    ///     SimpleRoute("/users"),
-    /// ];
-    ///
-    /// let prefilter = RouterPrefilter::new(routes);
-    /// assert!(prefilter.is_some());
+    /// let mut prefilter = RouterPrefilter::new();
+    /// prefilter.insert(0, Route("/api"));
+    /// prefilter.insert(1, Route("/users"));
     /// ```
-    ///
-    /// Returns [`None`] if:
-    /// - No matchers are provided
-    /// - Too many matchers lack extractable prefixes
-    /// - The internal prefilter fails to build
-    pub fn new<M, I>(matchers: I) -> Option<Self>
+    pub fn insert<M: Matcher>(&mut self, key: K, matcher: M)
     where
-        M: Matcher,
-        I: IntoIterator<Item = M>,
+        K: Clone,
     {
-        Self::with_max_unfiltered(matchers, usize::MAX)
+        matcher.visit(&mut self.matcher_visitor);
+        let seq = self.matcher_visitor.finish();
+        if let Some(literals) = seq.literals() {
+            let prefixes = literals.iter().map(|lit| lit.as_bytes().to_vec()).collect();
+            self.prefilter.insert(key, prefixes);
+        } else {
+            self.always_possible.insert(key);
+        }
     }
 
-    /// Creates a new router prefilter with a custom unfiltered matcher limit.
-    ///
-    /// Analyzes each matcher to extract literal prefixes and builds an efficient
-    /// lookup structure. Matchers without extractable prefixes are tracked as
-    /// always-possible matches up to the `max_unfiltered` limit.
+    /// Removes a matcher by key.
     ///
     /// # Examples
     ///
     /// ```
     /// use router_prefilter::{RouterPrefilter, Matcher, MatcherVisitor, Case};
     ///
-    /// struct SimpleRoute(&'static str);
+    /// struct Route(&'static str);
     ///
-    /// impl Matcher for SimpleRoute {
+    /// impl Matcher for Route {
     ///     fn visit(&self, visitor: &mut MatcherVisitor) {
     ///         visitor.visit_match_starts_with(self.0, Case::Sensitive);
     ///     }
     /// }
     ///
-    /// let routes = vec![
-    ///     SimpleRoute("/api"),
-    ///     SimpleRoute("/users"),
-    /// ];
-    ///
-    /// let prefilter = RouterPrefilter::with_max_unfiltered(routes, 100);
-    /// assert!(prefilter.is_some());
+    /// let mut prefilter = RouterPrefilter::new();
+    /// prefilter.insert(0, Route("/api"));
+    /// prefilter.remove(&0);
     /// ```
-    ///
-    /// Returns [`None`] if:
-    /// - No matchers are provided
-    /// - All matchers lack extractable prefixes and exceed `max_unfiltered`
-    /// - The internal prefilter fails to build
-    pub fn with_max_unfiltered<M, I>(matchers: I, max_unfiltered: usize) -> Option<Self>
-    where
-        M: Matcher,
-        I: IntoIterator<Item = M>,
-    {
-        let max_unfiltered = Idx::try_from(max_unfiltered).unwrap_or(Idx::MAX);
-
-        let mut matchers = matchers.into_iter().enumerate();
-        let mut extractor = MatcherVisitor::new();
-        let mut num_unfiltered = 0;
-        let (idx, first_prefixes) = loop {
-            let (i, m) = matchers.next()?;
-            m.visit(&mut extractor);
-            let extracted_prefixes = extractor.finish();
-            if extracted_prefixes.is_finite() {
-                break (i, extracted_prefixes);
-            }
-            num_unfiltered += 1;
-            if num_unfiltered >= max_unfiltered {
-                return None;
-            }
-        };
-        let first_prefiltered = num_unfiltered;
-
-        let mut unfiltered = RoaringBitmap::new();
-        let mut patterns = Vec::new();
-        let mut pattern_indexes = Vec::new();
-
-        for prefix in first_prefixes.literals().unwrap_or_default() {
-            patterns.push(prefix.as_bytes().to_vec());
-            pattern_indexes.push(Idx::try_from(idx).unwrap());
-        }
-
-        for (i, m) in matchers {
-            m.visit(&mut extractor);
-            let extracted_prefixes = extractor.finish();
-
-            if let Some(prefixes) = extracted_prefixes.literals() {
-                patterns.reserve(prefixes.len());
-                pattern_indexes.reserve(prefixes.len());
-                for prefix in prefixes {
-                    patterns.push(prefix.as_bytes().to_vec());
-                    pattern_indexes.push(Idx::try_from(i).unwrap());
-                }
-            } else {
-                unfiltered.insert(i as u32);
-                num_unfiltered += 1;
-                if num_unfiltered >= max_unfiltered {
-                    return None;
-                }
-            }
-        }
-        let prefilter = InnerPrefilter::new(&patterns, pattern_indexes)?;
-        Some(Self {
-            always_possible_indexes: unfiltered,
-            first_prefiltered,
-            prefilter,
-        })
+    pub fn remove(&mut self, key: &K) {
+        self.always_possible.remove(key);
+        self.prefilter.remove(key);
     }
 
     /// Returns an iterator over matcher indexes that may match the given value.
@@ -273,19 +244,24 @@ impl RouterPrefilter {
     /// }
     ///
     /// let routes = vec![Route("/api"), Route("/users")];
-    /// let prefilter = RouterPrefilter::new(routes).unwrap();
+    /// let mut prefilter = RouterPrefilter::new();
+    /// for (i, route) in routes.into_iter().enumerate() {
+    ///     prefilter.insert(i, route);
+    /// }
     ///
     /// let matches: Vec<_> = prefilter.possible_matches("/api/v1").collect();
-    /// assert_eq!(matches, vec![0]);
+    /// assert_eq!(matches, vec![&0]);
     /// ```
     #[must_use]
-    pub fn possible_matches<'a>(&'a self, value: &'a str) -> RouterPrefilterIter<'a> {
+    pub fn possible_matches<'a>(&'a self, value: &'a str) -> RouterPrefilterIter<'a, K> {
         let value = value.as_bytes();
-        RouterPrefilterIter(RouterPrefilterIterState::BeforePrefilter {
-            i: 0,
-            router_prefilter: self,
-            s: value,
-        })
+        let inner = match self.prefilter.check(value) {
+            Some(prefiltered) => {
+                RouterPrefilterIterState::Union(prefiltered.union(&self.always_possible))
+            }
+            None => RouterPrefilterIterState::OnlyAlways(self.always_possible.iter()),
+        };
+        RouterPrefilterIter(inner)
     }
 }
 
@@ -293,89 +269,40 @@ impl RouterPrefilter {
 ///
 /// Created by [`RouterPrefilter::possible_matches`]. Yields matcher indexes
 /// in ascending order.
-pub struct RouterPrefilterIter<'a>(RouterPrefilterIterState<'a>);
+pub struct RouterPrefilterIter<'a, K>(RouterPrefilterIterState<'a, K>);
 
-impl Iterator for RouterPrefilterIter<'_> {
-    type Item = usize;
+enum RouterPrefilterIterState<'a, K> {
+    OnlyAlways(btree_set::Iter<'a, K>),
+    Union(btree_set::Union<'a, K>),
+}
+
+impl<'a, K: Ord> Iterator for RouterPrefilterIter<'a, K> {
+    type Item = &'a K;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.0 {
-            RouterPrefilterIterState::BeforePrefilter {
-                ref mut i,
-                router_prefilter,
-                s,
-            } => {
-                let idx = *i;
-                if idx >= router_prefilter.first_prefiltered {
-                    let mut it = make_combined_prefilter_iter(router_prefilter, s);
-                    let result = it.next().map(|i| usize::try_from(i).unwrap());
-                    self.0 = RouterPrefilterIterState::Both(it);
-                    return result;
-                }
-                *i = idx + 1;
-                Some(usize::try_from(idx).unwrap())
-            }
-            RouterPrefilterIterState::Both(ref mut inner) => {
-                inner.next().map(|i| usize::try_from(i).unwrap())
-            }
+        match &mut self.0 {
+            RouterPrefilterIterState::OnlyAlways(inner) => inner.next(),
+            RouterPrefilterIterState::Union(inner) => inner.next(),
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        match self.0 {
-            RouterPrefilterIterState::BeforePrefilter {
-                i,
-                router_prefilter,
-                s: _,
-            } => {
-                let min_size = router_prefilter.first_prefiltered - i;
-                (min_size as usize, None)
-            }
-            RouterPrefilterIterState::Both(ref inner) => inner.size_hint(),
+        match &self.0 {
+            RouterPrefilterIterState::OnlyAlways(inner) => inner.size_hint(),
+            RouterPrefilterIterState::Union(inner) => inner.size_hint(),
         }
     }
 
-    fn fold<B, F>(self, mut init: B, mut f: F) -> B
+    fn fold<B, F>(self, init: B, f: F) -> B
     where
         Self: Sized,
         F: FnMut(B, Self::Item) -> B,
     {
-        let both_iter = match self.0 {
-            RouterPrefilterIterState::BeforePrefilter {
-                i,
-                router_prefilter,
-                s,
-            } => {
-                init = (i..router_prefilter.first_prefiltered)
-                    .map(|idx| usize::try_from(idx).unwrap())
-                    .fold(init, &mut f);
-                make_combined_prefilter_iter(router_prefilter, s)
-            }
-            RouterPrefilterIterState::Both(it) => it,
-        };
-        both_iter
-            .map(|idx| usize::try_from(idx).unwrap())
-            .fold(init, &mut f)
+        match self.0 {
+            RouterPrefilterIterState::OnlyAlways(inner) => inner.fold(init, f),
+            RouterPrefilterIterState::Union(inner) => inner.fold(init, f),
+        }
     }
-}
-fn make_combined_prefilter_iter(
-    router_prefilter: &RouterPrefilter,
-    s: &[u8],
-) -> roaring::bitmap::IntoIter {
-    let mut indexes = router_prefilter.always_possible_indexes.clone();
-    if let Some(prefilter_indexes) = router_prefilter.prefilter.check(s) {
-        indexes |= prefilter_indexes;
-    }
-    indexes.into_iter()
-}
-
-enum RouterPrefilterIterState<'a> {
-    BeforePrefilter {
-        i: Idx,
-        router_prefilter: &'a RouterPrefilter,
-        s: &'a [u8],
-    },
-    Both(roaring::bitmap::IntoIter),
 }
 
 fn extract_prefixes(hir: &Hir) -> Option<BTreeSet<Vec<u8>>> {
@@ -546,9 +473,14 @@ impl MatcherVisitor {
 
     fn finish(&mut self) -> literal::Seq {
         let Self { frames } = self;
-        let frame = frames.pop().unwrap();
-        assert!(frames.is_empty());
-        frames.push(Frame::default());
+        let frame = match &mut frames[..] {
+            [only_frame] => mem::take(only_frame),
+            _ => {
+                frames.clear();
+                frames.push(Frame::default());
+                panic!("mismatched nesting calls to MatcherVisitor")
+            }
+        };
         frame.finish().map_or_else(literal::Seq::infinite, |set| {
             let mut seq = literal::Seq::new(set);
             seq.optimize_for_prefix_by_preference();
@@ -750,14 +682,17 @@ mod tests {
             TestMatcher::with_prefix("/users"),
         ];
 
-        let prefilter = RouterPrefilter::new(matchers).unwrap();
+        let mut prefilter = RouterPrefilter::new();
+        for (i, matcher) in matchers.into_iter().enumerate() {
+            prefilter.insert(i, matcher);
+        }
         let matches: Vec<_> = prefilter.possible_matches("/api/test").collect();
 
-        assert_eq!(matches, vec![0, 1, 2, 3, 4]);
+        assert_eq!(matches, vec![&0, &1, &2, &3, &4]);
     }
 
     #[test]
-    fn test_max_unfiltered_limit() {
+    fn test_mixed_matchers() {
         let matchers = vec![
             TestMatcher::without_prefix(),
             TestMatcher::without_prefix(),
@@ -765,12 +700,15 @@ mod tests {
             TestMatcher::with_prefix("/api"),
         ];
 
-        // Should succeed with limit of 4 (allows 3 unfiltered + 1 with prefix)
-        let prefilter = RouterPrefilter::with_max_unfiltered(matchers.clone(), 4);
-        assert!(prefilter.is_some());
+        let mut prefilter = RouterPrefilter::new();
+        for (i, matcher) in matchers.into_iter().enumerate() {
+            prefilter.insert(i, matcher);
+        }
 
-        // Should fail with limit of 2 (only allows 2 unfiltered, but we have 3)
-        let prefilter = RouterPrefilter::with_max_unfiltered(matchers, 2);
-        assert!(prefilter.is_none());
+        let matches: Vec<_> = prefilter.possible_matches("/api/test").collect();
+        assert_eq!(matches, vec![&0, &1, &2, &3]);
+
+        let matches: Vec<_> = prefilter.possible_matches("/other/path").collect();
+        assert_eq!(matches, vec![&0, &1, &2]);
     }
 }
