@@ -25,6 +25,10 @@ impl<K> InnerPrefilter<K> {
             key_to_prefixes: BTreeMap::new(),
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.key_to_prefixes.is_empty()
+    }
 }
 
 impl<K: Ord> InnerPrefilter<K> {

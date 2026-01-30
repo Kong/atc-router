@@ -165,6 +165,35 @@ impl<K> RouterPrefilter<K> {
             matcher_visitor: MatcherVisitor::new(),
         }
     }
+
+    /// Returns whether this prefilter can perform filtering.
+    ///
+    /// Returns `true` if at least one matcher has been inserted with extractable
+    /// prefixes. Returns `false` if the prefilter is empty or all matchers lack
+    /// extractable prefixes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::{RouterPrefilter, Matcher, MatcherVisitor, Case};
+    ///
+    /// struct Route(&'static str);
+    ///
+    /// impl Matcher for Route {
+    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
+    ///         visitor.visit_match_starts_with(self.0, Case::Sensitive);
+    ///     }
+    /// }
+    ///
+    /// let mut prefilter = RouterPrefilter::new();
+    /// assert!(!prefilter.can_prefilter());
+    ///
+    /// prefilter.insert(0, Route("/api"));
+    /// assert!(prefilter.can_prefilter());
+    /// ```
+    pub fn can_prefilter(&self) -> bool {
+        !self.prefilter.is_empty()
+    }
 }
 
 impl<K: Ord> RouterPrefilter<K> {
