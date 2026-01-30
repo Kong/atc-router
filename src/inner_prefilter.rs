@@ -54,14 +54,14 @@ impl<K: Ord> InnerPrefilter<K> {
 
     /// Checks bytes against the prefilter, returning a bitmap of possible matcher indexes.
     pub fn check(&self, bytes: &[u8]) -> Option<&BTreeSet<K>> {
-        longest_contained_prefix(BStr::new(bytes), &self.prefixes)
+        longest_contained_prefix(BStr::new(bytes), &self.prefixes).map(|(_prefix, keys)| keys)
     }
 }
 
 fn longest_contained_prefix<'a, K: Ord>(
     value: &BStr,
     prefixes: &'a BTreeMap<BString, BTreeSet<K>>,
-) -> Option<&'a BTreeSet<K>> {
+) -> Option<(&'a BStr, &'a BTreeSet<K>)> {
     let mut upper_bound = value;
 
     loop {
@@ -79,7 +79,7 @@ fn longest_contained_prefix<'a, K: Ord>(
             return None;
         }
         if common_len == found_key.len() {
-            return Some(indexes);
+            return Some((found_key.as_bstr(), indexes));
         }
 
         upper_bound = &value[..common_len];
@@ -94,14 +94,15 @@ fn recursively_add_to_longer_prefixes<K: Ord + Clone>(
     let mut keys_from_shorter_prefixes = BTreeSet::new();
     keys_from_shorter_prefixes.insert(key.clone());
 
-    // TODO: skip like with `longest_contained_prefix`
-    let range = prefixes.range::<BStr, _>((Bound::Unbounded, Bound::Excluded(prefix.as_bstr())));
-    for (shorter_prefix, shorter_keys) in range {
-        if prefix.starts_with(shorter_prefix) {
-            for shorter_key in shorter_keys {
-                keys_from_shorter_prefixes.insert(shorter_key.clone());
+    let mut upper_bound = prefix.as_bstr();
+    while let Some((_, smaller_prefix)) = upper_bound.split_last() {
+        upper_bound = match longest_contained_prefix(smaller_prefix.as_bstr(), prefixes) {
+            Some((smaller_prefix, keys)) => {
+                keys_from_shorter_prefixes.extend(keys.iter().cloned());
+                smaller_prefix
             }
-        }
+            None => break,
+        };
     }
 
     let range =
@@ -112,7 +113,10 @@ fn recursively_add_to_longer_prefixes<K: Ord + Clone>(
         }
         keys.insert(key.clone());
     }
-    prefixes.entry(prefix).or_default().extend(keys_from_shorter_prefixes);
+    prefixes
+        .entry(prefix)
+        .or_default()
+        .extend(keys_from_shorter_prefixes);
 }
 fn recursively_remove_from_longer_prefixes<K: Ord>(
     prefix: &BStr,

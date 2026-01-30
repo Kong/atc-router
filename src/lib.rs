@@ -606,7 +606,6 @@ impl MatcherVisitor {
     /// let route = RegexRoute("^/api/.*");
     /// ```
     pub fn visit_match_regex(&mut self, regex: &str) {
-        // TODO: Should we return an error? Or panic instead?
         let hir = regex_syntax::parse(regex).unwrap_or_else(|_| Hir::fail());
         let current = &mut self.frames.last_mut().unwrap().and_literal_prefixes;
         let new_prefixes = extract_prefixes(&hir);
