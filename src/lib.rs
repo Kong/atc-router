@@ -476,4 +476,102 @@ mod tests {
         let matches: Vec<_> = prefilter.possible_matches("/other/path").collect();
         assert_eq!(matches, vec![&0, &1, &2]);
     }
+
+    #[test]
+    fn test_clone() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+        prefilter.insert(1, TestMatcher::without_prefix());
+
+        let cloned = prefilter.clone();
+        let matches: Vec<_> = cloned.possible_matches("/api/test").collect();
+        assert_eq!(matches, vec![&0, &1]);
+    }
+
+    #[test]
+    fn test_default() {
+        let prefilter: RouterPrefilter<usize> = RouterPrefilter::default();
+        assert!(prefilter.is_empty());
+        assert!(!prefilter.can_prefilter());
+    }
+
+    #[test]
+    fn test_utility_methods() {
+        let mut prefilter = RouterPrefilter::new();
+
+        // Empty state
+        assert!(prefilter.is_empty());
+        assert_eq!(prefilter.len(), 0);
+        assert!(!prefilter.can_prefilter());
+        assert_eq!(prefilter.prefilterable_routes(), 0);
+
+        // Add prefilterable route
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+        assert!(!prefilter.is_empty());
+        assert_eq!(prefilter.len(), 1);
+        assert!(prefilter.can_prefilter());
+        assert_eq!(prefilter.prefilterable_routes(), 1);
+
+        // Add non-prefilterable route
+        prefilter.insert(1, TestMatcher::without_prefix());
+        assert_eq!(prefilter.len(), 2);
+        assert_eq!(prefilter.prefilterable_routes(), 1); // Still only 1 prefilterable
+
+        // Add another prefilterable route
+        prefilter.insert(2, TestMatcher::with_prefix("/users"));
+        assert_eq!(prefilter.len(), 3);
+        assert_eq!(prefilter.prefilterable_routes(), 2);
+    }
+
+    #[test]
+    fn test_remove() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+        prefilter.insert(1, TestMatcher::without_prefix());
+        prefilter.insert(2, TestMatcher::with_prefix("/users"));
+
+        assert_eq!(prefilter.len(), 3);
+
+        // Remove prefilterable route
+        prefilter.remove(&0);
+        assert_eq!(prefilter.len(), 2);
+        let matches: Vec<_> = prefilter.possible_matches("/api/test").collect();
+        assert!(!matches.contains(&&0));
+        assert!(matches.contains(&&1));
+
+        // Remove non-prefilterable route
+        prefilter.remove(&1);
+        assert_eq!(prefilter.len(), 1);
+        let matches: Vec<_> = prefilter.possible_matches("/users/test").collect();
+        assert!(!matches.contains(&&1));
+        assert!(matches.contains(&&2));
+
+        // Remove last route
+        prefilter.remove(&2);
+        assert!(prefilter.is_empty());
+    }
+
+    #[test]
+    fn test_iterator_fold() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+        prefilter.insert(1, TestMatcher::with_prefix("/users"));
+
+        let sum = prefilter.possible_matches("/api/test").fold(0, |acc, &x| acc + x);
+        assert_eq!(sum, 0); // Only route 0 matches
+
+        let sum = prefilter.possible_matches("/users/test").fold(0, |acc, &x| acc + x);
+        assert_eq!(sum, 1); // Only route 1 matches
+    }
+
+    #[test]
+    fn test_iterator_size_hint() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+        prefilter.insert(1, TestMatcher::without_prefix());
+
+        let iter = prefilter.possible_matches("/api/test");
+        let (min, max) = iter.size_hint();
+        assert!(min <= max.unwrap_or(usize::MAX));
+    }
 }

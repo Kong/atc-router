@@ -8,12 +8,11 @@
 //!
 //! - [`Matcher`] - Trait for types that can be analyzed for prefix extraction
 //! - [`MatcherVisitor`] - Visitor that extracts literal prefixes from matcher patterns
-//! - [`Case`] - Specifies case-sensitivity for pattern matching
 //!
 //! # Example
 //!
 //! ```
-//! use router_prefilter::matchers::{Matcher, MatcherVisitor, Case};
+//! use router_prefilter::matchers::{Matcher, MatcherVisitor};
 //!
 //! struct RoutePattern {
 //!     prefix: String,
@@ -21,7 +20,7 @@
 //!
 //! impl Matcher for RoutePattern {
 //!     fn visit(&self, visitor: &mut MatcherVisitor) {
-//!         visitor.visit_match_starts_with(&self.prefix, Case::Sensitive);
+//!         visitor.visit_match_starts_with(&self.prefix);
 //!     }
 //! }
 //! ```
@@ -103,13 +102,13 @@ impl Frame {
 /// Basic usage with a simple prefix:
 ///
 /// ```
-/// use router_prefilter::matchers::{Matcher, MatcherVisitor, Case};
+/// use router_prefilter::matchers::{Matcher, MatcherVisitor};
 ///
 /// struct ApiRoute;
 ///
 /// impl Matcher for ApiRoute {
 ///     fn visit(&self, visitor: &mut MatcherVisitor) {
-///         visitor.visit_match_starts_with("/api", Case::Sensitive);
+///         visitor.visit_match_starts_with("/api");
 ///     }
 /// }
 /// ```
@@ -117,18 +116,18 @@ impl Frame {
 /// Complex pattern with nesting:
 ///
 /// ```
-/// use router_prefilter::matchers::{Matcher, MatcherVisitor, Case};
+/// use router_prefilter::matchers::{Matcher, MatcherVisitor};
 ///
 /// struct VersionedRoute;
 ///
 /// impl Matcher for VersionedRoute {
 ///     fn visit(&self, visitor: &mut MatcherVisitor) {
 ///         // /v && (/v1 || /v2)
-///         visitor.visit_match_starts_with("/v", Case::Sensitive);
+///         visitor.visit_match_starts_with("/v");
 ///         visitor.visit_nested_start();
-///         visitor.visit_match_starts_with("/v1", Case::Sensitive);
+///         visitor.visit_match_starts_with("/v1");
 ///         visitor.visit_or_in();
-///         visitor.visit_match_starts_with("/v2", Case::Sensitive);
+///         visitor.visit_match_starts_with("/v2");
 ///         visitor.visit_nested_finish();
 ///     }
 /// }
@@ -243,14 +242,14 @@ impl MatcherVisitor {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor, Case};
+    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct NestedRoute;
     ///
     /// impl Matcher for NestedRoute {
     ///     fn visit(&self, visitor: &mut MatcherVisitor) {
     ///         visitor.visit_nested_start();
-    ///         visitor.visit_match_starts_with("/api", Case::Sensitive);
+    ///         visitor.visit_match_starts_with("/api");
     ///         visitor.visit_nested_finish();
     ///     }
     /// }
@@ -285,15 +284,15 @@ impl MatcherVisitor {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor, Case};
+    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct MultiVersionRoute;
     ///
     /// impl Matcher for MultiVersionRoute {
     ///     fn visit(&self, visitor: &mut MatcherVisitor) {
-    ///         visitor.visit_match_starts_with("/v1", Case::Sensitive);
+    ///         visitor.visit_match_starts_with("/v1");
     ///         visitor.visit_or_in();
-    ///         visitor.visit_match_starts_with("/v2", Case::Sensitive);
+    ///         visitor.visit_match_starts_with("/v2");
     ///     }
     /// }
     /// ```
@@ -397,4 +396,179 @@ fn extract_prefixes(hir: &Hir) -> Option<BTreeSet<Vec<u8>>> {
             .map(|lit| lit.as_bytes().to_vec())
             .collect::<BTreeSet<_>>()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct SimpleMatcher(&'static str);
+
+    impl Matcher for SimpleMatcher {
+        fn visit(&self, visitor: &mut MatcherVisitor) {
+            visitor.visit_match_starts_with(self.0);
+        }
+    }
+
+    #[test]
+    fn test_matcher_by_reference() {
+        let matcher = SimpleMatcher("/api");
+        let mut visitor = MatcherVisitor::new();
+        (&matcher).visit(&mut visitor);
+        let seq = visitor.finish();
+        assert!(seq.literals().is_some());
+    }
+
+    #[test]
+    fn test_visit_match_regex_anchored() {
+        let mut visitor = MatcherVisitor::new();
+        visitor.visit_match_regex(r"^/api/.*");
+        let seq = visitor.finish();
+        let literals = seq.literals().unwrap();
+        assert_eq!(literals.len(), 1);
+        assert_eq!(literals[0].as_bytes(), b"/api/");
+    }
+
+    #[test]
+    fn test_visit_match_regex_unanchored() {
+        let mut visitor = MatcherVisitor::new();
+        visitor.visit_match_regex(r"/api/.*");
+        let seq = visitor.finish();
+        // Unanchored regex should not extract prefixes
+        assert!(seq.literals().is_none());
+    }
+
+    #[test]
+    fn test_visit_match_equals() {
+        let mut visitor = MatcherVisitor::new();
+        visitor.visit_match_equals("/api/users");
+        let seq = visitor.finish();
+        let literals = seq.literals().unwrap();
+        assert_eq!(literals.len(), 1);
+        assert_eq!(literals[0].as_bytes(), b"/api/users");
+    }
+
+    #[test]
+    fn test_visit_nested() {
+        let mut visitor = MatcherVisitor::new();
+        visitor.visit_nested_start();
+        visitor.visit_match_starts_with("/api");
+        visitor.visit_nested_finish();
+        let seq = visitor.finish();
+        let literals = seq.literals().unwrap();
+        assert_eq!(literals.len(), 1);
+        assert_eq!(literals[0].as_bytes(), b"/api");
+    }
+
+    #[test]
+    fn test_visit_or_in() {
+        let mut visitor = MatcherVisitor::new();
+        visitor.visit_match_starts_with("/v1");
+        visitor.visit_or_in();
+        visitor.visit_match_starts_with("/v2");
+        let seq = visitor.finish();
+        let literals = seq.literals().unwrap();
+        assert_eq!(literals.len(), 2);
+        assert!(literals.iter().any(|l| l.as_bytes() == b"/v1"));
+        assert!(literals.iter().any(|l| l.as_bytes() == b"/v2"));
+    }
+
+    #[test]
+    fn test_nested_with_or() {
+        let mut visitor = MatcherVisitor::new();
+        // Match: /v && (/v1 || /v2)
+        visitor.visit_match_starts_with("/v");
+        visitor.visit_nested_start();
+        visitor.visit_match_starts_with("/v1");
+        visitor.visit_or_in();
+        visitor.visit_match_starts_with("/v2");
+        visitor.visit_nested_finish();
+        let seq = visitor.finish();
+        let literals = seq.literals().unwrap();
+        // Should have /v1 and /v2 (both start with /v)
+        assert_eq!(literals.len(), 2);
+        assert!(literals.iter().any(|l| l.as_bytes() == b"/v1"));
+        assert!(literals.iter().any(|l| l.as_bytes() == b"/v2"));
+    }
+
+    #[test]
+    fn test_union_prefixes_limited_exceeds_max() {
+        let mut lhs = Some(BTreeSet::new());
+        let mut rhs = BTreeSet::new();
+
+        // Fill lhs with 60 items
+        for i in 0..60 {
+            lhs.as_mut().unwrap().insert(vec![i]);
+        }
+
+        // Fill rhs with 60 items
+        for i in 60..120 {
+            rhs.insert(vec![i]);
+        }
+
+        union_prefixes_limited(&mut lhs, Some(rhs), 100);
+        // Should exceed limit and become None
+        assert!(lhs.is_none());
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_both_none() {
+        let mut lhs = None;
+        let rhs = None;
+        intersect_prefix_expansions(&mut lhs, rhs);
+        assert!(lhs.is_none());
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_lhs_none() {
+        let mut lhs = None;
+        let mut rhs = BTreeSet::new();
+        rhs.insert(b"/api".to_vec());
+        intersect_prefix_expansions(&mut lhs, Some(rhs.clone()));
+        assert_eq!(lhs, Some(rhs));
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_rhs_none() {
+        let mut lhs_set = BTreeSet::new();
+        lhs_set.insert(b"/api".to_vec());
+        let mut lhs = Some(lhs_set.clone());
+        intersect_prefix_expansions(&mut lhs, None);
+        // Should remain unchanged when rhs is None
+        assert_eq!(lhs, Some(lhs_set));
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_with_values() {
+        // Test that intersect finds elements where one is a prefix of the other
+        let mut lhs_set = BTreeSet::new();
+        lhs_set.insert(b"/a".to_vec());
+
+        let mut rhs_set = BTreeSet::new();
+        rhs_set.insert(b"/api".to_vec());
+
+        let mut lhs = Some(lhs_set);
+        intersect_prefix_expansions(&mut lhs, Some(rhs_set));
+
+        // /a is a prefix of /api, so /api should be in the result
+        let result = lhs.unwrap();
+        assert!(result.contains(&b"/api".to_vec()));
+    }
+
+    #[test]
+    fn test_extract_prefixes_anchored() {
+        let hir = regex_syntax::parse(r"^/api/.*").unwrap();
+        let prefixes = extract_prefixes(&hir);
+        assert!(prefixes.is_some());
+        let prefixes = prefixes.unwrap();
+        assert!(prefixes.contains(&b"/api/".to_vec()));
+    }
+
+    #[test]
+    fn test_extract_prefixes_unanchored() {
+        let hir = regex_syntax::parse(r"/api/.*").unwrap();
+        let prefixes = extract_prefixes(&hir);
+        // Unanchored patterns should return None
+        assert!(prefixes.is_none());
+    }
 }

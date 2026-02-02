@@ -320,4 +320,98 @@ mod tests {
         assert!(!result.contains(&3)); // "/other" doesn't match
         assert_eq!(result.len(), 2);
     }
+
+    #[test]
+    fn test_remove() {
+        let mut prefilter = InnerPrefilter::new();
+        prefilter.insert(0, vec![b"/api".to_vec()]);
+        prefilter.insert(1, vec![b"/api/v1".to_vec()]);
+        prefilter.insert(2, vec![b"/users".to_vec()]);
+
+        assert!(!prefilter.is_empty());
+        assert_eq!(prefilter.num_routes(), 3);
+
+        // Remove a route
+        prefilter.remove(&1);
+        assert_eq!(prefilter.num_routes(), 2);
+
+        // Verify it's gone
+        let result = prefilter.check(b"/api/v1/users").unwrap();
+        assert!(result.contains(&0)); // "/api" still matches
+        assert!(!result.contains(&1)); // "/api/v1" was removed
+
+        // Remove all routes
+        prefilter.remove(&0);
+        prefilter.remove(&2);
+        assert!(prefilter.is_empty());
+    }
+
+    #[test]
+    fn test_prefix_map_remove() {
+        let mut map = PrefixInheritanceMap::new();
+        map.insert(BString::from("/api"), 1);
+        map.insert(BString::from("/api/v1"), 2);
+        map.insert(BString::from("/api/v1/users"), 3);
+
+        // All three should match initially
+        let result = map.longest_match(BStr::new(b"/api/v1/users/123"));
+        assert!(result.is_some());
+        let (_, keys) = result.unwrap();
+        assert!(keys.contains(&1));
+        assert!(keys.contains(&2));
+        assert!(keys.contains(&3));
+
+        // Remove from middle prefix
+        map.remove(BStr::new(b"/api/v1"), &2);
+
+        // Key 2 should be removed from /api/v1 and /api/v1/users
+        let result = map.longest_match(BStr::new(b"/api/v1/users/123"));
+        assert!(result.is_some());
+        let (_, keys) = result.unwrap();
+        assert!(keys.contains(&1)); // Still has key from /api
+        assert!(!keys.contains(&2)); // Removed
+        assert!(keys.contains(&3)); // Still has its own key
+
+        // Remove last key from a prefix
+        map.remove(BStr::new(b"/api/v1/users"), &1);
+        map.remove(BStr::new(b"/api/v1/users"), &3);
+
+        // /api/v1/users should be removed entirely since it's empty
+        let result = map.longest_match(BStr::new(b"/api/v1/users/123"));
+        assert!(result.is_some());
+        let (prefix, _) = result.unwrap();
+        // Should only match /api/v1 now (which still has key 1 from /api)
+        assert_eq!(prefix, b"/api/v1" as &[u8]);
+    }
+
+    #[test]
+    fn test_no_common_prefix() {
+        let mut map = PrefixInheritanceMap::new();
+        map.insert(BString::from("zzz"), 1);
+
+        // Search for something that shares no common prefix
+        let result = map.longest_match(BStr::new(b"aaa"));
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_is_empty_and_num_routes() {
+        let mut prefilter = InnerPrefilter::new();
+        assert!(prefilter.is_empty());
+        assert_eq!(prefilter.num_routes(), 0);
+
+        prefilter.insert(0, vec![b"/api".to_vec()]);
+        assert!(!prefilter.is_empty());
+        assert_eq!(prefilter.num_routes(), 1);
+
+        prefilter.insert(1, vec![b"/users".to_vec()]);
+        assert_eq!(prefilter.num_routes(), 2);
+
+        prefilter.remove(&0);
+        assert_eq!(prefilter.num_routes(), 1);
+
+        prefilter.remove(&1);
+        assert!(prefilter.is_empty());
+        assert_eq!(prefilter.num_routes(), 0);
+    }
 }
