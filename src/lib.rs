@@ -557,10 +557,10 @@ mod tests {
         prefilter.insert(0, TestMatcher::with_prefix("/api"));
         prefilter.insert(1, TestMatcher::with_prefix("/users"));
 
-        let sum = prefilter.possible_matches("/api/test").fold(0, |acc, &x| acc + x);
+        let sum = prefilter.possible_matches("/api/test").sum::<i32>();
         assert_eq!(sum, 0); // Only route 0 matches
 
-        let sum = prefilter.possible_matches("/users/test").fold(0, |acc, &x| acc + x);
+        let sum = prefilter.possible_matches("/users/test").sum::<i32>();
         assert_eq!(sum, 1); // Only route 1 matches
     }
 

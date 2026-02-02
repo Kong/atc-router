@@ -414,6 +414,7 @@ mod tests {
     fn test_matcher_by_reference() {
         let matcher = SimpleMatcher("/api");
         let mut visitor = MatcherVisitor::new();
+        #[expect(clippy::needless_borrow)]
         (&matcher).visit(&mut visitor);
         let seq = visitor.finish();
         assert!(seq.literals().is_some());
@@ -552,7 +553,7 @@ mod tests {
 
         // /a is a prefix of /api, so /api should be in the result
         let result = lhs.unwrap();
-        assert!(result.contains(&b"/api".to_vec()));
+        assert!(result.contains(b"/api".as_slice()));
     }
 
     #[test]
@@ -561,7 +562,7 @@ mod tests {
         let prefixes = extract_prefixes(&hir);
         assert!(prefixes.is_some());
         let prefixes = prefixes.unwrap();
-        assert!(prefixes.contains(&b"/api/".to_vec()));
+        assert!(prefixes.contains(b"/api/".as_slice()));
     }
 
     #[test]
