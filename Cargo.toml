@@ -1,11 +1,15 @@
 [package]
 name = "router_prefilter"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "Fast prefix-based prefiltering for router pattern matching"
+categories = ["data-structures"]
+keywords = ["router", "routing", "prefilter", "http", "performance"]
+authors = ["Zachary Dremann <dremann@gmail.com>"]
 
 [dependencies]
 regex-syntax = "0.8"
-roaring = "0.11"
 bstr = "1.12"
 
 [dev-dependencies]
