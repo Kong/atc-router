@@ -1,6 +1,6 @@
 [package]
 name = "router_prefilter"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "Fast prefix-based prefiltering for router pattern matching"
