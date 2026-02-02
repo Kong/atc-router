@@ -104,11 +104,30 @@ impl Frame {
 /// ```
 /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
 ///
-/// struct ApiRoute;
+/// enum RouteMatcher {
+///     And(Box<RouteMatcher>, Box<RouteMatcher>),
+///     Or(Box<RouteMatcher>, Box<RouteMatcher>),
+///     Regex(&'static str),
+/// }
 ///
-/// impl Matcher for ApiRoute {
+/// impl Matcher for RouteMatcher {
 ///     fn visit(&self, visitor: &mut MatcherVisitor) {
-///         visitor.visit_match_starts_with("/api");
+///         match self {
+///             Self::And(lhs, rhs) => {
+///                 visitor.visit_nested_start();
+///                 lhs.visit(visitor);
+///                 visitor.visit_nested_finish();
+///                 visitor.visit_nested_start();
+///                 rhs.visit(visitor);
+///                 visitor.visit_nested_finish();
+///             }
+///             Self::Or(lhs, rhs) => {
+///                 lhs.visit(visitor);
+///                 visitor.visit_or_in();
+///                 rhs.visit(visitor);
+///             }
+///             Self::Regex(regex) => visitor.visit_match_regex(regex),
+///         }
 ///     }
 /// }
 /// ```
@@ -135,6 +154,210 @@ impl Frame {
 #[derive(Debug)]
 pub struct MatcherVisitor {
     frames: Vec<Frame>,
+}
+
+impl MatcherVisitor {
+    pub(crate) fn new() -> Self {
+        Self {
+            frames: vec![Frame::default()],
+        }
+    }
+
+    fn current_frame(&mut self) -> &mut Frame {
+        self.frames.last_mut().unwrap()
+    }
+
+    pub(crate) fn finish(&mut self) -> literal::Seq {
+        let Self { frames } = self;
+        let frame = match &mut frames[..] {
+            [only_frame] => mem::take(only_frame),
+            _ => {
+                frames.clear();
+                frames.push(Frame::default());
+                panic!("mismatched nesting calls to MatcherVisitor")
+            }
+        };
+        frame.finish().map_or_else(literal::Seq::infinite, |set| {
+            let mut seq = literal::Seq::new(set);
+            seq.optimize_for_prefix_by_preference();
+            seq
+        })
+    }
+
+    /// Begins a nested matching context.
+    ///
+    /// Use this to group patterns together for complex matching logic.
+    /// Must be paired with [`visit_nested_finish`].
+    ///
+    /// Acts as a kind of "parenthesis" for matching logic.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    ///
+    /// struct NestedRoute;
+    ///
+    /// impl Matcher for NestedRoute {
+    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
+    ///         // startsWith("/api") || (contains("abc") && contains("def"))
+    ///         visitor.visit_match_starts_with("/api");
+    ///         visitor.visit_or_in();
+    ///         visitor.visit_nested_start();
+    ///         visitor.visit_match_regex("abc");
+    ///         visitor.visit_match_regex("def");
+    ///         visitor.visit_nested_finish();
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// [`visit_nested_finish`]: MatcherVisitor::visit_nested_finish
+    pub fn visit_nested_start(&mut self) {
+        self.frames.push(Frame::default());
+    }
+
+    /// Completes a nested matching context.
+    ///
+    /// Finalizes the pattern grouping started with [`visit_nested_start`].
+    /// Must be paired with a preceding [`visit_nested_start`] call.
+    ///
+    /// The nested context's extracted prefixes are merged into the parent
+    /// context using AND semantics.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    ///
+    /// struct NestedRoute;
+    ///
+    /// impl Matcher for NestedRoute {
+    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
+    ///         // startsWith("/api") || (contains("abc") && contains("def"))
+    ///         visitor.visit_match_starts_with("/api");
+    ///         visitor.visit_or_in();
+    ///         visitor.visit_nested_start();
+    ///         visitor.visit_match_regex("abc");
+    ///         visitor.visit_match_regex("def");
+    ///         visitor.visit_nested_finish();
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if called without a matching [`visit_nested_start`].
+    ///
+    /// [`visit_nested_start`]: MatcherVisitor::visit_nested_start
+    pub fn visit_nested_finish(&mut self) {
+        let frame = self
+            .frames
+            .pop()
+            .expect("every finish should match with a start");
+        let new_inner = frame.finish();
+        intersect_prefix_expansions(&mut self.current_frame().and_literal_prefixes, new_inner);
+    }
+
+    /// Marks an OR boundary in the current matching context.
+    ///
+    /// Use this to separate alternative patterns that should be treated
+    /// as different matching possibilities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    ///
+    /// struct MultiVersionRoute;
+    ///
+    /// impl Matcher for MultiVersionRoute {
+    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
+    ///         // (startsWith("/v1") && contains("abc") || (startsWith("/v2") && contains("def"))
+    ///         visitor.visit_match_starts_with("/v1");
+    ///         visitor.visit_match_regex(r"abc");
+    ///         visitor.visit_or_in();
+    ///         visitor.visit_match_starts_with("/v2");
+    ///         visitor.visit_match_regex(r"def");
+    ///     }
+    /// }
+    /// ```
+    pub fn visit_or_in(&mut self) {
+        let frame = self.current_frame();
+        let new_and = frame.and_literal_prefixes.take();
+        union_prefixes_limited(&mut frame.or_literal_prefixes, new_and, 100);
+    }
+
+    /// Processes a regex pattern to extract literal prefixes.
+    ///
+    /// Parses the regex and extracts any literal prefixes that can be used
+    /// for prefiltering. Only anchored patterns yield extractable prefixes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    ///
+    /// struct RegexRoute(&'static str);
+    ///
+    /// impl Matcher for RegexRoute {
+    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
+    ///         visitor.visit_match_regex(self.0);
+    ///     }
+    /// }
+    ///
+    /// let route = RegexRoute("^/api/.*");
+    /// ```
+    pub fn visit_match_regex(&mut self, regex: &str) {
+        let hir = regex_syntax::parse(regex).unwrap_or_else(|_| Hir::fail());
+        let current = &mut self.frames.last_mut().unwrap().and_literal_prefixes;
+        let new_prefixes = extract_prefixes(&hir);
+        intersect_prefix_expansions(current, new_prefixes);
+    }
+
+    /// Processes an exact equality match pattern.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    ///
+    /// struct ExactRoute(&'static str);
+    ///
+    /// impl Matcher for ExactRoute {
+    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
+    ///         visitor.visit_match_equals(self.0);
+    ///     }
+    /// }
+    ///
+    /// let route = ExactRoute("/api/users");
+    /// ```
+    pub fn visit_match_equals(&mut self, equals: &str) {
+        // for our purposes, equality and starting with are the same
+        self.visit_match_starts_with(equals);
+    }
+
+    /// Processes a prefix match pattern.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    ///
+    /// struct PrefixRoute(&'static str);
+    ///
+    /// impl Matcher for PrefixRoute {
+    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
+    ///         visitor.visit_match_starts_with(self.0);
+    ///     }
+    /// }
+    ///
+    /// let route = PrefixRoute("/api");
+    /// ```
+    pub fn visit_match_starts_with(&mut self, prefix: &str) {
+        let new_prefixes = Some(BTreeSet::from([prefix.as_bytes().to_vec()]));
+        let current = &mut self.frames.last_mut().unwrap().and_literal_prefixes;
+        intersect_prefix_expansions(current, new_prefixes);
+    }
 }
 
 fn union_prefixes_limited(
@@ -206,181 +429,6 @@ fn intersect_prefix_expansions(
     *lhs = result;
 }
 
-impl MatcherVisitor {
-    pub(crate) fn new() -> Self {
-        Self {
-            frames: vec![Frame::default()],
-        }
-    }
-
-    fn current_frame(&mut self) -> &mut Frame {
-        self.frames.last_mut().unwrap()
-    }
-
-    pub(crate) fn finish(&mut self) -> literal::Seq {
-        let Self { frames } = self;
-        let frame = match &mut frames[..] {
-            [only_frame] => mem::take(only_frame),
-            _ => {
-                frames.clear();
-                frames.push(Frame::default());
-                panic!("mismatched nesting calls to MatcherVisitor")
-            }
-        };
-        frame.finish().map_or_else(literal::Seq::infinite, |set| {
-            let mut seq = literal::Seq::new(set);
-            seq.optimize_for_prefix_by_preference();
-            seq
-        })
-    }
-
-    /// Begins a nested matching context.
-    ///
-    /// Use this to group patterns together for complex matching logic.
-    /// Must be paired with [`visit_nested_finish`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
-    ///
-    /// struct NestedRoute;
-    ///
-    /// impl Matcher for NestedRoute {
-    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
-    ///         visitor.visit_nested_start();
-    ///         visitor.visit_match_starts_with("/api");
-    ///         visitor.visit_nested_finish();
-    ///     }
-    /// }
-    /// ```
-    ///
-    /// [`visit_nested_finish`]: MatcherVisitor::visit_nested_finish
-    pub fn visit_nested_start(&mut self) {
-        self.frames.push(Frame::default());
-    }
-
-    /// Completes a nested matching context.
-    ///
-    /// # Panics
-    ///
-    /// Panics if called without a matching [`visit_nested_start`].
-    ///
-    /// [`visit_nested_start`]: MatcherVisitor::visit_nested_start
-    pub fn visit_nested_finish(&mut self) {
-        let frame = self
-            .frames
-            .pop()
-            .expect("every finish should match with a start");
-        let new_inner = frame.finish();
-        intersect_prefix_expansions(&mut self.current_frame().and_literal_prefixes, new_inner);
-    }
-
-    /// Marks an OR boundary in the current matching context.
-    ///
-    /// Use this to separate alternative patterns that should be treated
-    /// as different matching possibilities.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
-    ///
-    /// struct MultiVersionRoute;
-    ///
-    /// impl Matcher for MultiVersionRoute {
-    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
-    ///         visitor.visit_match_starts_with("/v1");
-    ///         visitor.visit_or_in();
-    ///         visitor.visit_match_starts_with("/v2");
-    ///     }
-    /// }
-    /// ```
-    pub fn visit_or_in(&mut self) {
-        let frame = self.current_frame();
-        let new_and = frame.and_literal_prefixes.take();
-        union_prefixes_limited(&mut frame.or_literal_prefixes, new_and, 100);
-    }
-
-    /// Processes a regex pattern to extract literal prefixes.
-    ///
-    /// Parses the regex and extracts any literal prefixes that can be used
-    /// for prefiltering. Only anchored patterns yield extractable prefixes.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
-    ///
-    /// struct RegexRoute(&'static str);
-    ///
-    /// impl Matcher for RegexRoute {
-    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
-    ///         visitor.visit_match_regex(self.0);
-    ///     }
-    /// }
-    ///
-    /// let route = RegexRoute("^/api/.*");
-    /// ```
-    pub fn visit_match_regex(&mut self, regex: &str) {
-        let hir = regex_syntax::parse(regex).unwrap_or_else(|_| Hir::fail());
-        let current = &mut self.frames.last_mut().unwrap().and_literal_prefixes;
-        let new_prefixes = extract_prefixes(&hir);
-        intersect_prefix_expansions(current, new_prefixes);
-    }
-
-    /// Processes an exact equality match pattern.
-    ///
-    /// For prefiltering purposes, exact equality matches are treated the same
-    /// as prefix matches, since any string equal to the pattern also starts
-    /// with it.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
-    ///
-    /// struct ExactRoute(&'static str);
-    ///
-    /// impl Matcher for ExactRoute {
-    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
-    ///         visitor.visit_match_equals(self.0);
-    ///     }
-    /// }
-    ///
-    /// let route = ExactRoute("/api/users");
-    /// ```
-    pub fn visit_match_equals(&mut self, equals: &str) {
-        // for our purposes, equality and starting with are the same
-        self.visit_match_starts_with(equals);
-    }
-
-    /// Processes a prefix match pattern.
-    ///
-    /// Case-sensitive matches can be optimized for prefiltering.
-    /// Case-insensitive matches are currently not optimized.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
-    ///
-    /// struct PrefixRoute(&'static str);
-    ///
-    /// impl Matcher for PrefixRoute {
-    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
-    ///         visitor.visit_match_starts_with(self.0);
-    ///     }
-    /// }
-    ///
-    /// let route = PrefixRoute("/api");
-    /// ```
-    pub fn visit_match_starts_with(&mut self, prefix: &str) {
-        let new_prefixes = Some(BTreeSet::from([prefix.as_bytes().to_vec()]));
-        let current = &mut self.frames.last_mut().unwrap().and_literal_prefixes;
-        intersect_prefix_expansions(current, new_prefixes);
-    }
-}
 fn extract_prefixes(hir: &Hir) -> Option<BTreeSet<Vec<u8>>> {
     if !hir
         .properties()
