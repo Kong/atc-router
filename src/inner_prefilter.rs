@@ -2,40 +2,157 @@ use bstr::{BStr, BString, ByteSlice};
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Bound;
 
+/// A map that maintains the prefix-inheritance invariant: for every string A in the map,
+/// every other string that has A as a prefix contains all the K values associated with A.
+#[derive(Debug, Clone)]
+pub(crate) struct PrefixInheritanceMap<K> {
+    prefixes: BTreeMap<BString, BTreeSet<K>>,
+}
+
+impl<K: Ord> PrefixInheritanceMap<K> {
+    /// Creates a new empty prefix map.
+    pub fn new() -> Self {
+        Self {
+            prefixes: BTreeMap::new(),
+        }
+    }
+
+    /// Finds the longest prefix in the map that matches the given value.
+    ///
+    /// Returns a tuple of (matched_prefix, associated_keys) if a match is found.
+    pub fn longest_match(&self, value: &BStr) -> Option<(&BStr, &BTreeSet<K>)> {
+        let mut upper_bound = value;
+
+        loop {
+            let (found_key, indexes) = self
+                .prefixes
+                .range::<BStr, _>((Bound::Unbounded, Bound::Included(upper_bound)))
+                .next_back()?;
+
+            let common_len = value
+                .iter()
+                .zip(found_key.iter())
+                .take_while(|(a, b)| a == b)
+                .count();
+
+            if common_len == 0 {
+                return None;
+            }
+            if common_len == found_key.len() {
+                return Some((found_key.as_bstr(), indexes));
+            }
+
+            upper_bound = &value[..common_len];
+        }
+    }
+
+    /// Inserts a key associated with the given prefix.
+    ///
+    /// This method maintains the prefix-inheritance invariant by:
+    /// 1. Finding all shorter prefixes and inheriting their keys
+    /// 2. Adding this key to all longer prefixes that start with this prefix
+    pub fn insert(&mut self, prefix: BString, key: K)
+    where
+        K: Clone,
+    {
+        // Find all prefixes which are themselves prefixes of this prefix, and gather their keys
+        // to add to the keys for this prefix
+        let mut keys_from_shorter_prefixes = BTreeSet::new();
+        keys_from_shorter_prefixes.insert(key.clone());
+
+        let mut upper_bound = prefix.as_bstr();
+        while let Some((_, smaller_prefix)) = upper_bound.split_last() {
+            upper_bound = match self.longest_match(smaller_prefix.as_bstr()) {
+                Some((smaller_prefix, keys)) => {
+                    keys_from_shorter_prefixes.extend(keys.iter().cloned());
+                    smaller_prefix
+                }
+                None => break,
+            };
+        }
+
+        // Find all prefixes which have this prefix as a prefix, and add the key to their sets
+        let range = self
+            .prefixes
+            .range_mut::<BStr, _>((Bound::Excluded(prefix.as_bstr()), Bound::Unbounded));
+        for (longer_prefix, keys) in range {
+            if !longer_prefix.starts_with(&prefix) {
+                break;
+            }
+            keys.insert(key.clone());
+        }
+        self.prefixes
+            .entry(prefix)
+            .or_default()
+            .extend(keys_from_shorter_prefixes);
+    }
+
+    /// Removes a key from the given prefix and all longer prefixes.
+    ///
+    /// This method maintains the prefix-inheritance invariant by removing the key
+    /// from all prefixes that start with the given prefix. Empty prefix entries
+    /// are automatically cleaned up.
+    pub fn remove(&mut self, prefix: &BStr, key: &K) {
+        let range = self
+            .prefixes
+            .range_mut::<BStr, _>((Bound::Included(prefix.as_bstr()), Bound::Unbounded));
+        let mut newly_empty_prefixes = Vec::new();
+        for (longer_prefix, keys) in range {
+            if !longer_prefix.starts_with(prefix) {
+                break;
+            }
+            let did_remove = keys.remove(key);
+            debug_assert!(did_remove);
+            if keys.is_empty() {
+                newly_empty_prefixes.push(longer_prefix.clone());
+            }
+        }
+        for longer_prefix in newly_empty_prefixes {
+            self.prefixes.remove(&longer_prefix);
+        }
+    }
+}
+
 /// Internal prefix lookup structure using a BTreeMap for efficient range queries.
 ///
 /// Stores prefixes mapped to bitmaps of matcher indexes, with automatic
 /// prefix extension to handle nested prefix relationships.
 #[derive(Debug, Clone)]
 pub struct InnerPrefilter<K> {
-    prefixes: BTreeMap<BString, BTreeSet<K>>,
+    prefix_map: PrefixInheritanceMap<K>,
     key_to_prefixes: BTreeMap<K, Vec<BString>>,
 }
 
-impl<K> Default for InnerPrefilter<K> {
+impl<K: Ord> Default for InnerPrefilter<K> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<K> InnerPrefilter<K> {
+impl<K: Ord> InnerPrefilter<K> {
+    /// Creates a new empty inner prefilter.
     pub fn new() -> Self {
         Self {
-            prefixes: BTreeMap::new(),
+            prefix_map: PrefixInheritanceMap::new(),
             key_to_prefixes: BTreeMap::new(),
         }
     }
 
+    /// Returns true if the prefilter contains no keys.
     pub fn is_empty(&self) -> bool {
         self.key_to_prefixes.is_empty()
     }
 
+    /// Returns the number of routes in the prefilter.
     pub fn num_routes(&self) -> usize {
         self.key_to_prefixes.len()
     }
 }
 
 impl<K: Ord> InnerPrefilter<K> {
+    /// Inserts a key with the given prefixes into the prefilter.
+    ///
+    /// Each prefix is added to the prefix map, maintaining the prefix-inheritance invariant.
     pub fn insert(&mut self, key: K, prefixes: Vec<Vec<u8>>)
     where
         K: Clone,
@@ -43,111 +160,46 @@ impl<K: Ord> InnerPrefilter<K> {
         let prefixes: Vec<BString> = prefixes.into_iter().map(BString::new).collect();
         self.key_to_prefixes.insert(key.clone(), prefixes.clone());
         for prefix in prefixes {
-            recursively_add_to_longer_prefixes(prefix, key.clone(), &mut self.prefixes);
+            self.prefix_map.insert(prefix, key.clone());
         }
     }
 
+    /// Removes a key and all its associated prefixes from the prefilter.
     pub fn remove(&mut self, key: &K) {
         let Some(prefixes) = self.key_to_prefixes.remove(key) else {
             return;
         };
         for prefix in prefixes {
-            recursively_remove_from_longer_prefixes(prefix.as_bstr(), key, &mut self.prefixes);
+            self.prefix_map.remove(prefix.as_bstr(), key);
         }
     }
 
     /// Checks bytes against the prefilter, returning a bitmap of possible matcher indexes.
     pub fn check(&self, bytes: &[u8]) -> Option<&BTreeSet<K>> {
-        longest_contained_prefix(BStr::new(bytes), &self.prefixes).map(|(_prefix, keys)| keys)
-    }
-}
-
-fn longest_contained_prefix<'a, K: Ord>(
-    value: &BStr,
-    prefixes: &'a BTreeMap<BString, BTreeSet<K>>,
-) -> Option<(&'a BStr, &'a BTreeSet<K>)> {
-    let mut upper_bound = value;
-
-    loop {
-        let (found_key, indexes) = prefixes
-            .range::<BStr, _>((Bound::Unbounded, Bound::Included(upper_bound)))
-            .next_back()?;
-
-        let common_len = value
-            .iter()
-            .zip(found_key.iter())
-            .take_while(|(a, b)| a == b)
-            .count();
-
-        if common_len == 0 {
-            return None;
-        }
-        if common_len == found_key.len() {
-            return Some((found_key.as_bstr(), indexes));
-        }
-
-        upper_bound = &value[..common_len];
-    }
-}
-
-fn recursively_add_to_longer_prefixes<K: Ord + Clone>(
-    prefix: BString,
-    key: K,
-    prefixes: &mut BTreeMap<BString, BTreeSet<K>>,
-) {
-    let mut keys_from_shorter_prefixes = BTreeSet::new();
-    keys_from_shorter_prefixes.insert(key.clone());
-
-    let mut upper_bound = prefix.as_bstr();
-    while let Some((_, smaller_prefix)) = upper_bound.split_last() {
-        upper_bound = match longest_contained_prefix(smaller_prefix.as_bstr(), prefixes) {
-            Some((smaller_prefix, keys)) => {
-                keys_from_shorter_prefixes.extend(keys.iter().cloned());
-                smaller_prefix
-            }
-            None => break,
-        };
-    }
-
-    let range =
-        prefixes.range_mut::<BStr, _>((Bound::Excluded(prefix.as_bstr()), Bound::Unbounded));
-    for (longer_prefix, keys) in range {
-        if !longer_prefix.starts_with(&prefix) {
-            break;
-        }
-        keys.insert(key.clone());
-    }
-    prefixes
-        .entry(prefix)
-        .or_default()
-        .extend(keys_from_shorter_prefixes);
-}
-fn recursively_remove_from_longer_prefixes<K: Ord>(
-    prefix: &BStr,
-    key: &K,
-    prefixes: &mut BTreeMap<BString, BTreeSet<K>>,
-) {
-    let range =
-        prefixes.range_mut::<BStr, _>((Bound::Included(prefix.as_bstr()), Bound::Unbounded));
-    let mut to_remove = Vec::new();
-    for (longer_prefix, keys) in range {
-        if !longer_prefix.starts_with(prefix) {
-            break;
-        }
-        let did_remove = keys.remove(key);
-        debug_assert!(did_remove);
-        if keys.is_empty() {
-            to_remove.push(longer_prefix.clone());
-        }
-    }
-    for longer_prefix in to_remove {
-        prefixes.remove(&longer_prefix);
+        self.prefix_map
+            .longest_match(BStr::new(bytes))
+            .map(|(_prefix, keys)| keys)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_prefix_inheritance_map_basic() {
+        let mut map = PrefixInheritanceMap::new();
+        map.insert(BString::from("/api"), 1);
+        map.insert(BString::from("/api/v1"), 2);
+
+        // Looking up "/api/v1/users" returns both keys 1 and 2
+        let result = map.longest_match(BStr::new("/api/v1/users".as_bytes()));
+        assert!(result.is_some());
+        let (prefix, keys) = result.unwrap();
+        assert_eq!(prefix, "/api/v1".as_bytes());
+        assert!(keys.contains(&1));
+        assert!(keys.contains(&2));
+    }
 
     #[test]
     fn test_empty_patterns() {
