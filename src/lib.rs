@@ -2,7 +2,7 @@
 //!
 //! This crate provides efficient prefiltering of route matchers by extracting and indexing
 //! literal prefixes from patterns. It enables quick elimination of non-matching routes
-//! before running full pattern matching.
+//! before running full route matching.
 //!
 //! # Examples
 //!
@@ -193,6 +193,108 @@ impl<K> RouterPrefilter<K> {
     /// ```
     pub fn can_prefilter(&self) -> bool {
         !self.prefilter.is_empty()
+    }
+
+    /// Returns the number of routes with extractable prefixes.
+    ///
+    /// A "prefilterable" route is one from which literal prefixes can be
+    /// extracted for fast filtering. Routes without extractable prefixes
+    /// are tracked separately as always-possible matches and are not
+    /// counted by this method.
+    ///
+    /// A pattern must be anchored at the start and begin with literal
+    /// characters to have an extractable prefix.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::{RouterPrefilter, Matcher, MatcherVisitor};
+    ///
+    /// struct Route {
+    ///     pattern: &'static str,
+    /// }
+    ///
+    /// impl Matcher for Route {
+    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
+    ///         visitor.visit_match_regex(self.pattern);
+    ///     }
+    /// }
+    ///
+    /// let mut prefilter = RouterPrefilter::new();
+    ///
+    /// // Anchored with literal prefix - prefilterable
+    /// prefilter.insert(0, Route { pattern: r"^/api/.*" });
+    /// prefilter.insert(1, Route { pattern: r"^/users/\d+$" });
+    ///
+    /// // Anchored but no literal prefix - not prefilterable
+    /// prefilter.insert(2, Route { pattern: r"^.*abc" });
+    /// prefilter.insert(3, Route { pattern: r"^\d+/api" });
+    ///
+    /// // Not anchored - not prefilterable
+    /// prefilter.insert(4, Route { pattern: r"/abc/def" });
+    ///
+    /// // Only routes 0 and 1 have extractable literal prefixes
+    /// assert_eq!(prefilter.prefilterable_routes(), 2);
+    /// ```
+    pub fn prefilterable_routes(&self) -> usize {
+        self.prefilter.num_routes()
+    }
+
+    /// Returns the total number of routes in the prefilter.
+    ///
+    /// This includes both routes with extractable prefixes and routes
+    /// tracked as always-possible matches.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::{RouterPrefilter, Matcher, MatcherVisitor};
+    ///
+    /// struct Route {
+    ///     pattern: &'static str,
+    /// }
+    ///
+    /// impl Matcher for Route {
+    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
+    ///         visitor.visit_match_regex(self.pattern);
+    ///     }
+    /// }
+    ///
+    /// let mut prefilter = RouterPrefilter::new();
+    /// prefilter.insert(0, Route { pattern: r"^/api/.*" });
+    /// prefilter.insert(1, Route { pattern: r"^.*abc" });
+    ///
+    /// assert_eq!(prefilter.len(), 2);
+    /// ```
+    pub fn len(&self) -> usize {
+        self.prefilter.num_routes() + self.always_possible.len()
+    }
+
+    /// Returns whether the prefilter contains any routes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::{RouterPrefilter, Matcher, MatcherVisitor};
+    ///
+    /// struct Route {
+    ///     pattern: &'static str,
+    /// }
+    ///
+    /// impl Matcher for Route {
+    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
+    ///         visitor.visit_match_regex(self.pattern);
+    ///     }
+    /// }
+    ///
+    /// let mut prefilter: RouterPrefilter<usize> = RouterPrefilter::new();
+    /// assert!(prefilter.is_empty());
+    ///
+    /// prefilter.insert(0, Route { pattern: r"^/api/.*" });
+    /// assert!(!prefilter.is_empty());
+    /// ```
+    pub fn is_empty(&self) -> bool {
+        self.always_possible.is_empty() && self.prefilter.is_empty()
     }
 }
 

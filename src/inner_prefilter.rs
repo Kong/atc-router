@@ -29,6 +29,10 @@ impl<K> InnerPrefilter<K> {
     pub fn is_empty(&self) -> bool {
         self.key_to_prefixes.is_empty()
     }
+
+    pub fn num_routes(&self) -> usize {
+        self.key_to_prefixes.len()
+    }
 }
 
 impl<K: Ord> InnerPrefilter<K> {
