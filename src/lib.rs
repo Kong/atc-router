@@ -202,7 +202,6 @@ impl<K> RouterPrefilter<K> {
 }
 
 impl<K: Ord> RouterPrefilter<K> {
-
     /// Returns the total number of routes in the prefilter.
     ///
     /// This includes both routes with extractable prefixes and routes
