@@ -105,7 +105,7 @@ impl<K: Ord> Default for RouterPrefilter<K> {
     }
 }
 
-impl<K: Ord> RouterPrefilter<K> {
+impl<K> RouterPrefilter<K> {
     /// Creates a new empty prefilter.
     ///
     /// # Examples
@@ -199,6 +199,9 @@ impl<K: Ord> RouterPrefilter<K> {
     pub fn prefilterable_routes(&self) -> usize {
         self.prefilter.num_routes()
     }
+}
+
+impl<K: Ord> RouterPrefilter<K> {
 
     /// Returns the total number of routes in the prefilter.
     ///

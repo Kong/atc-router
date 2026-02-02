@@ -9,14 +9,15 @@ pub(crate) struct PrefixInheritanceMap<K> {
     prefixes: BTreeMap<BString, BTreeSet<K>>,
 }
 
-impl<K: Ord> PrefixInheritanceMap<K> {
-    /// Creates a new empty prefix map.
-    pub fn new() -> Self {
+impl<K> PrefixInheritanceMap<K> {
+    fn new() -> Self {
         Self {
             prefixes: BTreeMap::new(),
         }
     }
+}
 
+impl<K: Ord> PrefixInheritanceMap<K> {
     /// Finds the longest prefix in the map that matches the given value.
     ///
     /// Returns a tuple of (matched_prefix, associated_keys) if a match is found.
@@ -123,15 +124,8 @@ pub struct InnerPrefilter<K> {
     key_to_prefixes: BTreeMap<K, Vec<BString>>,
 }
 
-impl<K: Ord> Default for InnerPrefilter<K> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<K: Ord> InnerPrefilter<K> {
-    /// Creates a new empty inner prefilter.
-    pub fn new() -> Self {
+impl<K> InnerPrefilter<K> {
+    pub(crate) fn new() -> Self {
         Self {
             prefix_map: PrefixInheritanceMap::new(),
             key_to_prefixes: BTreeMap::new(),
