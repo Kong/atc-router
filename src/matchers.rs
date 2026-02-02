@@ -391,6 +391,10 @@ fn extract_prefixes(hir: &Hir) -> Option<BTreeSet<Vec<u8>>> {
         return None;
     }
     let seq = literal::Extractor::new().extract(hir);
-    seq.literals()
-        .map(|literals| BTreeSet::from_iter(literals.iter().map(|lit| lit.as_bytes().to_vec())))
+    seq.literals().map(|literals| {
+        literals
+            .iter()
+            .map(|lit| lit.as_bytes().to_vec())
+            .collect::<BTreeSet<_>>()
+    })
 }

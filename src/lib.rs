@@ -115,6 +115,7 @@ impl<K> RouterPrefilter<K> {
     ///
     /// let prefilter: RouterPrefilter<usize> = RouterPrefilter::new();
     /// ```
+    #[must_use]
     pub fn new() -> Self {
         Self {
             always_possible: BTreeSet::new(),
@@ -150,6 +151,7 @@ impl<K> RouterPrefilter<K> {
     /// prefilter.insert(0, Route("/api"));
     /// assert!(prefilter.can_prefilter());
     /// ```
+    #[must_use]
     pub fn can_prefilter(&self) -> bool {
         !self.prefilter.is_empty()
     }
@@ -196,6 +198,7 @@ impl<K> RouterPrefilter<K> {
     /// // Only routes 0 and 1 have extractable literal prefixes
     /// assert_eq!(prefilter.prefilterable_routes(), 2);
     /// ```
+    #[must_use]
     pub fn prefilterable_routes(&self) -> usize {
         self.prefilter.num_routes()
     }
@@ -229,6 +232,7 @@ impl<K: Ord> RouterPrefilter<K> {
     ///
     /// assert_eq!(prefilter.len(), 2);
     /// ```
+    #[must_use]
     pub fn len(&self) -> usize {
         self.prefilter.num_routes() + self.always_possible.len()
     }
@@ -257,6 +261,7 @@ impl<K: Ord> RouterPrefilter<K> {
     /// prefilter.insert(0, Route { pattern: r"^/api/.*" });
     /// assert!(!prefilter.is_empty());
     /// ```
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.always_possible.is_empty() && self.prefilter.is_empty()
     }

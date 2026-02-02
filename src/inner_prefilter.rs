@@ -1,5 +1,6 @@
 use bstr::{BStr, BString, ByteSlice};
 use std::collections::{BTreeMap, BTreeSet};
+use std::iter;
 use std::ops::Bound;
 
 /// A map that maintains the prefix-inheritance invariant: for every string A in the map,
@@ -48,18 +49,25 @@ impl<K: Ord> PrefixInheritanceMap<K> {
     }
 
     /// Inserts a key associated with the given prefix.
-    ///
-    /// This method maintains the prefix-inheritance invariant by:
-    /// 1. Finding all shorter prefixes and inheriting their keys
-    /// 2. Adding this key to all longer prefixes that start with this prefix
     pub fn insert(&mut self, prefix: BString, key: K)
     where
         K: Clone,
     {
+        // Find all prefixes which have this prefix as a prefix, and add the key to their sets
+        let range = self
+            .prefixes
+            .range_mut::<BStr, _>((Bound::Excluded(prefix.as_bstr()), Bound::Unbounded));
+        for (longer_prefix, keys) in range {
+            if !longer_prefix.starts_with(&prefix) {
+                break;
+            }
+            keys.insert(key.clone());
+        }
+
         // Find all prefixes which are themselves prefixes of this prefix, and gather their keys
         // to add to the keys for this prefix
         let mut keys_from_shorter_prefixes = BTreeSet::new();
-        keys_from_shorter_prefixes.insert(key.clone());
+        keys_from_shorter_prefixes.insert(key);
 
         let mut upper_bound = prefix.as_bstr();
         while let Some((_, smaller_prefix)) = upper_bound.split_last() {
@@ -70,17 +78,6 @@ impl<K: Ord> PrefixInheritanceMap<K> {
                 }
                 None => break,
             };
-        }
-
-        // Find all prefixes which have this prefix as a prefix, and add the key to their sets
-        let range = self
-            .prefixes
-            .range_mut::<BStr, _>((Bound::Excluded(prefix.as_bstr()), Bound::Unbounded));
-        for (longer_prefix, keys) in range {
-            if !longer_prefix.starts_with(&prefix) {
-                break;
-            }
-            keys.insert(key.clone());
         }
         self.prefixes
             .entry(prefix)
@@ -114,7 +111,7 @@ impl<K: Ord> PrefixInheritanceMap<K> {
     }
 }
 
-/// Internal prefix lookup structure using a BTreeMap for efficient range queries.
+/// Internal prefix lookup structure using a `BTreeMap` for efficient range queries.
 ///
 /// Stores prefixes mapped to bitmaps of matcher indexes, with automatic
 /// prefix extension to handle nested prefix relationships.
@@ -153,8 +150,10 @@ impl<K: Ord> InnerPrefilter<K> {
     {
         let prefixes: Vec<BString> = prefixes.into_iter().map(BString::new).collect();
         self.key_to_prefixes.insert(key.clone(), prefixes.clone());
-        for prefix in prefixes {
-            self.prefix_map.insert(prefix, key.clone());
+        let prefixes_len = prefixes.len();
+        // Use repeat_n to avoid cloning the last iteration
+        for (prefix, key) in prefixes.into_iter().zip(iter::repeat_n(key, prefixes_len)) {
+            self.prefix_map.insert(prefix, key);
         }
     }
 
