@@ -16,6 +16,10 @@ impl<K> PrefixInheritanceMap<K> {
             prefixes: BTreeMap::new(),
         }
     }
+    
+    fn clear(&mut self) {
+        self.prefixes.clear();
+    }
 }
 
 impl<K: Ord> PrefixInheritanceMap<K> {
@@ -165,6 +169,11 @@ impl<K: Ord> InnerPrefilter<K> {
         for prefix in prefixes {
             self.prefix_map.remove(prefix.as_bstr(), key);
         }
+    }
+    
+    pub fn clear(&mut self) {
+        self.key_to_prefixes.clear();
+        self.prefix_map.clear()
     }
 
     /// Checks bytes against the prefilter, returning a bitmap of possible matcher indexes.

@@ -328,6 +328,35 @@ impl<K: Ord> RouterPrefilter<K> {
         self.prefilter.remove(key);
     }
 
+    /// Removes all routes from the prefilter.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use router_prefilter::RouterPrefilter;
+    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    ///
+    /// struct Route(&'static str);
+    ///
+    /// impl Matcher for Route {
+    ///     fn visit(&self, visitor: &mut MatcherVisitor) {
+    ///         visitor.visit_match_starts_with(self.0);
+    ///     }
+    /// }
+    ///
+    /// let mut prefilter = RouterPrefilter::new();
+    /// prefilter.insert(0, Route("/api"));
+    /// prefilter.insert(1, Route("/users"));
+    ///
+    /// assert_eq!(prefilter.len(), 2);
+    /// prefilter.clear();
+    /// assert!(prefilter.is_empty());
+    /// ```
+    pub fn clear(&mut self) {
+        self.always_possible.clear();
+        self.prefilter.clear();
+    }
+
     /// Returns an iterator over matcher indexes that may match the given value.
     ///
     /// # Examples
