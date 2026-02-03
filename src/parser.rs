@@ -88,7 +88,7 @@ fn parse_lhs(pair: Pair<Rule>) -> ParseResult<Lhs> {
             let var = parse_ident(pair)?;
             Lhs {
                 var_name: var,
-                transformations: Vec::new(),
+                transformations: LhsTransformations::empty(),
             }
         }
         _ => unreachable!(),
@@ -247,9 +247,9 @@ fn parse_transform_func(pair: Pair<Rule>) -> ParseResult<Lhs> {
     let mut pairs = pairs.peekable();
     let func_name = pairs.next().unwrap().as_str().to_string();
     let mut lhs = parse_lhs(pairs.next().unwrap())?;
-    lhs.transformations.push(match func_name.as_str() {
-        "lower" => LhsTransformations::Lower,
-        "any" => LhsTransformations::Any,
+    lhs.transformations |= match func_name.as_str() {
+        "lower" => LhsTransformations::LOWER,
+        "any" => LhsTransformations::ANY,
         unknown => {
             return Err(ParseError::new_from_span(
                 ErrorVariant::CustomError {
@@ -258,7 +258,7 @@ fn parse_transform_func(pair: Pair<Rule>) -> ParseResult<Lhs> {
                 span,
             ));
         }
-    });
+    };
 
     Ok(lhs)
 }

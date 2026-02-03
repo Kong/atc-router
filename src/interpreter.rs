@@ -268,7 +268,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![],
+            transformations: ast::LhsTransformations::empty(),
         },
         rhs: Value::String("foo".to_string()),
         op: BinaryOperator::Prefix,
@@ -280,7 +280,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![],
+            transformations: ast::LhsTransformations::empty(),
         },
         rhs: Value::String("foo".to_string()),
         op: BinaryOperator::Prefix,
@@ -304,7 +304,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![],
+            transformations: ast::LhsTransformations::empty(),
         },
         rhs: Value::String("foo".to_string()),
         op: BinaryOperator::Prefix,
@@ -316,7 +316,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![],
+            transformations: ast::LhsTransformations::empty(),
         },
         rhs: Value::String("foo".to_string()),
         op: BinaryOperator::Postfix,
@@ -328,7 +328,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![ast::LhsTransformations::Any],
+            transformations: ast::LhsTransformations::ANY,
         },
         rhs: Value::String("foo".to_string()),
         op: BinaryOperator::Postfix,
@@ -340,7 +340,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![ast::LhsTransformations::Any],
+            transformations: ast::LhsTransformations::ANY,
         },
         rhs: Value::String("foo".to_string()),
         op: BinaryOperator::Prefix,
@@ -352,7 +352,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![ast::LhsTransformations::Any],
+            transformations: ast::LhsTransformations::ANY,
         },
         rhs: Value::String("nar".to_string()),
         op: BinaryOperator::Postfix,
@@ -364,7 +364,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![ast::LhsTransformations::Any],
+            transformations: ast::LhsTransformations::ANY,
         },
         rhs: Value::String("".to_string()),
         op: BinaryOperator::Postfix,
@@ -376,7 +376,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![ast::LhsTransformations::Any],
+            transformations: ast::LhsTransformations::ANY,
         },
         rhs: Value::String("".to_string()),
         op: BinaryOperator::Prefix,
@@ -388,7 +388,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![ast::LhsTransformations::Any],
+            transformations: ast::LhsTransformations::ANY,
         },
         rhs: Value::String("ob".to_string()),
         op: BinaryOperator::Contains,
@@ -400,7 +400,7 @@ fn test_predicate() {
     let p = Predicate {
         lhs: ast::Lhs {
             var_name: "my_key".to_string(),
-            transformations: vec![ast::LhsTransformations::Any],
+            transformations: ast::LhsTransformations::ANY,
         },
         rhs: Value::String("ok".to_string()),
         op: BinaryOperator::Contains,
