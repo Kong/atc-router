@@ -1,5 +1,3 @@
-extern crate pest;
-
 use crate::ast::{
     BinaryOperator, Expression, Lhs, LhsTransformations, LogicalExpression, Predicate, Value,
 };
@@ -10,6 +8,7 @@ use pest::iterators::Pair;
 use pest::pratt_parser::Assoc as AssocNew;
 use pest::pratt_parser::{Op, PrattParser};
 use pest::Parser;
+use pest_derive::Parser;
 use regex::Regex;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
