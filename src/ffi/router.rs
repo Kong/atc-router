@@ -1,8 +1,7 @@
 use crate::context::Context;
-use crate::ffi::ERR_BUF_MAX_LEN;
+use crate::ffi::write_errbuf;
 use crate::router::Router;
 use crate::schema::Schema;
-use std::cmp::min;
 use std::ffi;
 use std::os::raw::c_char;
 use std::slice::from_raw_parts_mut;
@@ -87,8 +86,7 @@ pub unsafe extern "C" fn router_free(router: *mut Router<&Schema>) {
 ///   and must not have '\0' in the middle.
 /// - `atc` must be a valid pointer to a C-style string, must be properly aligned,
 ///   and must not have '\0' in the middle.
-/// - `errbuf` must be valid to read and write for `errbuf_len * size_of::<u8>()` bytes,
-///   and it must be properly aligned.
+/// - `errbuf` must be valid to read and write for `*errbuf_len` bytes.
 /// - `errbuf_len` must be valid to read and write for `size_of::<usize>()` bytes,
 ///   and it must be properly aligned.
 #[no_mangle]
@@ -98,18 +96,15 @@ pub unsafe extern "C" fn router_add_matcher(
     uuid: *const i8,
     atc: *const i8,
     errbuf: *mut u8,
-    errbuf_len: *mut usize,
+    errbuf_len: &mut usize,
 ) -> bool {
     let uuid = ffi::CStr::from_ptr(uuid as *const c_char).to_str().unwrap();
     let atc = ffi::CStr::from_ptr(atc as *const c_char).to_str().unwrap();
-    let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
 
     let uuid = Uuid::try_parse(uuid).expect("invalid UUID format");
 
     if let Err(e) = router.add_matcher(priority, uuid, atc) {
-        let errlen = min(e.len(), *errbuf_len);
-        errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
-        *errbuf_len = errlen;
+        write_errbuf(e, errbuf, errbuf_len);
         return false;
     }
 
@@ -246,6 +241,31 @@ pub unsafe extern "C" fn router_get_fields(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ffi::ERR_BUF_MAX_LEN;
+
+    #[test]
+    fn test_short_error_buf() {
+        unsafe {
+            let schema = Schema::default();
+            let mut router = Router::new(&schema);
+            let uuid = ffi::CString::new("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c").unwrap();
+            let junk = ffi::CString::new(vec![b'a'; ERR_BUF_MAX_LEN * 2]).unwrap();
+            let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
+            let mut errbuf_len = 10;
+
+            let result = router_add_matcher(
+                &mut router,
+                1,
+                uuid.as_ptr() as *const i8,
+                junk.as_ptr() as *const i8,
+                errbuf[..errbuf_len].as_mut_ptr(),
+                &mut errbuf_len,
+            );
+            assert!(!result);
+            assert_eq!(errbuf_len, 10);
+            assert_eq!(errbuf[10], b'X');
+        }
+    }
 
     #[test]
     fn test_long_error_message() {
