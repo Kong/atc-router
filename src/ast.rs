@@ -52,6 +52,7 @@ pub enum Value {
     IpCidr(IpCidr),
     IpAddr(IpAddr),
     Int(i64),
+    Bool(bool),
     #[cfg_attr(feature = "serde", serde(with = "serde_regex"))]
     Regex(Regex),
 }
@@ -66,6 +67,7 @@ impl PartialEq for Value {
             (Self::IpCidr(i1), Self::IpCidr(i2)) => i1 == i2,
             (Self::IpAddr(i1), Self::IpAddr(i2)) => i1 == i2,
             (Self::Int(i1), Self::Int(i2)) => i1 == i2,
+            (Self::Bool(b1), Self::Bool(b2)) => b1 == b2,
             _ => false,
         }
     }
@@ -80,6 +82,7 @@ impl Value {
             Value::IpCidr(_) => Type::IpCidr,
             Value::IpAddr(_) => Type::IpAddr,
             Value::Int(_) => Type::Int,
+            Value::Bool(_) => Type::Bool,
             Value::Regex(_) => Type::Regex,
         }
     }
@@ -105,6 +108,13 @@ impl Value {
             return None;
         };
         Some(*i)
+    }
+
+    pub fn as_bool(&self) -> Option<bool> {
+        let Value::Bool(b) = self else {
+            return None;
+        };
+        Some(*b)
     }
 
     pub fn as_ipaddr(&self) -> Option<&IpAddr> {
@@ -136,6 +146,7 @@ pub enum Type {
     IpCidr,
     IpAddr,
     Int,
+    Bool,
     Regex,
 }
 
@@ -231,6 +242,7 @@ mod tests {
                 Value::IpCidr(cidr) => write!(f, "{}", cidr),
                 Value::IpAddr(addr) => write!(f, "{}", addr),
                 Value::Int(i) => write!(f, "{}", i),
+                Value::Bool(b) => write!(f, "{}", b),
                 Value::Regex(re) => write!(f, "\"{}\"", re),
             }
         }

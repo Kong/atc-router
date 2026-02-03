@@ -32,12 +32,14 @@ mod tests {
         s.add_field("cidr", Type::IpCidr);
         s.add_field("r", Type::Regex);
         s.add_field("i", Type::Int);
+        s.add_field("b", Type::Bool);
 
         assert_eq!(s.type_of("str"), Some(&Type::String));
         assert_eq!(s.type_of("ip"), Some(&Type::IpAddr));
         assert_eq!(s.type_of("cidr"), Some(&Type::IpCidr));
         assert_eq!(s.type_of("r"), Some(&Type::Regex));
         assert_eq!(s.type_of("i"), Some(&Type::Int));
+        assert_eq!(s.type_of("b"), Some(&Type::Bool));
 
         assert_eq!(s.type_of("unknown"), None);
     }
