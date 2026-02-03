@@ -2,7 +2,7 @@ use atc_router::ast::{Type, Value};
 use atc_router::context::Context;
 use atc_router::router::Router;
 use atc_router::schema::Schema;
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use uuid::Uuid;
 
 // To run this benchmark, execute the following command:
@@ -26,8 +26,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     for i in 0..N {
         let expr = format!(
-            r#"(http.path == "hello{}" && http.version == "1.1") || {} || {} || {}"#,
-            i, "!((a == 2) && (a == 9))", "!(a == 1)", "(a == 3 && a == 4) && !(a == 5)"
+            r#"(http.path == "hello{}" && http.version == "1.1") && ({} || {} || {}) && {}"#,
+            i, "!((a == 2) && (a == 9))", "!(a == 1)", "(a == 3 && a == 4)", "!(a == 5)"
         );
 
         let uuid = make_uuid(i);
@@ -36,33 +36,42 @@ fn criterion_benchmark(c: &mut Criterion) {
         router.add_matcher(N - i, uuid, &expr).unwrap();
     }
 
+    let mut g = c.benchmark_group("match_mix");
+
     let mut ctx = Context::new(&schema);
 
     // match benchmark
-    ctx.add_value("http.path", Value::String("hello49999".to_string()));
-    ctx.add_value("http.version", Value::String("1.1".to_string()));
-    ctx.add_value("a", Value::Int(3_i64));
+    for i in [0, 10, 49999, N - 1, N + 1] {
+        ctx.reset();
+        ctx.add_value("http.path", Value::String(format!("hello{}", i)));
+        ctx.add_value("http.version", Value::String("1.1".to_string()));
+        ctx.add_value("a", Value::Int(3_i64));
 
-    c.bench_function("Match", |b| {
-        b.iter(|| {
-            let is_match = router.execute(&mut ctx);
-            assert!(is_match);
+        let expected_match = i < N;
+        let name = if expected_match { "match" } else { "no match" };
+        g.bench_with_input(BenchmarkId::new(name, i), &i, |b, _| {
+            b.iter(|| {
+                let is_match = router.execute(&mut ctx);
+                assert_eq!(is_match, expected_match);
+            });
         });
-    });
+    }
 
-    ctx.reset();
 
     // not match benchmark
     ctx.add_value("http.path", Value::String("hello49999".to_string()));
     ctx.add_value("http.version", Value::String("1.1".to_string()));
     ctx.add_value("a", Value::Int(5_i64)); // not match
 
-    c.bench_function("Doesn't Match", |b| {
-        b.iter(|| {
-            let not_match = !router.execute(&mut ctx);
-            assert!(not_match);
+        let expected_match = i < N;
+        let name = if expected_match { "match" } else { "no match" };
+        g.bench_with_input(BenchmarkId::new(name, i), &i, |b, _| {
+            b.iter(|| {
+                let is_match = router.execute(&mut ctx);
+                assert_eq!(is_match, expected_match);
+            });
         });
-    });
+    }
 }
 
 criterion_group!(benches, criterion_benchmark);
