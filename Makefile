@@ -16,7 +16,7 @@ INSTALL ?= install
 RELEASE_FOLDER = target/$(CARGO_BUILD_TARGET)/release
 DEBUG_RELEASE_FOLDER = target/$(CARGO_BUILD_TARGET)/debug
 
-.PHONY: all test install build clean
+.PHONY: all test install build clean update-ffi-cdefs
 
 all: ;
 
@@ -52,3 +52,6 @@ valgrind: $(DEBUG_RELEASE_FOLDER)/libatc_router.%
 
 clean:
 	rm -rf target
+
+update-ffi-cdefs:
+	./scripts/update-ffi-cdefs.sh
