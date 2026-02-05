@@ -29,6 +29,7 @@ criterion = "0"
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
+bench = false
 
 [features]
 default = ["ffi"]
@@ -42,4 +43,8 @@ harness = false
 
 [[bench]]
 name = "match_mix"
+harness = false
+
+[[bench]]
+name = "worst_case"
 harness = false

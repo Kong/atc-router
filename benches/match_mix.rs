@@ -5,11 +5,6 @@ use atc_router::schema::Schema;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use uuid::Uuid;
 
-// To run this benchmark, execute the following command:
-// ```shell
-// cargo bench --bench match_mix
-// ```
-
 const N: usize = 100_000;
 
 fn make_uuid(a: usize) -> String {
@@ -41,15 +36,15 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut ctx = Context::new(&schema);
 
     // match benchmark
-    for i in [0, 10, 49999, N - 1, N + 1] {
+    const NUMBERS: &[usize] = &[0, 10, 1_000, 10_000, 40_000, 70_000, N - 1, N + 1];
+    for &i in NUMBERS {
         ctx.reset();
         ctx.add_value("http.path", Value::String(format!("hello{}", i)));
         ctx.add_value("http.version", Value::String("1.1".to_string()));
         ctx.add_value("a", Value::Int(3_i64));
 
         let expected_match = i < N;
-        let name = if expected_match { "match" } else { "no match" };
-        g.bench_with_input(BenchmarkId::new(name, i), &i, |b, _| {
+        g.bench_with_input(BenchmarkId::new("without prefilter", i), &i, |b, _| {
             b.iter(|| {
                 let is_match = router.execute(&mut ctx);
                 assert_eq!(is_match, expected_match);
@@ -58,24 +53,22 @@ fn criterion_benchmark(c: &mut Criterion) {
     }
 
     router.enable_prefilter("http.path");
-    g.finish();
 
-    let mut g = c.benchmark_group("match_mix with prefilter");
-    for i in [0, 10, 49999, N - 1, N + 1] {
+    for &i in NUMBERS {
         ctx.reset();
         ctx.add_value("http.path", Value::String(format!("hello{}", i)));
         ctx.add_value("http.version", Value::String("1.1".to_string()));
         ctx.add_value("a", Value::Int(3_i64));
 
         let expected_match = i < N;
-        let name = if expected_match { "match" } else { "no match" };
-        g.bench_with_input(BenchmarkId::new(name, i), &i, |b, _| {
+        g.bench_with_input(BenchmarkId::new("with prefilter", i), &i, |b, _| {
             b.iter(|| {
                 let is_match = router.execute(&mut ctx);
                 assert_eq!(is_match, expected_match);
             });
         });
     }
+    g.finish();
 }
 
 criterion_group!(benches, criterion_benchmark);
