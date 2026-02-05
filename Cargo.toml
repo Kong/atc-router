@@ -43,3 +43,7 @@ harness = false
 [[bench]]
 name = "match_mix"
 harness = false
+
+[[bench]]
+name = "expression_parsing"
+harness = false
