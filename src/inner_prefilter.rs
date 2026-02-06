@@ -26,7 +26,7 @@ impl<K: Ord> PrefixInheritanceMap<K> {
     /// Finds the longest prefix in the map that matches the given value.
     ///
     /// Returns a tuple of (matched_prefix, associated_keys) if a match is found.
-    pub fn longest_match(&self, value: &BStr) -> Option<(&BStr, &BTreeSet<K>)> {
+    pub(crate) fn longest_match(&self, value: &BStr) -> Option<(&BStr, &BTreeSet<K>)> {
         let mut upper_bound = value;
 
         loop {
@@ -53,7 +53,7 @@ impl<K: Ord> PrefixInheritanceMap<K> {
     }
 
     /// Inserts a key associated with the given prefix.
-    pub fn insert(&mut self, prefix: BString, key: K)
+    pub(crate) fn insert(&mut self, prefix: BString, key: K)
     where
         K: Clone,
     {
@@ -90,7 +90,7 @@ impl<K: Ord> PrefixInheritanceMap<K> {
     /// This method maintains the prefix-inheritance invariant by removing the key
     /// from all prefixes that start with the given prefix. Empty prefix entries
     /// are automatically cleaned up.
-    pub fn remove(&mut self, prefix: &BStr, key: &K) {
+    pub(crate) fn remove(&mut self, prefix: &BStr, key: &K) {
         let range = self
             .prefixes
             .range_mut::<BStr, _>((Bound::Included(prefix.as_bstr()), Bound::Unbounded));
@@ -116,7 +116,7 @@ impl<K: Ord> PrefixInheritanceMap<K> {
 /// Stores prefixes mapped to bitmaps of matcher indexes, with automatic
 /// prefix extension to handle nested prefix relationships.
 #[derive(Debug, Clone)]
-pub struct InnerPrefilter<K> {
+pub(crate) struct InnerPrefilter<K> {
     prefix_map: PrefixInheritanceMap<K>,
     key_to_prefixes: BTreeMap<K, Vec<BString>>,
 }
@@ -130,12 +130,12 @@ impl<K> InnerPrefilter<K> {
     }
 
     /// Returns true if the prefilter contains no keys.
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.key_to_prefixes.is_empty()
     }
 
     /// Returns the number of routes in the prefilter.
-    pub fn num_routes(&self) -> usize {
+    pub(crate) fn num_routes(&self) -> usize {
         self.key_to_prefixes.len()
     }
 }
@@ -150,7 +150,7 @@ impl<K: Ord> InnerPrefilter<K> {
     /// applies `optimize_for_prefix_by_preference`, which collapses such
     /// overlapping literals). Violating this causes `remove` to trip a
     /// debug assertion.
-    pub fn insert(&mut self, key: K, prefixes: Vec<Vec<u8>>)
+    pub(crate) fn insert(&mut self, key: K, prefixes: Vec<Vec<u8>>)
     where
         K: Clone,
     {
@@ -168,7 +168,7 @@ impl<K: Ord> InnerPrefilter<K> {
     }
 
     /// Removes a key and all its associated prefixes from the prefilter.
-    pub fn remove(&mut self, key: &K) {
+    pub(crate) fn remove(&mut self, key: &K) {
         let Some(prefixes) = self.key_to_prefixes.remove(key) else {
             return;
         };
@@ -177,13 +177,13 @@ impl<K: Ord> InnerPrefilter<K> {
         }
     }
 
-    pub fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) {
         self.key_to_prefixes.clear();
         self.prefix_map.clear()
     }
 
     /// Checks bytes against the prefilter, returning a bitmap of possible matcher indexes.
-    pub fn check(&self, bytes: &[u8]) -> Option<&BTreeSet<K>> {
+    pub(crate) fn check(&self, bytes: &[u8]) -> Option<&BTreeSet<K>> {
         self.prefix_map
             .longest_match(BStr::new(bytes))
             .map(|(_prefix, keys)| keys)

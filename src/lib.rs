@@ -1,6 +1,7 @@
 #![doc = include_str!("../README.md")]
 
 #![warn(variant_size_differences)]
+#![warn(unreachable_pub)]
 #![deny(missing_docs)]
 #![deny(unsafe_op_in_unsafe_fn)]
 #![deny(unnameable_types)]
@@ -11,6 +12,7 @@ pub mod matchers;
 use crate::matchers::{Matcher, MatcherVisitor};
 use inner_prefilter::InnerPrefilter;
 use std::collections::{BTreeSet, btree_set};
+use std::iter::FusedIterator;
 
 /// A prefilter for quickly identifying potentially matching route patterns.
 ///
@@ -391,7 +393,12 @@ impl<'a, K: Ord> Iterator for RouterPrefilterIter<'a, K> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         match &self.0 {
             RouterPrefilterIterState::OnlyAlways(inner) => inner.size_hint(),
-            RouterPrefilterIterState::Union(inner) => inner.size_hint(),
+            RouterPrefilterIterState::Union(inner) => {
+                // The sets are disjoint, so the upper bound is exact
+                let (_, upper) = inner.size_hint();
+                let len = upper.unwrap();
+                (len, Some(len))
+            }
         }
     }
 
@@ -403,6 +410,36 @@ impl<'a, K: Ord> Iterator for RouterPrefilterIter<'a, K> {
         match self.0 {
             RouterPrefilterIterState::OnlyAlways(inner) => inner.fold(init, f),
             RouterPrefilterIterState::Union(inner) => inner.fold(init, f),
+        }
+    }
+}
+
+impl<K: Ord> ExactSizeIterator for RouterPrefilterIter<'_, K> {}
+
+impl<K: Ord> FusedIterator for RouterPrefilterIter<'_, K> {}
+
+impl<K> Clone for RouterPrefilterIter<'_, K> {
+    fn clone(&self) -> Self {
+        Self(match &self.0 {
+            RouterPrefilterIterState::OnlyAlways(inner) => {
+                RouterPrefilterIterState::OnlyAlways(inner.clone())
+            }
+            RouterPrefilterIterState::Union(inner) => {
+                RouterPrefilterIterState::Union(inner.clone())
+            }
+        })
+    }
+}
+
+impl<K: std::fmt::Debug> std::fmt::Debug for RouterPrefilterIter<'_, K> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.0 {
+            RouterPrefilterIterState::OnlyAlways(inner) => {
+                f.debug_tuple("RouterPrefilterIter").field(inner).finish()
+            }
+            RouterPrefilterIterState::Union(inner) => {
+                f.debug_tuple("RouterPrefilterIter").field(inner).finish()
+            }
         }
     }
 }
@@ -573,6 +610,70 @@ mod tests {
         let iter = prefilter.possible_matches("/api/test");
         let (min, max) = iter.size_hint();
         assert!(min <= max.unwrap_or(usize::MAX));
+    }
+
+    #[test]
+    fn test_iterator_exact_size() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+        prefilter.insert(1, TestMatcher::without_prefix());
+        prefilter.insert(2, TestMatcher::with_prefix("/users"));
+
+        // Union case: prefilter result + always_possible
+        let iter = prefilter.possible_matches("/api/test");
+        assert_eq!(iter.len(), 2); // routes 0 and 1
+        let (min, max) = iter.size_hint();
+        assert_eq!(min, 2);
+        assert_eq!(max, Some(2));
+
+        // OnlyAlways case: no prefilter matches
+        let iter = prefilter.possible_matches("/other/path");
+        assert_eq!(iter.len(), 1); // only route 1
+        let (min, max) = iter.size_hint();
+        assert_eq!(min, 1);
+        assert_eq!(max, Some(1));
+    }
+
+    #[test]
+    fn test_iterator_clone() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+        prefilter.insert(1, TestMatcher::with_prefix("/users"));
+
+        let iter = prefilter.possible_matches("/api/test");
+        let cloned = iter.clone();
+
+        let original: Vec<_> = iter.collect();
+        let cloned: Vec<_> = cloned.collect();
+        assert_eq!(original, cloned);
+        assert_eq!(original, &[&0]);
+    }
+
+    #[test]
+    fn test_iterator_debug() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert("key 123", TestMatcher::with_prefix("/api"));
+
+        let iter = prefilter.possible_matches("/api/test");
+        let debug_str = format!("{:?}", iter);
+        assert!(debug_str.contains("RouterPrefilterIter"));
+        assert!(debug_str.contains("key 123"));
+    }
+
+    #[test]
+    fn test_iterator_fused() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+
+        let mut iter = prefilter.possible_matches("/api/test");
+
+        // Exhaust the iterator
+        assert_eq!(iter.next(), Some(&0));
+        assert_eq!(iter.next(), None);
+
+        // FusedIterator guarantees None forever after
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next(), None);
     }
 
     #[test]
