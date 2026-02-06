@@ -296,9 +296,13 @@ impl<K: Ord> RouterPrefilter<K> {
         matcher.visit(&mut self.matcher_visitor);
         let seq = self.matcher_visitor.finish();
         if let Some(literals) = seq.literals() {
+            // Clean up in case this key was previously in always_possible
+            self.always_possible.remove(&key);
             let prefixes = literals.iter().map(|lit| lit.as_bytes().to_vec()).collect();
             self.prefilter.insert(key, prefixes);
         } else {
+            // Clean up in case this key was previously in the prefilter
+            self.prefilter.remove(&key);
             self.always_possible.insert(key);
         }
     }
@@ -602,5 +606,71 @@ mod tests {
         let iter = prefilter.possible_matches("/api/test");
         let (min, max) = iter.size_hint();
         assert!(min <= max.unwrap_or(usize::MAX));
+    }
+
+    #[test]
+    fn test_duplicate_key_insert_replaces_prefix() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+        prefilter.insert(0, TestMatcher::with_prefix("/users"));
+
+        assert_eq!(prefilter.len(), 1);
+        assert_eq!(prefilter.prefilterable_routes(), 1);
+
+        // Old prefix should no longer match
+        let matches: Vec<_> = prefilter.possible_matches("/api/test").collect();
+        assert!(!matches.contains(&&0));
+
+        // New prefix should match
+        let matches: Vec<_> = prefilter.possible_matches("/users/test").collect();
+        assert!(matches.contains(&&0));
+    }
+
+    #[test]
+    fn test_duplicate_key_insert_prefilterable_to_always() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+        prefilter.insert(0, TestMatcher::without_prefix());
+
+        assert_eq!(prefilter.len(), 1);
+        assert_eq!(prefilter.prefilterable_routes(), 0);
+
+        // Should now be in always_possible, matching everything
+        let matches: Vec<_> = prefilter.possible_matches("/anything").collect();
+        assert!(matches.contains(&&0));
+    }
+
+    #[test]
+    fn test_duplicate_key_insert_always_to_prefilterable() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert(0, TestMatcher::without_prefix());
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+
+        assert_eq!(prefilter.len(), 1);
+        assert_eq!(prefilter.prefilterable_routes(), 1);
+
+        // Should only match the new prefix
+        let matches: Vec<_> = prefilter.possible_matches("/api/test").collect();
+        assert!(matches.contains(&&0));
+
+        let matches: Vec<_> = prefilter.possible_matches("/other").collect();
+        assert!(!matches.contains(&&0));
+    }
+
+    #[test]
+    fn test_duplicate_key_insert_then_remove() {
+        let mut prefilter = RouterPrefilter::new();
+        prefilter.insert(0, TestMatcher::with_prefix("/api"));
+        prefilter.insert(0, TestMatcher::with_prefix("/users"));
+        prefilter.remove(&0);
+
+        assert!(prefilter.is_empty());
+        assert_eq!(prefilter.len(), 0);
+
+        // Nothing should match after removal
+        let matches: Vec<_> = prefilter.possible_matches("/api/test").collect();
+        assert!(matches.is_empty());
+        let matches: Vec<_> = prefilter.possible_matches("/users/test").collect();
+        assert!(matches.is_empty());
     }
 }

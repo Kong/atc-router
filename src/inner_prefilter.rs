@@ -144,12 +144,22 @@ impl<K: Ord> InnerPrefilter<K> {
     /// Inserts a key with the given prefixes into the prefilter.
     ///
     /// Each prefix is added to the prefix map, maintaining the prefix-inheritance invariant.
+    ///
+    /// No prefix in `prefixes` may be a prefix of another entry in `prefixes`.
+    /// This precondition is upheld by the caller (`MatcherVisitor::finish`
+    /// applies `optimize_for_prefix_by_preference`, which collapses such
+    /// overlapping literals). Violating this causes `remove` to trip a
+    /// debug assertion.
     pub fn insert(&mut self, key: K, prefixes: Vec<Vec<u8>>)
     where
         K: Clone,
     {
         let prefixes: Vec<BString> = prefixes.into_iter().map(BString::new).collect();
-        self.key_to_prefixes.insert(key.clone(), prefixes.clone());
+        if let Some(old_prefixes) = self.key_to_prefixes.insert(key.clone(), prefixes.clone()) {
+            for prefix in old_prefixes {
+                self.prefix_map.remove(prefix.as_bstr(), &key);
+            }
+        }
         let prefixes_len = prefixes.len();
         // Use repeat_n to avoid cloning the last iteration
         for (prefix, key) in prefixes.into_iter().zip(iter::repeat_n(key, prefixes_len)) {
