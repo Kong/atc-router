@@ -1,37 +1,4 @@
-//! Fast prefix-based prefiltering for router pattern matching.
-//!
-//! This crate provides efficient prefiltering of route matchers by extracting and indexing
-//! literal prefixes from patterns. It enables quick elimination of non-matching routes
-//! before running full route matching.
-//!
-//! # Examples
-//!
-//! ```
-//! use router_prefilter::RouterPrefilter;
-//! use router_prefilter::matchers::{Matcher, MatcherVisitor};
-//!
-//! struct RoutePattern {
-//!     prefix: String,
-//! }
-//!
-//! impl Matcher for RoutePattern {
-//!     fn visit(&self, visitor: &mut MatcherVisitor) {
-//!         visitor.visit_match_starts_with(&self.prefix);
-//!     }
-//! }
-//!
-//! let routes = vec![
-//!     RoutePattern { prefix: "/api".to_string() },
-//!     RoutePattern { prefix: "/users".to_string() },
-//! ];
-//!
-//! let mut prefilter = RouterPrefilter::new();
-//! for (i, route) in routes.into_iter().enumerate() {
-//!     prefilter.insert(i, route);
-//! }
-//! let matches: Vec<_> = prefilter.possible_matches("/api/v1").collect();
-//! assert_eq!(matches, vec![&0]);
-//! ```
+#![doc = include_str!("../README.md")]
 
 #![warn(variant_size_differences)]
 #![deny(missing_docs)]
