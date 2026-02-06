@@ -16,7 +16,7 @@ impl<K> PrefixInheritanceMap<K> {
             prefixes: BTreeMap::new(),
         }
     }
-    
+
     fn clear(&mut self) {
         self.prefixes.clear();
     }
@@ -68,20 +68,16 @@ impl<K: Ord> PrefixInheritanceMap<K> {
             keys.insert(key.clone());
         }
 
-        // Find all prefixes which are themselves prefixes of this prefix, and gather their keys
-        // to add to the keys for this prefix
         let mut keys_from_shorter_prefixes = BTreeSet::new();
         keys_from_shorter_prefixes.insert(key);
 
-        let mut upper_bound = prefix.as_bstr();
-        while let Some((_, smaller_prefix)) = upper_bound.split_last() {
-            upper_bound = match self.longest_match(smaller_prefix.as_bstr()) {
-                Some((smaller_prefix, keys)) => {
-                    keys_from_shorter_prefixes.extend(keys.iter().cloned());
-                    smaller_prefix
-                }
-                None => break,
-            };
+        // Find the largest prefix which is itself a prefix of this prefix
+        // to add to the keys for this prefix.
+        // The keys for all prefixes shorter will already be present in the keys for that prefix
+        if let Some((_, smaller_prefix)) = prefix.as_bstr().split_last()
+            && let Some((_, keys)) = self.longest_match(smaller_prefix.as_bstr())
+        {
+            keys_from_shorter_prefixes.extend(keys.iter().cloned());
         }
         self.prefixes
             .entry(prefix)
@@ -170,7 +166,7 @@ impl<K: Ord> InnerPrefilter<K> {
             self.prefix_map.remove(prefix.as_bstr(), key);
         }
     }
-    
+
     pub fn clear(&mut self) {
         self.key_to_prefixes.clear();
         self.prefix_map.clear()
