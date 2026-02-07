@@ -1,5 +1,4 @@
 #![doc = include_str!("../README.md")]
-
 #![warn(variant_size_differences)]
 #![warn(unreachable_pub)]
 #![deny(missing_docs)]
@@ -11,6 +10,7 @@ pub mod matchers;
 
 use crate::matchers::{Matcher, MatcherVisitor};
 use inner_prefilter::InnerPrefilter;
+use std::cmp::Ordering;
 use std::collections::{BTreeSet, btree_set};
 use std::iter::FusedIterator;
 
@@ -263,11 +263,11 @@ impl<K: Ord> RouterPrefilter<K> {
         K: Clone,
     {
         matcher.visit(&mut self.matcher_visitor);
-        let seq = self.matcher_visitor.finish();
-        if let Some(literals) = seq.literals() {
+        let prefixes = self.matcher_visitor.finish();
+        if let Some(prefixes) = prefixes {
             // Clean up in case this key was previously in always_possible
             self.always_possible.remove(&key);
-            let prefixes = literals.iter().map(|lit| lit.as_bytes().to_vec()).collect();
+            let prefixes = prefixes.into_iter().collect();
             self.prefilter.insert(key, prefixes);
         } else {
             // Clean up in case this key was previously in the prefilter
@@ -359,11 +359,14 @@ impl<K: Ord> RouterPrefilter<K> {
     #[doc(alias = "iter")]
     pub fn possible_matches<'a>(&'a self, value: &'a str) -> RouterPrefilterIter<'a, K> {
         let value = value.as_bytes();
-        let inner = match self.prefilter.check(value) {
-            Some(prefiltered) => {
-                RouterPrefilterIterState::Union(prefiltered.union(&self.always_possible))
-            }
-            None => RouterPrefilterIterState::OnlyAlways(self.always_possible.iter()),
+        let filtered_keys = self.prefilter.check(value);
+        let inner = if filtered_keys.is_empty() {
+            RouterPrefilterIterState::OnlyAlways(self.always_possible.iter())
+        } else {
+            RouterPrefilterIterState::Union(UnionIter::new(
+                self.always_possible.iter(),
+                filtered_keys.into_iter(),
+            ))
         };
         RouterPrefilterIter(inner)
     }
@@ -377,7 +380,7 @@ pub struct RouterPrefilterIter<'a, K>(RouterPrefilterIterState<'a, K>);
 
 enum RouterPrefilterIterState<'a, K> {
     OnlyAlways(btree_set::Iter<'a, K>),
-    Union(btree_set::Union<'a, K>),
+    Union(UnionIter<'a, K>),
 }
 
 impl<'a, K: Ord> Iterator for RouterPrefilterIter<'a, K> {
@@ -393,12 +396,7 @@ impl<'a, K: Ord> Iterator for RouterPrefilterIter<'a, K> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         match &self.0 {
             RouterPrefilterIterState::OnlyAlways(inner) => inner.size_hint(),
-            RouterPrefilterIterState::Union(inner) => {
-                // The sets are disjoint, so the upper bound is exact
-                let (_, upper) = inner.size_hint();
-                let len = upper.unwrap();
-                (len, Some(len))
-            }
+            RouterPrefilterIterState::Union(inner) => inner.size_hint(),
         }
     }
 
@@ -418,19 +416,6 @@ impl<K: Ord> ExactSizeIterator for RouterPrefilterIter<'_, K> {}
 
 impl<K: Ord> FusedIterator for RouterPrefilterIter<'_, K> {}
 
-impl<K> Clone for RouterPrefilterIter<'_, K> {
-    fn clone(&self) -> Self {
-        Self(match &self.0 {
-            RouterPrefilterIterState::OnlyAlways(inner) => {
-                RouterPrefilterIterState::OnlyAlways(inner.clone())
-            }
-            RouterPrefilterIterState::Union(inner) => {
-                RouterPrefilterIterState::Union(inner.clone())
-            }
-        })
-    }
-}
-
 impl<K: std::fmt::Debug> std::fmt::Debug for RouterPrefilterIter<'_, K> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.0 {
@@ -441,6 +426,76 @@ impl<K: std::fmt::Debug> std::fmt::Debug for RouterPrefilterIter<'_, K> {
                 f.debug_tuple("RouterPrefilterIter").field(inner).finish()
             }
         }
+    }
+}
+
+// Iterator over the union of always and filtered keys
+//
+// We require that a key will not be in both `always` and `filtered` sets
+#[derive(Debug)]
+struct UnionIter<'a, K> {
+    always: btree_set::Iter<'a, K>,
+    filtered: btree_set::IntoIter<&'a K>,
+    peeked: Option<Peeked<'a, K>>,
+}
+
+#[derive(Debug)]
+enum Peeked<'a, K> {
+    Always(&'a K),
+    Filtered(&'a K),
+}
+
+impl<'a, K> UnionIter<'a, K> {
+    fn new(always: btree_set::Iter<'a, K>, filtered: btree_set::IntoIter<&'a K>) -> Self {
+        Self {
+            always,
+            filtered,
+            peeked: None,
+        }
+    }
+}
+
+impl<'a, K: Ord> Iterator for UnionIter<'a, K> {
+    type Item = &'a K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let always_next;
+        let filtered_next;
+        match self.peeked.take() {
+            Some(Peeked::Always(next)) => {
+                always_next = Some(next);
+                filtered_next = self.filtered.next();
+            }
+            Some(Peeked::Filtered(next)) => {
+                always_next = self.always.next();
+                filtered_next = Some(next);
+            }
+            None => {
+                always_next = self.always.next();
+                filtered_next = self.filtered.next();
+            }
+        }
+        match (always_next, filtered_next) {
+            (Some(a), Some(f)) => {
+                let (returned, next_peeked) = match a.cmp(&f) {
+                    Ordering::Less => (a, Peeked::Filtered(f)),
+                    Ordering::Greater => (f, Peeked::Always(a)),
+                    Ordering::Equal => {
+                        unreachable!("keys cannot be both always found and filtered")
+                    }
+                };
+                self.peeked = Some(next_peeked);
+                Some(returned)
+            }
+            (Some(k), None) | (None, Some(k)) => Some(k),
+            (None, None) => None,
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        // We require non-overlapping values
+        let len = self.always.len() + self.filtered.len() + usize::from(self.peeked.is_some());
+        (len, Some(len))
     }
 }
 
@@ -632,21 +687,14 @@ mod tests {
         let (min, max) = iter.size_hint();
         assert_eq!(min, 1);
         assert_eq!(max, Some(1));
-    }
 
-    #[test]
-    fn test_iterator_clone() {
-        let mut prefilter = RouterPrefilter::new();
-        prefilter.insert(0, TestMatcher::with_prefix("/api"));
-        prefilter.insert(1, TestMatcher::with_prefix("/users"));
-
-        let iter = prefilter.possible_matches("/api/test");
-        let cloned = iter.clone();
-
-        let original: Vec<_> = iter.collect();
-        let cloned: Vec<_> = cloned.collect();
-        assert_eq!(original, cloned);
-        assert_eq!(original, &[&0]);
+        // Union case: size_hint must stay accurate after consuming elements
+        let mut iter = prefilter.possible_matches("/api/test");
+        assert_eq!(iter.len(), 2);
+        iter.next();
+        assert_eq!(iter.len(), 1);
+        iter.next();
+        assert_eq!(iter.len(), 0);
     }
 
     #[test]
@@ -740,5 +788,53 @@ mod tests {
         assert!(matches.is_empty());
         let matches: Vec<_> = prefilter.possible_matches("/users/test").collect();
         assert!(matches.is_empty());
+    }
+
+    #[test]
+    fn test_nested_prefix_chain() {
+        // Each prefix is a prefix of the ones above it, inserted longest-first
+        let matchers = vec![
+            TestMatcher::with_prefix("/a/a/a/a/a/a/a/a/a/a"),
+            TestMatcher::with_prefix("/a/a/a/a/a/a/a/a/a"),
+            TestMatcher::with_prefix("/a/a/a/a/a/a/a/a"),
+            TestMatcher::with_prefix("/a/a/a/a/a/a/a"),
+            TestMatcher::with_prefix("/a/a/a/a/a/a"),
+            TestMatcher::with_prefix("/a/a/a/a/a"),
+            TestMatcher::with_prefix("/a/a/a/a"),
+            TestMatcher::with_prefix("/a/a/a"),
+            TestMatcher::with_prefix("/a/a"),
+            TestMatcher::with_prefix("/a"),
+            TestMatcher::with_prefix(""),
+        ];
+
+        let mut prefilter = RouterPrefilter::new();
+        for (i, matcher) in matchers.into_iter().enumerate() {
+            prefilter.insert(i, matcher);
+        }
+
+        // Full path matches all prefixes
+        let matches: Vec<_> = prefilter
+            .possible_matches("/a/a/a/a/a/a/a/a/a/a/end")
+            .collect();
+        assert_eq!(matches, vec![&0, &1, &2, &3, &4, &5, &6, &7, &8, &9, &10]);
+
+        // Partial path matches only shorter prefixes
+        let matches: Vec<_> = prefilter.possible_matches("/a/a/a/a/a/z").collect();
+        assert_eq!(matches, vec![&5, &6, &7, &8, &9, &10]);
+
+        // Shortest non-empty prefix
+        let matches: Vec<_> = prefilter.possible_matches("/a/z").collect();
+        assert_eq!(matches, vec![&9, &10]);
+
+        // No non-empty prefix matches, but empty prefix is always possible
+        let matches: Vec<_> = prefilter.possible_matches("/b").collect();
+        assert_eq!(matches, vec![&10]);
+
+        // Empty string matches empty prefix (always possible)
+        let matches: Vec<_> = prefilter.possible_matches("").collect();
+        assert_eq!(matches, vec![&10]);
+
+        // Empty prefix goes into always_possible, not the prefilter
+        assert_eq!(prefilter.prefilterable_routes(), 10);
     }
 }

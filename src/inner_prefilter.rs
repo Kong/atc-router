@@ -1,130 +1,164 @@
-use bstr::{BStr, BString, ByteSlice};
+use bstr::BString;
 use std::collections::{BTreeMap, BTreeSet};
 use std::iter;
-use std::ops::Bound;
+use std::mem;
 
-/// A map that maintains the prefix-inheritance invariant: for every string A in the map,
-/// every other string that has A as a prefix contains all the K values associated with A.
 #[derive(Debug, Clone)]
-pub(crate) struct PrefixInheritanceMap<K> {
-    prefixes: BTreeMap<BString, BTreeSet<K>>,
+struct RadixTrie<K> {
+    keys: BTreeSet<K>,
+    children: Vec<RadixLink<K>>,
 }
 
-impl<K> PrefixInheritanceMap<K> {
+#[derive(Debug, Clone)]
+struct RadixLink<K> {
+    ch: u8,
+    rest: BString,
+    child: RadixTrie<K>,
+}
+
+impl<K> RadixTrie<K> {
     fn new() -> Self {
         Self {
-            prefixes: BTreeMap::new(),
+            keys: BTreeSet::new(),
+            children: Vec::new(),
         }
     }
 
-    fn clear(&mut self) {
-        self.prefixes.clear();
+    /// Find the child index whose edge label starts with the given byte.
+    fn find_child(&self, byte: u8) -> Result<usize, usize> {
+        self.children.binary_search_by(|link| link.ch.cmp(&byte))
     }
 }
 
-impl<K: Ord> PrefixInheritanceMap<K> {
-    /// Finds the longest prefix in the map that matches the given value.
-    ///
-    /// Returns a tuple of (matched_prefix, associated_keys) if a match is found.
-    pub(crate) fn longest_match(&self, value: &BStr) -> Option<(&BStr, &BTreeSet<K>)> {
-        let mut upper_bound = value;
+impl<K: Ord> RadixTrie<K> {
+    fn insert(&mut self, mut prefix: &[u8], key: K) {
+        let mut node = self;
+        while let Some(&first_char) = prefix.split_off_first() {
+            let idx = match node.find_child(first_char) {
+                Ok(idx) => idx,
+                Err(idx) => {
+                    node.children.insert(
+                        idx,
+                        RadixLink {
+                            ch: first_char,
+                            rest: BString::new(prefix.to_vec()),
+                            child: RadixTrie::new(),
+                        },
+                    );
+                    node = &mut node.children[idx].child;
+                    break;
+                }
+            };
 
+            let link = &mut node.children[idx];
+            let common_len = common_prefix_len(&link.rest, prefix);
+
+            if common_len < link.rest.len() {
+                split_link(link, common_len);
+            }
+
+            prefix = &prefix[common_len..];
+            node = &mut node.children[idx].child;
+        }
+        node.keys.insert(key);
+    }
+
+    fn remove(&mut self, mut prefix: &[u8], key: &K) {
+        let Some(&first_char) = prefix.split_off_first() else {
+            self.keys.remove(key);
+            return;
+        };
+        let Ok(idx) = self.find_child(first_char) else {
+            return;
+        };
+
+        let link = &mut self.children[idx];
+        let Some((prefix_rest_begin, prefix_rest)) = prefix.split_at_checked(link.rest.len())
+        else {
+            return;
+        };
+        if prefix_rest_begin != link.rest.as_slice() {
+            return;
+        }
+
+        link.child.remove(prefix_rest, key);
+
+        // Clean up empty nodes.
+        if link.child.keys.is_empty() && link.child.children.is_empty() {
+            self.children.remove(idx);
+        } else {
+            try_compact_link(&mut self.children[idx]);
+        }
+    }
+
+    fn collect_prefix_matches(&self, mut input: &[u8]) -> BTreeSet<&K> {
+        let mut result = BTreeSet::new();
+        let mut node = self;
         loop {
-            let (found_key, indexes) = self
-                .prefixes
-                .range::<BStr, _>((Bound::Unbounded, Bound::Included(upper_bound)))
-                .next_back()?;
+            result.extend(&node.keys);
 
-            let common_len = value
-                .iter()
-                .zip(found_key.iter())
-                .take_while(|(a, b)| a == b)
-                .count();
+            let Some(&first_char) = input.split_off_first() else {
+                break;
+            };
 
-            if common_len == 0 {
-                return None;
-            }
-            if common_len == found_key.len() {
-                return Some((found_key.as_bstr(), indexes));
-            }
+            let Ok(idx) = node.find_child(first_char) else {
+                break;
+            };
 
-            upper_bound = &value[..common_len];
-        }
-    }
-
-    /// Inserts a key associated with the given prefix.
-    pub(crate) fn insert(&mut self, prefix: BString, key: K)
-    where
-        K: Clone,
-    {
-        // Find all prefixes which have this prefix as a prefix, and add the key to their sets
-        let range = self
-            .prefixes
-            .range_mut::<BStr, _>((Bound::Excluded(prefix.as_bstr()), Bound::Unbounded));
-        for (longer_prefix, keys) in range {
-            if !longer_prefix.starts_with(&prefix) {
+            let link = &node.children[idx];
+            let Some((input_rest_begin, input_rest)) = input.split_at_checked(link.rest.len())
+            else {
+                break;
+            };
+            if input_rest_begin != link.rest.as_slice() {
                 break;
             }
-            keys.insert(key.clone());
-        }
 
-        let mut keys_from_shorter_prefixes = BTreeSet::new();
-        keys_from_shorter_prefixes.insert(key);
-
-        // Find the largest prefix which is itself a prefix of this prefix
-        // to add to the keys for this prefix.
-        // The keys for all prefixes shorter will already be present in the keys for that prefix
-        if let Some((_, smaller_prefix)) = prefix.as_bstr().split_last()
-            && let Some((_, keys)) = self.longest_match(smaller_prefix.as_bstr())
-        {
-            keys_from_shorter_prefixes.extend(keys.iter().cloned());
+            input = input_rest;
+            node = &link.child;
         }
-        self.prefixes
-            .entry(prefix)
-            .or_default()
-            .extend(keys_from_shorter_prefixes);
-    }
-
-    /// Removes a key from the given prefix and all longer prefixes.
-    ///
-    /// This method maintains the prefix-inheritance invariant by removing the key
-    /// from all prefixes that start with the given prefix. Empty prefix entries
-    /// are automatically cleaned up.
-    pub(crate) fn remove(&mut self, prefix: &BStr, key: &K) {
-        let range = self
-            .prefixes
-            .range_mut::<BStr, _>((Bound::Included(prefix.as_bstr()), Bound::Unbounded));
-        let mut newly_empty_prefixes = Vec::new();
-        for (longer_prefix, keys) in range {
-            if !longer_prefix.starts_with(prefix) {
-                break;
-            }
-            let did_remove = keys.remove(key);
-            debug_assert!(did_remove);
-            if keys.is_empty() {
-                newly_empty_prefixes.push(longer_prefix.clone());
-            }
-        }
-        for longer_prefix in newly_empty_prefixes {
-            self.prefixes.remove(&longer_prefix);
-        }
+        result
     }
 }
 
-/// Internal prefix lookup structure using a `BTreeMap` for efficient range queries.
+fn try_compact_link<K>(link: &mut RadixLink<K>) {
+    if link.child.keys.is_empty() && link.child.children.len() == 1 {
+        let grandchild = link.child.children.pop().unwrap();
+        link.rest.reserve(1 + grandchild.rest.len());
+        link.rest.push(grandchild.ch);
+        link.rest.extend_from_slice(&grandchild.rest);
+        link.child = grandchild.child;
+    }
+}
+
+fn split_link<K>(link: &mut RadixLink<K>, at: usize) {
+    let tail = link.rest.split_off(at + 1);
+    let ch = link.rest.pop().unwrap();
+    let old_child = mem::replace(&mut link.child, RadixTrie::new());
+    link.child.children.push(RadixLink {
+        ch,
+        rest: BString::new(tail),
+        child: old_child,
+    });
+}
+
+fn common_prefix_len(lhs: &[u8], rhs: &[u8]) -> usize {
+    lhs.iter().zip(rhs).take_while(|(a, b)| a == b).count()
+}
+
+/// Internal prefix lookup structure using a radix trie for efficient prefix matching.
 ///
-/// Stores prefixes mapped to bitmaps of matcher indexes, with automatic
-/// prefix extension to handle nested prefix relationships.
+/// Stores prefixes mapped to sets of keys, with a reverse index for removal.
 #[derive(Debug, Clone)]
 pub(crate) struct InnerPrefilter<K> {
-    prefix_map: PrefixInheritanceMap<K>,
+    prefix_map: RadixTrie<K>,
     key_to_prefixes: BTreeMap<K, Vec<BString>>,
 }
 
 impl<K> InnerPrefilter<K> {
     pub(crate) fn new() -> Self {
         Self {
-            prefix_map: PrefixInheritanceMap::new(),
+            prefix_map: RadixTrie::new(),
             key_to_prefixes: BTreeMap::new(),
         }
     }
@@ -157,13 +191,13 @@ impl<K: Ord> InnerPrefilter<K> {
         let prefixes: Vec<BString> = prefixes.into_iter().map(BString::new).collect();
         if let Some(old_prefixes) = self.key_to_prefixes.insert(key.clone(), prefixes.clone()) {
             for prefix in old_prefixes {
-                self.prefix_map.remove(prefix.as_bstr(), &key);
+                self.prefix_map.remove(&prefix, &key);
             }
         }
         let prefixes_len = prefixes.len();
         // Use repeat_n to avoid cloning the last iteration
         for (prefix, key) in prefixes.into_iter().zip(iter::repeat_n(key, prefixes_len)) {
-            self.prefix_map.insert(prefix, key);
+            self.prefix_map.insert(&prefix, key);
         }
     }
 
@@ -173,20 +207,18 @@ impl<K: Ord> InnerPrefilter<K> {
             return;
         };
         for prefix in prefixes {
-            self.prefix_map.remove(prefix.as_bstr(), key);
+            self.prefix_map.remove(&prefix, key);
         }
     }
 
     pub(crate) fn clear(&mut self) {
         self.key_to_prefixes.clear();
-        self.prefix_map.clear()
+        self.prefix_map = RadixTrie::new();
     }
 
-    /// Checks bytes against the prefilter, returning a bitmap of possible matcher indexes.
-    pub(crate) fn check(&self, bytes: &[u8]) -> Option<&BTreeSet<K>> {
-        self.prefix_map
-            .longest_match(BStr::new(bytes))
-            .map(|(_prefix, keys)| keys)
+    /// Checks bytes against the prefilter, returning a set of possible matcher keys.
+    pub(crate) fn check(&self, bytes: &[u8]) -> BTreeSet<&K> {
+        self.prefix_map.collect_prefix_matches(bytes)
     }
 }
 
@@ -195,24 +227,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_prefix_inheritance_map_basic() {
-        let mut map = PrefixInheritanceMap::new();
-        map.insert(BString::from("/api"), 1);
-        map.insert(BString::from("/api/v1"), 2);
-
-        // Looking up "/api/v1/users" returns both keys 1 and 2
-        let result = map.longest_match(BStr::new("/api/v1/users".as_bytes()));
-        assert!(result.is_some());
-        let (prefix, keys) = result.unwrap();
-        assert_eq!(prefix, "/api/v1".as_bytes());
-        assert!(keys.contains(&1));
-        assert!(keys.contains(&2));
-    }
-
-    #[test]
     fn test_empty_patterns() {
         let prefilter = InnerPrefilter::<u8>::new();
-        assert_eq!(prefilter.check(b""), None);
+        assert_eq!(prefilter.check(b""), BTreeSet::new());
     }
 
     #[test]
@@ -223,7 +240,7 @@ mod tests {
             prefilter.insert(i, vec![pattern]);
         }
 
-        let result = prefilter.check(b"/api/users/123").unwrap();
+        let result = prefilter.check(b"/api/users/123");
         assert!(result.contains(&0));
         assert!(!result.contains(&1));
     }
@@ -237,7 +254,7 @@ mod tests {
             prefilter.insert(index, vec![pattern]);
         }
 
-        let result = prefilter.check(b"/api/v1/users").unwrap();
+        let result = prefilter.check(b"/api/v1/users");
         assert!(result.contains(&0));
         assert!(result.contains(&1));
     }
@@ -251,7 +268,7 @@ mod tests {
             prefilter.insert(index, vec![pattern]);
         }
 
-        let result = prefilter.check(b"/api/v1").unwrap();
+        let result = prefilter.check(b"/api/v1");
         assert!(result.contains(&0));
         assert!(result.contains(&1));
         assert!(!result.contains(&2));
@@ -271,13 +288,13 @@ mod tests {
             prefilter.insert(index, vec![pattern]);
         }
 
-        let result = prefilter.check(b"/abc/def").unwrap();
+        let result = prefilter.check(b"/abc/def");
         assert!(result.contains(&0));
         assert!(result.contains(&1));
         assert!(result.contains(&2));
         assert!(result.contains(&3));
 
-        let result = prefilter.check(b"/ab").unwrap();
+        let result = prefilter.check(b"/ab");
         assert!(result.contains(&0));
         assert!(result.contains(&1));
         assert!(result.contains(&2));
@@ -306,7 +323,7 @@ mod tests {
         for (index, pattern) in indexes.into_iter().zip(patterns.into_iter()) {
             prefilter.insert(index, vec![pattern]);
         }
-        let result = prefilter.check(b"/target/resource").unwrap();
+        let result = prefilter.check(b"/target/resource");
 
         assert!(result.contains(&1000)); // "/" matches
         assert!(result.contains(&1001)); // "/target" matches
@@ -328,7 +345,7 @@ mod tests {
             prefilter.insert(index, vec![pattern]);
         }
 
-        let result = prefilter.check(b"/api/users/123").unwrap();
+        let result = prefilter.check(b"/api/users/123");
         assert!(result.contains(&0)); // "/" matches
         assert!(result.contains(&1)); // "/api" matches
         assert!(!result.contains(&2)); // "/api/v999" doesn't match
@@ -351,7 +368,7 @@ mod tests {
         assert_eq!(prefilter.num_routes(), 2);
 
         // Verify it's gone
-        let result = prefilter.check(b"/api/v1/users").unwrap();
+        let result = prefilter.check(b"/api/v1/users");
         assert!(result.contains(&0)); // "/api" still matches
         assert!(!result.contains(&1)); // "/api/v1" was removed
 
@@ -362,51 +379,59 @@ mod tests {
     }
 
     #[test]
-    fn test_prefix_map_remove() {
-        let mut map = PrefixInheritanceMap::new();
-        map.insert(BString::from("/api"), 1);
-        map.insert(BString::from("/api/v1"), 2);
-        map.insert(BString::from("/api/v1/users"), 3);
+    fn test_remove_compaction() {
+        let mut prefilter = InnerPrefilter::new();
+        // Build a trie with structure: root -> "a" -> "b" -> "c" (key 0)
+        //                                          -> "x" (key 1)
+        // Removing key 1 should compact "a"+"b" into "ab" since the "b"
+        // node would have no keys and one child.
+        prefilter.insert(0, vec![b"abc".to_vec()]);
+        prefilter.insert(1, vec![b"abx".to_vec()]);
+        prefilter.insert(2, vec![b"a".to_vec()]);
 
-        // All three should match initially
-        let result = map.longest_match(BStr::new(b"/api/v1/users/123"));
-        assert!(result.is_some());
-        let (_, keys) = result.unwrap();
-        assert!(keys.contains(&1));
-        assert!(keys.contains(&2));
-        assert!(keys.contains(&3));
+        // Verify all match before removal
+        assert!(prefilter.check(b"abc_more").contains(&0));
+        assert!(prefilter.check(b"abx_more").contains(&1));
 
-        // Remove from middle prefix
-        map.remove(BStr::new(b"/api/v1"), &2);
+        // Remove key 1 — "ab" node now has one child "c", should compact
+        prefilter.remove(&1);
+        // Key 0 must still work after compaction
+        assert!(prefilter.check(b"abc_more").contains(&0));
+        assert!(prefilter.check(b"a_more").contains(&2));
+        assert!(!prefilter.check(b"abx_more").contains(&1));
 
-        // Key 2 should be removed from /api/v1 and /api/v1/users
-        let result = map.longest_match(BStr::new(b"/api/v1/users/123"));
-        assert!(result.is_some());
-        let (_, keys) = result.unwrap();
-        assert!(keys.contains(&1)); // Still has key from /api
-        assert!(!keys.contains(&2)); // Removed
-        assert!(keys.contains(&3)); // Still has its own key
-
-        // Remove last key from a prefix
-        map.remove(BStr::new(b"/api/v1/users"), &1);
-        map.remove(BStr::new(b"/api/v1/users"), &3);
-
-        // /api/v1/users should be removed entirely since it's empty
-        let result = map.longest_match(BStr::new(b"/api/v1/users/123"));
-        assert!(result.is_some());
-        let (prefix, _) = result.unwrap();
-        // Should only match /api/v1 now (which still has key 1 from /api)
-        assert_eq!(prefix, b"/api/v1" as &[u8]);
+        // Remove key 2, then key 0 — trie should be fully empty
+        prefilter.remove(&2);
+        prefilter.remove(&0);
+        assert!(prefilter.is_empty());
     }
 
     #[test]
-    fn test_no_common_prefix() {
-        let mut map = PrefixInheritanceMap::new();
-        map.insert(BString::from("zzz"), 1);
+    fn test_edge_split_insert() {
+        let mut prefilter = InnerPrefilter::new();
+        // Insert "abcdef" then "abcxyz" — forces a split at "abc"
+        prefilter.insert(0, vec![b"abcdef".to_vec()]);
+        prefilter.insert(1, vec![b"abcxyz".to_vec()]);
 
-        // Search for something that shares no common prefix
-        let result = map.longest_match(BStr::new(b"aaa"));
-        assert_eq!(result, None);
+        assert!(prefilter.check(b"abcdef_more").contains(&0));
+        assert!(prefilter.check(b"abcxyz_more").contains(&1));
+        assert!(!prefilter.check(b"abc").contains(&0));
+        assert!(!prefilter.check(b"abc").contains(&1));
+
+        // Insert "abc" — key at the split point itself
+        prefilter.insert(2, vec![b"abc".to_vec()]);
+        let result = prefilter.check(b"abcdef_more");
+        assert!(result.contains(&0));
+        assert!(result.contains(&2));
+        assert!(!result.contains(&1));
+
+        // Insert "ab" — forces another split higher up
+        prefilter.insert(3, vec![b"ab".to_vec()]);
+        let result = prefilter.check(b"abcxyz_more");
+        assert!(result.contains(&1));
+        assert!(result.contains(&2));
+        assert!(result.contains(&3));
+        assert!(!result.contains(&0));
     }
 
     #[test]

@@ -86,7 +86,14 @@ impl Frame {
             and_literal_prefixes,
         } = self;
         union_prefixes_limited(&mut or_literal_prefixes, and_literal_prefixes, 100);
-        or_literal_prefixes
+        let prefixes = or_literal_prefixes?;
+        if prefixes
+            .first()
+            .is_none_or(|shortest_prefix| shortest_prefix.is_empty())
+        {
+            return None;
+        }
+        Some(prefixes)
     }
 }
 
@@ -167,7 +174,7 @@ impl MatcherVisitor {
         self.frames.last_mut().unwrap()
     }
 
-    pub(crate) fn finish(&mut self) -> literal::Seq {
+    pub(crate) fn finish(&mut self) -> Option<BTreeSet<Vec<u8>>> {
         let Self { frames } = self;
         let frame = match &mut frames[..] {
             [only_frame] => mem::take(only_frame),
@@ -177,11 +184,7 @@ impl MatcherVisitor {
                 panic!("mismatched nesting calls to MatcherVisitor")
             }
         };
-        frame.finish().map_or_else(literal::Seq::infinite, |set| {
-            let mut seq = literal::Seq::new(set);
-            seq.optimize_for_prefix_by_preference();
-            seq
-        })
+        frame.finish()
     }
 
     /// Begins a nested matching context.
@@ -464,37 +467,34 @@ mod tests {
         let mut visitor = MatcherVisitor::new();
         #[expect(clippy::needless_borrow)]
         (&matcher).visit(&mut visitor);
-        let seq = visitor.finish();
-        assert!(seq.literals().is_some());
+        let prefixes = visitor.finish();
+        assert!(prefixes.is_some());
     }
 
     #[test]
     fn test_visit_match_regex_anchored() {
         let mut visitor = MatcherVisitor::new();
         visitor.visit_match_regex(r"^/api/.*");
-        let seq = visitor.finish();
-        let literals = seq.literals().unwrap();
-        assert_eq!(literals.len(), 1);
-        assert_eq!(literals[0].as_bytes(), b"/api/");
+        let prefixes = visitor.finish().unwrap();
+        assert_eq!(prefixes.len(), 1);
+        assert!(prefixes.contains(b"/api/".as_slice()));
     }
 
     #[test]
     fn test_visit_match_regex_unanchored() {
         let mut visitor = MatcherVisitor::new();
         visitor.visit_match_regex(r"/api/.*");
-        let seq = visitor.finish();
         // Unanchored regex should not extract prefixes
-        assert!(seq.literals().is_none());
+        assert!(visitor.finish().is_none());
     }
 
     #[test]
     fn test_visit_match_equals() {
         let mut visitor = MatcherVisitor::new();
         visitor.visit_match_equals("/api/users");
-        let seq = visitor.finish();
-        let literals = seq.literals().unwrap();
-        assert_eq!(literals.len(), 1);
-        assert_eq!(literals[0].as_bytes(), b"/api/users");
+        let prefixes = visitor.finish().unwrap();
+        assert_eq!(prefixes.len(), 1);
+        assert!(prefixes.contains(b"/api/users".as_slice()));
     }
 
     #[test]
@@ -503,10 +503,9 @@ mod tests {
         visitor.visit_nested_start();
         visitor.visit_match_starts_with("/api");
         visitor.visit_nested_finish();
-        let seq = visitor.finish();
-        let literals = seq.literals().unwrap();
-        assert_eq!(literals.len(), 1);
-        assert_eq!(literals[0].as_bytes(), b"/api");
+        let prefixes = visitor.finish().unwrap();
+        assert_eq!(prefixes.len(), 1);
+        assert!(prefixes.contains(b"/api".as_slice()));
     }
 
     #[test]
@@ -515,11 +514,10 @@ mod tests {
         visitor.visit_match_starts_with("/v1");
         visitor.visit_or_in();
         visitor.visit_match_starts_with("/v2");
-        let seq = visitor.finish();
-        let literals = seq.literals().unwrap();
-        assert_eq!(literals.len(), 2);
-        assert!(literals.iter().any(|l| l.as_bytes() == b"/v1"));
-        assert!(literals.iter().any(|l| l.as_bytes() == b"/v2"));
+        let prefixes = visitor.finish().unwrap();
+        assert_eq!(prefixes.len(), 2);
+        assert!(prefixes.contains(b"/v1".as_slice()));
+        assert!(prefixes.contains(b"/v2".as_slice()));
     }
 
     #[test]
@@ -532,12 +530,11 @@ mod tests {
         visitor.visit_or_in();
         visitor.visit_match_starts_with("/v2");
         visitor.visit_nested_finish();
-        let seq = visitor.finish();
-        let literals = seq.literals().unwrap();
+        let prefixes = visitor.finish().unwrap();
         // Should have /v1 and /v2 (both start with /v)
-        assert_eq!(literals.len(), 2);
-        assert!(literals.iter().any(|l| l.as_bytes() == b"/v1"));
-        assert!(literals.iter().any(|l| l.as_bytes() == b"/v2"));
+        assert_eq!(prefixes.len(), 2);
+        assert!(prefixes.contains(b"/v1".as_slice()));
+        assert!(prefixes.contains(b"/v2".as_slice()));
     }
 
     #[test]
