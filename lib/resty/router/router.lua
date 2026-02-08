@@ -66,6 +66,13 @@ function _M:remove_matcher(uuid)
     return clib.router_remove_matcher(self.router, priority, uuid) == true
 end
 
+function _M:enable_prefilter(field)
+    clib.router_enable_prefilter(self.router, field)
+end
+
+function _M:disable_prefilter()
+    clib.router_disable_prefilter(self.router)
+end
 
 function _M:execute(context)
     assert(context.schema == self.schema)
