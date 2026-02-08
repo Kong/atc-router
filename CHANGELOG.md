@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0](https://github.com/Dr-Emann/router-prefilter/compare/v1.2.0...v1.3.0) - 2026-02-08
+
+### Other
+
+- replace BTreeMap-based implmementation with a radix trie
+
 ## [1.2.0](https://github.com/Dr-Emann/router-prefilter/compare/v1.1.1...v1.2.0) - 2026-02-06
 
 ### Added
