@@ -23,8 +23,8 @@ use std::iter::FusedIterator;
 /// # Examples
 ///
 /// ```
-/// use router_prefilter::RouterPrefilter;
-/// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+/// use atc_router_prefilter::RouterPrefilter;
+/// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
 ///
 /// struct Route {
 ///     path: String,
@@ -80,7 +80,7 @@ impl<K> RouterPrefilter<K> {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::RouterPrefilter;
+    /// use atc_router_prefilter::RouterPrefilter;
     ///
     /// let prefilter: RouterPrefilter<usize> = RouterPrefilter::new();
     /// ```
@@ -103,8 +103,8 @@ impl<K> RouterPrefilter<K> {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::RouterPrefilter;
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::RouterPrefilter;
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct Route(&'static str);
     ///
@@ -138,8 +138,8 @@ impl<K> RouterPrefilter<K> {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::RouterPrefilter;
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::RouterPrefilter;
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct Route {
     ///     pattern: &'static str,
@@ -182,8 +182,8 @@ impl<K: Ord> RouterPrefilter<K> {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::RouterPrefilter;
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::RouterPrefilter;
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct Route {
     ///     pattern: &'static str,
@@ -211,8 +211,8 @@ impl<K: Ord> RouterPrefilter<K> {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::RouterPrefilter;
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::RouterPrefilter;
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct Route {
     ///     pattern: &'static str,
@@ -243,8 +243,8 @@ impl<K: Ord> RouterPrefilter<K> {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::RouterPrefilter;
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::RouterPrefilter;
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct Route(&'static str);
     ///
@@ -281,8 +281,8 @@ impl<K: Ord> RouterPrefilter<K> {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::RouterPrefilter;
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::RouterPrefilter;
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct Route(&'static str);
     ///
@@ -306,8 +306,8 @@ impl<K: Ord> RouterPrefilter<K> {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::RouterPrefilter;
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::RouterPrefilter;
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct Route(&'static str);
     ///
@@ -335,8 +335,8 @@ impl<K: Ord> RouterPrefilter<K> {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::RouterPrefilter;
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::RouterPrefilter;
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct Route(&'static str);
     ///

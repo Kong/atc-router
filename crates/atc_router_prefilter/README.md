@@ -1,4 +1,6 @@
-# router_prefilter
+# atc_router_prefilter
+
+Kong's fork of [`router_prefilter`].
 
 Fast prefix-based prefiltering for router pattern matching.
 
@@ -7,8 +9,8 @@ This crate provides efficient prefiltering of route matchers by extracting and i
 ## Usage
 
 ```rust
-use router_prefilter::RouterPrefilter;
-use router_prefilter::matchers::{Matcher, MatcherVisitor};
+use atc_router_prefilter::RouterPrefilter;
+use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
 
 struct RoutePattern {
     regex: String,
@@ -44,3 +46,5 @@ If we are able to find a small set of prefixes where one _must_ match at the beg
 e.g. `path startsWith "/abc" OR path matchesRegex "^/ef[gh]"`: the path must start with either `/abc`, `/efg` or `/efh`.
 Alternations which cannot be proved to start with anything will cause prefiltering to be impossible for that route.
 e.g. `path startsWith "/abc" OR path endsWith "zzz"`: prefiltering is impossible because the path could start with _anything_.
+
+[`router_prefilter`]: https://github.com/Dr-Emann/router-prefilter

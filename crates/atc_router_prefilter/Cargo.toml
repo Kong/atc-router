@@ -1,13 +1,13 @@
 [package]
-name = "router_prefilter"
+name = "atc_router_prefilter"
 version = "1.3.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
-description = "Fast prefix-based prefiltering for router pattern matching"
+description = "Fast prefix-based prefiltering for router pattern matching. Kong's fork of router_prefilter."
 categories = ["data-structures"]
 keywords = ["router", "routing", "prefilter", "http", "performance"]
 authors = ["Zachary Dremann <dremann@gmail.com>"]
-repository = "https://github.com/Dr-Emann/router-prefilter"
+repository = "https://github.com/Kong/atc-router"
 
 [dependencies]
 regex-syntax = "0.8"
@@ -21,7 +21,3 @@ regex = "1.12.2"
 [[bench]]
 name = "router_bench"
 harness = false
-
-[profile.samply]
-inherits = "release"
-debug = true

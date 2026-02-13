@@ -12,7 +12,7 @@
 //! # Example
 //!
 //! ```
-//! use router_prefilter::matchers::{Matcher, MatcherVisitor};
+//! use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
 //!
 //! struct RoutePattern {
 //!     prefix: String,
@@ -38,7 +38,7 @@ use std::mem;
 /// # Examples
 ///
 /// ```
-/// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+/// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
 ///
 /// struct PrefixMatcher {
 ///     prefix: String,
@@ -109,7 +109,7 @@ impl Frame {
 /// Basic usage with a simple prefix:
 ///
 /// ```
-/// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+/// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
 ///
 /// enum RouteMatcher {
 ///     And(Box<RouteMatcher>, Box<RouteMatcher>),
@@ -142,7 +142,7 @@ impl Frame {
 /// Complex pattern with nesting:
 ///
 /// ```
-/// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+/// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
 ///
 /// struct VersionedRoute;
 ///
@@ -197,7 +197,7 @@ impl MatcherVisitor {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct NestedRoute;
     ///
@@ -230,7 +230,7 @@ impl MatcherVisitor {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct NestedRoute;
     ///
@@ -269,7 +269,7 @@ impl MatcherVisitor {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct MultiVersionRoute;
     ///
@@ -298,7 +298,7 @@ impl MatcherVisitor {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct RegexRoute(&'static str);
     ///
@@ -322,7 +322,7 @@ impl MatcherVisitor {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct ExactRoute(&'static str);
     ///
@@ -344,7 +344,7 @@ impl MatcherVisitor {
     /// # Examples
     ///
     /// ```
-    /// use router_prefilter::matchers::{Matcher, MatcherVisitor};
+    /// use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
     ///
     /// struct PrefixRoute(&'static str);
     ///

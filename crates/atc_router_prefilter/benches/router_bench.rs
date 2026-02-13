@@ -1,8 +1,8 @@
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use rand::prelude::*;
 use regex::Regex;
-use router_prefilter::RouterPrefilter;
-use router_prefilter::matchers::{Matcher, MatcherVisitor};
+use atc_router_prefilter::RouterPrefilter;
+use atc_router_prefilter::matchers::{Matcher, MatcherVisitor};
 use std::fs;
 use std::hint::black_box;
 use std::sync::LazyLock;
