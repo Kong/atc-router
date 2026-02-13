@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1](https://github.com/Dr-Emann/router-prefilter/compare/v1.3.0...v1.3.1) - 2026-02-13
+
+### Other
+
+- *(deps)* update rand to published 0.10 version in dev dependencies
+
 ## [1.3.0](https://github.com/Dr-Emann/router-prefilter/compare/v1.2.0...v1.3.0) - 2026-02-08
 
 ### Other
