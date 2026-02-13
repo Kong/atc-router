@@ -1,8 +1,7 @@
 use crate::ast::Value;
 use crate::context::Context;
-use crate::ffi::{CValue, ERR_BUF_MAX_LEN};
+use crate::ffi::{write_errbuf, CValue};
 use crate::schema::Schema;
-use std::cmp::min;
 use std::ffi;
 use std::os::raw::c_char;
 use std::slice::from_raw_parts_mut;
@@ -78,9 +77,8 @@ pub unsafe extern "C" fn context_free(context: *mut Context) {
 /// * `field` must be a valid pointer to a C-style string,
 ///   must be properply aligned, and must not have '\0' in the middle.
 /// * `value` must be a valid pointer to a [`CValue`].
-/// * `errbuf` must be valid to read and write for `errbuf_len * size_of::<u8>()` bytes,
-///   and it must be properly aligned.
-/// * `errbuf_len` must be vlaid to read and write for `size_of::<usize>()` bytes,
+/// * `errbuf` must be valid to read and write for `*errbuf_len` bytes.
+/// * `errbuf_len` must be valid to read and write for `size_of::<usize>()` bytes,
 ///   and it must be properly aligned.
 #[no_mangle]
 pub unsafe extern "C" fn context_add_value(
@@ -88,18 +86,15 @@ pub unsafe extern "C" fn context_add_value(
     field: *const i8,
     value: &CValue,
     errbuf: *mut u8,
-    errbuf_len: *mut usize,
+    errbuf_len: &mut usize,
 ) -> bool {
     let field = ffi::CStr::from_ptr(field as *const c_char)
         .to_str()
         .unwrap();
-    let errbuf = from_raw_parts_mut(errbuf, ERR_BUF_MAX_LEN);
 
     let value: Result<Value, _> = value.try_into();
     if let Err(e) = value {
-        let errlen = min(e.len(), *errbuf_len);
-        errbuf[..errlen].copy_from_slice(&e.as_bytes()[..errlen]);
-        *errbuf_len = errlen;
+        write_errbuf(e, errbuf, errbuf_len);
         return false;
     }
 
@@ -165,9 +160,9 @@ pub unsafe extern "C" fn context_reset(context: &mut Context) {
 ///   must be passed to [`router_execute`] before calling this function,
 ///   and must not be reset by [`context_reset`] before calling this function.
 /// - If `uuid_hex` is not `NULL`, `uuid_hex` must be valid to read and write for
-///   `16 * size_of::<u8>()` bytes, and it must be properly aligned.
+///   `36` bytes.
 /// - If `matched_field` is not `NULL`,
-///   `matched_field` must be a vlaid pointer to a C-style string,
+///   `matched_field` must be a valid pointer to a C-style string,
 ///   must be properly aligned, and must not have '\0' in the middle.
 /// - If `matched_value` is not `NULL`,
 ///   `matched_value` must be valid to read and write for
