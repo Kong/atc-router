@@ -35,6 +35,9 @@ use std::mem;
 /// Implementors use the [`MatcherVisitor`] to describe their matching logic,
 /// allowing the prefilter to extract literal prefixes for fast filtering.
 ///
+/// See the docs on [`MatcherVisitor`] for information about how to use the visitor describe the
+/// requirements of this matcher.
+///
 /// # Examples
 ///
 /// ```
@@ -99,10 +102,43 @@ impl Frame {
 
 /// Visitor for extracting literal prefixes from matcher patterns.
 ///
-/// Supports AND, OR, and nested pattern combinations. Extracted prefixes
-/// are used to build the prefilter's lookup structure.
-///
+/// Extracted prefixes are used to build the prefilter's lookup structure.
 /// Instances of this visitor are passed to [`Matcher::visit`] implementations.
+///
+/// The visitor methods build a boolean expression over matcher constraints.
+/// Like most expression languages, **AND** binds tighter than **OR**:
+/// consecutive `visit_match_*` calls are **AND**-ed together, and
+/// [`visit_or_in`] separates groups of those calls into alternatives.
+///
+/// Use [`visit_nested_start`] and [`visit_nested_finish`] to override
+/// precedence, just like parentheses in an expression. The result of a
+/// nested group is **AND**-ed with the surrounding context.
+///
+/// For example,
+/// ```
+/// use router_prefilter::matchers::MatcherVisitor;
+/// fn visit(visitor: &mut MatcherVisitor) {
+///     visitor.visit_match_starts_with("A");
+///     visitor.visit_match_starts_with("B");
+///     visitor.visit_or_in();
+///     visitor.visit_match_starts_with("C");
+///     visitor.visit_match_starts_with("D");
+/// }
+/// ```
+/// is interpreted as `(A && B) || (C && D)`, to instead match as `A && (B | C) && D`, introduce a
+/// level of nesting:
+/// ```
+/// use router_prefilter::matchers::MatcherVisitor;
+/// fn visit(visitor: &mut MatcherVisitor) {
+///     visitor.visit_match_starts_with("A");
+///     visitor.visit_nested_start();
+///     visitor.visit_match_starts_with("B");
+///     visitor.visit_or_in();
+///     visitor.visit_match_starts_with("C");
+///     visitor.visit_nested_finish();
+///     visitor.visit_match_starts_with("D");
+/// }
+/// ```
 ///
 /// # Examples
 ///
@@ -158,6 +194,10 @@ impl Frame {
 ///     }
 /// }
 /// ```
+///
+/// [`visit_nested_start`]: Self::visit_nested_start
+/// [`visit_nested_finish`]: Self::visit_nested_finish
+/// [`visit_or_in`]: Self::visit_or_in
 #[derive(Debug)]
 pub struct MatcherVisitor {
     frames: Vec<Frame>,
