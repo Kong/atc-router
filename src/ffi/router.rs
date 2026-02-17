@@ -147,6 +147,48 @@ pub unsafe extern "C" fn router_remove_matcher(
     router.remove_matcher(priority, uuid)
 }
 
+/// Enable prefiltering on the specified field.
+///
+/// # Arguments
+/// - `router`: a pointer to the [`Router`] object returned by [`router_new`].
+/// - `field`: a pointer to a C-style string representing the field name.
+///
+/// # Panics
+///
+/// This function will panic when:
+///
+/// - `field` doesn't point to a valid C-style string which is a string field in the router's schema
+///
+/// # Safety
+///
+/// Violating any of the following constraints will result in undefined behavior:
+///
+/// - `router` must be a valid pointer returned by [`router_new`].
+/// - `field` must be a valid pointer to a C-style string, must be properly aligned,
+///   and must not have '\0' in the middle.
+#[no_mangle]
+pub unsafe extern "C" fn router_enable_prefilter(router: &mut Router<&Schema>, field: *const u8) {
+    let field = ffi::CStr::from_ptr(field as *const c_char)
+        .to_str()
+        .unwrap();
+    router.enable_prefilter(field);
+}
+
+/// Disable prefiltering.
+///
+/// # Arguments
+/// - `router`: a pointer to the [`Router`] object returned by [`router_new`].
+///
+/// # Safety
+///
+/// Violating any of the following constraints will result in undefined behavior:
+///
+/// - `router` must be a valid pointer returned by [`router_new`].
+#[no_mangle]
+pub unsafe extern "C" fn router_disable_prefilter(router: &mut Router<&Schema>) {
+    router.disable_prefilter();
+}
+
 /// Execute the router with the context.
 ///
 /// # Arguments
