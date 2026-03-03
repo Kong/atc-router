@@ -429,6 +429,23 @@ fn union_prefixes_limited(
     }
 }
 
+/// Computes the prefix-aware intersection of `lhs` and `rhs`, writing matching elements into `dst`.
+///
+/// A pair `(l, r)` contributes to `dst` when one is a prefix of the other; the more specific
+/// element (the one that starts with the other) is inserted. Both input sets are (at least partly)
+/// drained during the operation.
+///
+/// This computes the AND of two OR-prefix constraints. Each set represents an OR constraint:
+/// the input must start with at least one element in the set.
+///
+/// For example, combining `["a", "box", "z"]` and `["apple", "ankle", "bo", "dog"]`
+/// yields `["apple", "ankle", "box"]`. If the target string must start with (one of a, box, z)
+/// AND (one of apple, ankle, bo, dog), the target string must start with either apple, ankle,
+/// or box to match.
+///
+/// Returns [`None`] when either set is exhausted, acting as the loop exit signal. The
+/// [`Infallible`] bound ensures [`Some`] is never constructed — the `?` operator is used purely
+/// for control flow.
 fn intersect_prefix_expansions_into(
     dst: &mut BTreeSet<Vec<u8>>,
     lhs: &mut BTreeSet<Vec<u8>>,
@@ -455,6 +472,7 @@ fn intersect_prefix_expansions_into(
     }
 }
 
+/// See [`intersect_prefix_expansions_into`] for details
 fn intersect_prefix_expansions(
     lhs: &mut Option<BTreeSet<Vec<u8>>>,
     rhs: Option<BTreeSet<Vec<u8>>>,
