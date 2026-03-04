@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.3](https://github.com/Dr-Emann/router-prefilter/compare/v1.3.2...v1.3.3) - 2026-03-03
+
+### Other
+
+- add unit tests for intersect_prefix_expansions_into function
+- add docs about what intersecting with prefix expansion means/does
+
+## [1.3.2](https://github.com/Dr-Emann/router-prefilter/compare/v1.3.1...v1.3.2) - 2026-02-16
+
+### Other
+
+- add more documentation on how to call the visitor functions
+
 ## [1.3.1](https://github.com/Dr-Emann/router-prefilter/compare/v1.3.0...v1.3.1) - 2026-02-13
 
 ### Other

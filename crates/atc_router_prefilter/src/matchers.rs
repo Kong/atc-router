@@ -429,6 +429,23 @@ fn union_prefixes_limited(
     }
 }
 
+/// Computes the prefix-aware intersection of `lhs` and `rhs`, writing matching elements into `dst`.
+///
+/// A pair `(l, r)` contributes to `dst` when one is a prefix of the other; the more specific
+/// element (the one that starts with the other) is inserted. Both input sets are (at least partly)
+/// drained during the operation.
+///
+/// This computes the AND of two OR-prefix constraints. Each set represents an OR constraint:
+/// the input must start with at least one element in the set.
+///
+/// For example, combining `["a", "box", "z"]` and `["apple", "ankle", "bo", "dog"]`
+/// yields `["apple", "ankle", "box"]`. If the target string must start with (one of a, box, z)
+/// AND (one of apple, ankle, bo, dog), the target string must start with either apple, ankle,
+/// or box to match.
+///
+/// Returns [`None`] when either set is exhausted, acting as the loop exit signal. The
+/// [`Infallible`] bound ensures [`Some`] is never constructed — the `?` operator is used purely
+/// for control flow.
 fn intersect_prefix_expansions_into(
     dst: &mut BTreeSet<Vec<u8>>,
     lhs: &mut BTreeSet<Vec<u8>>,
@@ -455,6 +472,7 @@ fn intersect_prefix_expansions_into(
     }
 }
 
+/// See [`intersect_prefix_expansions_into`] for details
 fn intersect_prefix_expansions(
     lhs: &mut Option<BTreeSet<Vec<u8>>>,
     rhs: Option<BTreeSet<Vec<u8>>>,
@@ -639,6 +657,87 @@ mod tests {
         // /a is a prefix of /api, so /api should be in the result
         let result = lhs.unwrap();
         assert!(result.contains(b"/api".as_slice()));
+    }
+
+    fn make_set(items: &[&str]) -> BTreeSet<Vec<u8>> {
+        let mut result = BTreeSet::new();
+        for item in items {
+            result.insert(item.as_bytes().to_vec());
+        }
+        result
+    }
+
+    fn run_intersect(lhs: &[&str], rhs: &[&str]) -> BTreeSet<Vec<u8>> {
+        let mut dst = BTreeSet::new();
+        _ = intersect_prefix_expansions_into(&mut dst, &mut make_set(lhs), &mut make_set(rhs));
+        dst
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_into_doc_example() {
+        let result = run_intersect(&["a", "box", "z"], &["ankle", "apple", "bo", "dog"]);
+        assert_eq!(result, make_set(&["ankle", "apple", "box"]));
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_into_empty_lhs() {
+        let result = run_intersect(&[], &["abc"]);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_into_empty_rhs() {
+        let result = run_intersect(&["abc"], &[]);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_into_no_overlap() {
+        let result = run_intersect(&["abc"], &["xyz"]);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_into_exact_match() {
+        let result = run_intersect(&["abc"], &["abc"]);
+        assert_eq!(result, make_set(&["abc"]));
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_into_lhs_prefix_of_rhs() {
+        // "ab" is a prefix of "abcd", so "abcd" (the more specific) is inserted
+        let result = run_intersect(&["ab"], &["abcd"]);
+        assert_eq!(result, make_set(&["abcd"]));
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_into_rhs_prefix_of_lhs() {
+        // "ab" is a prefix of "abcd", so "abcd" (the more specific) is inserted
+        let result = run_intersect(&["abcd"], &["ab"]);
+        assert_eq!(result, make_set(&["abcd"]));
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_into_one_to_many() {
+        // "a" is a prefix of all three rhs elements
+        let result = run_intersect(&["a"], &["aa", "ab", "ac"]);
+        assert_eq!(result, make_set(&["aa", "ab", "ac"]));
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_into_nested_prefixes_on_one_side() {
+        // "a" and "aaaaa" are both in lhs, where "a" is a prefix of "aaaaa".
+        // Any r that would match "aaaaa" also matches "a", so "a" catches it first.
+        // "aaaaa" contributes nothing extra; the result is still correct.
+        let result = run_intersect(&["a", "aaaaa", "ba"], &["aaab", "ba"]);
+        assert_eq!(result, make_set(&["aaab", "ba"]));
+    }
+
+    #[test]
+    fn test_intersect_prefix_expansions_into_multiple_lhs_prefixes() {
+        // "a" matches "ab" from rhs; "b" matches "bcd" from rhs
+        let result = run_intersect(&["ab", "b"], &["a", "bcd"]);
+        assert_eq!(result, make_set(&["ab", "bcd"]));
     }
 
     #[test]
