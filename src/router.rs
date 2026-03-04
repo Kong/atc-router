@@ -17,6 +17,9 @@ struct MatcherKey(usize, Uuid);
 #[derive(Debug)]
 struct PrefilteredField {
     field: String,
+    // RouterPrefilter returns prefiltered matches in ascending order, but we want to
+    // visit them in _descending_ order, so higher priority matches are checked first, so
+    // use Reverse to reverse the sort order.
     prefilter: RouterPrefilter<Reverse<MatcherKey>>,
 }
 
