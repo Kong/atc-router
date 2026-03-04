@@ -16,6 +16,8 @@ ATC Router library for Kong.
         * [new](#new)
         * [add\_matcher](#add_matcher)
         * [remove\_matcher](#remove_matcher)
+        * [enable\_prefilter](#enable_prefilter)
+        * [disable\_prefilter](#disable_prefilter)
         * [execute](#execute)
         * [get\_fields](#get_fields)
         * [validate](#validate)
@@ -162,6 +164,29 @@ Remove matcher with `uuid` from the router.
 
 Returns `true` if the matcher has successfully been removed. `false` if the
 matcher does not exist.
+
+[Back to TOC](#table-of-contents)
+
+### enable\_prefilter
+
+**syntax:** *r:enable_prefilter(field)*
+
+**context:** *any*
+
+Enables prefiltering on the specified `field`. The field must be of type `String`
+in the router's schema. When enabled, the router uses the prefilter to narrow down
+candidate matchers before performing full evaluation, which can improve match
+performance.
+
+[Back to TOC](#table-of-contents)
+
+### disable\_prefilter
+
+**syntax:** *r:disable_prefilter()*
+
+**context:** *any*
+
+Disables prefiltering on the router, reverting to the default matching behavior.
 
 [Back to TOC](#table-of-contents)
 
