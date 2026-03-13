@@ -22,12 +22,14 @@ serde = { version = "1.0", features = ["derive"], optional = true }
 serde_regex = { version = "1.1", optional = true }
 fnv = "1"
 bitflags = { version = "2.6", optional = true }
+atc_router_prefilter = { version = "1.0", path = "crates/atc_router_prefilter" }
 
 [dev-dependencies]
 criterion = "0"
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
+bench = false
 
 [features]
 default = ["ffi"]
@@ -42,3 +44,10 @@ harness = false
 [[bench]]
 name = "match_mix"
 harness = false
+
+[[bench]]
+name = "worst_case"
+harness = false
+
+[workspace]
+members = ["crates/*"]

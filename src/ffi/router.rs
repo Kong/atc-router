@@ -147,6 +147,73 @@ pub unsafe extern "C" fn router_remove_matcher(
     router.remove_matcher(priority, uuid)
 }
 
+/// Enable prefiltering on the specified field.
+///
+/// # Arguments
+/// - `router`: a pointer to the [`Router`] object returned by [`router_new`].
+/// - `field`: a pointer to a C-style string representing the field name.
+/// - `errbuf`: a buffer to store the error message.
+/// - `errbuf_len`: a pointer to the length of the error message buffer.
+///
+/// # Returns
+///
+/// Returns `true` if the prefilter was added successfully, otherwise `false`,
+/// and the error message will be stored in the `errbuf`,
+/// and the length of the error message will be stored in `errbuf_len`.
+///
+/// # Errors
+///
+/// This function will return `false` if the prefilter could not be added to the router,
+/// such as invalid field (not in the schema, not a string field).
+///
+/// # Panics
+///
+/// This function will panic when:
+///
+/// - `field` doesn't point to a valid C-style string which is a string field in the router's schema
+///
+/// # Safety
+///
+/// Violating any of the following constraints will result in undefined behavior:
+///
+/// - `router` must be a valid pointer returned by [`router_new`].
+/// - `field` must be a valid pointer to a C-style string, must be properly aligned,
+///   and must not have '\0' in the middle.
+/// - `errbuf` must be valid to read and write for `*errbuf_len` bytes.
+/// - `errbuf_len` must be valid to read and write for `size_of::<usize>()` bytes,
+///   and it must be properly aligned.
+#[no_mangle]
+pub unsafe extern "C" fn router_enable_prefilter(
+    router: &mut Router<&Schema>,
+    field: *const u8,
+    errbuf: *mut u8,
+    errbuf_len: &mut usize,
+) -> bool {
+    let field = ffi::CStr::from_ptr(field as *const c_char)
+        .to_str()
+        .unwrap();
+    if let Err(e) = router.enable_prefilter(field) {
+        write_errbuf(e, errbuf, errbuf_len);
+        return false;
+    }
+    true
+}
+
+/// Disable prefiltering.
+///
+/// # Arguments
+/// - `router`: a pointer to the [`Router`] object returned by [`router_new`].
+///
+/// # Safety
+///
+/// Violating any of the following constraints will result in undefined behavior:
+///
+/// - `router` must be a valid pointer returned by [`router_new`].
+#[no_mangle]
+pub unsafe extern "C" fn router_disable_prefilter(router: &mut Router<&Schema>) {
+    router.disable_prefilter();
+}
+
 /// Execute the router with the context.
 ///
 /// # Arguments

@@ -64,6 +64,10 @@ bool router_add_matcher(struct Router *router,
 
 bool router_remove_matcher(struct Router *router, uintptr_t priority, const int8_t *uuid);
 
+bool router_enable_prefilter(struct Router *router, const uint8_t *field, uint8_t *errbuf, uintptr_t *errbuf_len);
+
+void router_disable_prefilter(struct Router *router);
+
 bool router_execute(const struct Router *router, struct Context *context);
 
 uintptr_t router_get_fields(const struct Router *router,
