@@ -180,7 +180,7 @@ where
         }
         let mut prefilter = RouterPrefilter::new();
         for (key, expr) in &self.matchers {
-            prefilter.insert(Reverse(key.clone()), ExprMatcher { expr, field });
+            prefilter.insert(Reverse(*key), ExprMatcher { expr, field });
         }
         self.prefiltered_field = Some(PrefilteredField {
             field: field.to_string(),
