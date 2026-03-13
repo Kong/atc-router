@@ -36,6 +36,7 @@ __DATA__
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
+            assert(r:enable_prefilter("http.path"))
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path contains \"keyword\" && tcp.port == 80"))
 
@@ -80,6 +81,7 @@ nil
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
+            assert(r:enable_prefilter("http.path"))
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path contains \"keyword\" && tcp.port == 80"))
 

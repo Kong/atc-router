@@ -36,9 +36,9 @@ __DATA__
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
-            r:enable_prefilter("http.path")
+            assert(r:enable_prefilter("http.path"))
             r:disable_prefilter()
-            r:enable_prefilter("http.path")
+            assert(r:enable_prefilter("http.path"))
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
 
@@ -82,6 +82,7 @@ a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
+            assert(r:enable_prefilter("http.path"))
             assert(r:add_matcher(1, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150d",
@@ -126,6 +127,7 @@ uuid = a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c prefix = /foo
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
+            assert(r:enable_prefilter("http.path"))
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
 
@@ -179,6 +181,7 @@ false
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
+            assert(r:enable_prefilter("http.path"))
             ngx.say(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                   "http.path = \"/foo\" && tcp.port == 80"))
         }
@@ -214,6 +217,7 @@ nil --> 1:11
             s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
+            assert(r:enable_prefilter("http.path"))
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path ^= \"/foo\" && tcp.port == 80"))
 
