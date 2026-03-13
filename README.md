@@ -169,7 +169,7 @@ matcher does not exist.
 
 ### enable\_prefilter
 
-**syntax:** *r:enable_prefilter(field)*
+**syntax:** *res, err = r:enable_prefilter(field)*
 
 **context:** *any*
 
@@ -177,6 +177,13 @@ Enables prefiltering on the specified `field`. The field must be of type `String
 in the router's schema. When enabled, the router uses the prefilter to narrow down
 candidate matchers before performing full evaluation, which can improve match
 performance.
+
+Calling this method requires building a prefilter for all current matchers: it may be 
+expensive. It is expected that this method will be called only once for a router. The
+prefilter will be kept up to date with any added and removed matchers, until this method
+is called again with a different field name, or the disable_prefilter method is called.
+
+If an error occurred, `nil` and a string describing the error will be returned.
 
 [Back to TOC](#table-of-contents)
 

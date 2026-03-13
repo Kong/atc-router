@@ -156,11 +156,27 @@ where
     }
 
     /// Enable prefiltering on the specified field.
-    pub fn enable_prefilter(&mut self, field: &str) {
+    ///
+    /// This will compile a prefilter for all currently existing matchers, and all future added
+    /// matchers will be added to the prefilter. This can be an expensive call if there are a lot
+    /// of matchers.
+    ///
+    /// Calling
+    pub fn enable_prefilter(&mut self, field: &str) -> Result<(), String> {
+        if let Some(prefiltered_field) = &self.prefiltered_field {
+            if prefiltered_field.field == field {
+                // Already prefiltered by this field
+                return Ok(());
+            }
+        }
         match self.schema.borrow().type_of(field) {
             Some(Type::String) => {}
-            Some(actual) => panic!("Field {field} is of type {actual:?}, must be a string"),
-            None => panic!("Field {field} is not in schema"),
+            Some(actual) => {
+                return Err(format!(
+                    "Field {field} is of type {actual:?}, must be a string"
+                ))
+            }
+            None => return Err(format!("Field {field} is not in schema")),
         }
         let mut prefilter = RouterPrefilter::new();
         for (key, expr) in &self.matchers {
@@ -170,6 +186,7 @@ where
             field: field.to_string(),
             prefilter,
         });
+        Ok(())
     }
 
     /// Disable prefiltering.

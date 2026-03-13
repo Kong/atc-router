@@ -67,7 +67,15 @@ function _M:remove_matcher(uuid)
 end
 
 function _M:enable_prefilter(field)
-    clib.router_enable_prefilter(self.router, field)
+    local errbuf = get_string_buf(ERR_BUF_MAX_LEN)
+    local errbuf_len = get_size_ptr()
+    errbuf_len[0] = ERR_BUF_MAX_LEN
+
+    if clib.router_enable_prefilter(self.router, field, errbuf, errbuf_len) == false then
+        return nil, ffi_string(errbuf, errbuf_len[0])
+    end
+
+    return true
 end
 
 function _M:disable_prefilter()
