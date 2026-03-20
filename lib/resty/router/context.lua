@@ -63,6 +63,9 @@ function _M:add_value(field, value)
     elseif typ == "Bool" then
         CACHED_VALUE[0].tag = C.CValue_Bool
         CACHED_VALUE[0].bool_ = value
+
+    else
+        return nil, "cannot set context value for field of type " .. typ
     end
 
     local errbuf = get_string_buf(ERR_BUF_MAX_LEN)
