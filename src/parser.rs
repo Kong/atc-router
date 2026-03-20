@@ -1,7 +1,8 @@
 extern crate pest;
 
 use crate::ast::{
-    BinaryOperator, Expression, Lhs, LhsTransformations, LogicalExpression, Predicate, Value,
+    BinaryOperator, Expression, Lhs, LhsTransformations, LogicalExpression, Predicate,
+    PredicateRhs, Value,
 };
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
 use pest::error::Error as ParseError;
@@ -14,6 +15,11 @@ use regex::Regex;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 type ParseResult<T> = Result<T, ParseError<Rule>>;
+
+enum ParsedRhs {
+    Value(Value),
+    Nil,
+}
 
 /// cbindgen:ignore
 // Bug: https://github.com/eqrion/cbindgen/issues/286
@@ -95,20 +101,29 @@ fn parse_lhs(pair: Pair<Rule>) -> ParseResult<Lhs> {
     })
 }
 
-// rhs = { str_literal | ip_literal | int_literal }
+// rhs = { str_literal | ip_literal | int_literal | nil_literal }
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
-fn parse_rhs(pair: Pair<Rule>) -> ParseResult<Value> {
+fn parse_rhs(pair: Pair<Rule>) -> ParseResult<ParsedRhs> {
     let pairs = pair.into_inner();
     let pair = pairs.peek().unwrap();
     let rule = pair.as_rule();
     Ok(match rule {
-        Rule::str_literal => Value::String(parse_str_literal(pair)?),
-        Rule::rawstr_literal => Value::String(parse_rawstr_literal(pair)?),
-        Rule::ipv4_cidr_literal => Value::IpCidr(IpCidr::V4(parse_ipv4_cidr_literal(pair)?)),
-        Rule::ipv6_cidr_literal => Value::IpCidr(IpCidr::V6(parse_ipv6_cidr_literal(pair)?)),
-        Rule::ipv4_literal => Value::IpAddr(IpAddr::V4(parse_ipv4_literal(pair)?)),
-        Rule::ipv6_literal => Value::IpAddr(IpAddr::V6(parse_ipv6_literal(pair)?)),
-        Rule::int_literal => Value::Int(parse_int_literal(pair)?),
+        Rule::str_literal => ParsedRhs::Value(Value::String(parse_str_literal(pair)?)),
+        Rule::rawstr_literal => ParsedRhs::Value(Value::String(parse_rawstr_literal(pair)?)),
+        Rule::ipv4_cidr_literal => {
+            ParsedRhs::Value(Value::IpCidr(IpCidr::V4(parse_ipv4_cidr_literal(pair)?)))
+        }
+        Rule::ipv6_cidr_literal => {
+            ParsedRhs::Value(Value::IpCidr(IpCidr::V6(parse_ipv6_cidr_literal(pair)?)))
+        }
+        Rule::ipv4_literal => {
+            ParsedRhs::Value(Value::IpAddr(IpAddr::V4(parse_ipv4_literal(pair)?)))
+        }
+        Rule::ipv6_literal => {
+            ParsedRhs::Value(Value::IpAddr(IpAddr::V6(parse_ipv6_literal(pair)?)))
+        }
+        Rule::int_literal => ParsedRhs::Value(Value::Int(parse_int_literal(pair)?)),
+        Rule::nil_literal => ParsedRhs::Nil,
         _ => unreachable!(),
     })
 }
@@ -212,28 +227,31 @@ fn parse_predicate(pair: Pair<Rule>) -> ParseResult<Predicate> {
     let rhs = parse_rhs(rhs_pair.clone())?;
     Ok(Predicate {
         lhs,
-        rhs: if op == BinaryOperator::Regex {
-            let Value::String(s) = rhs else {
-                return Err(ParseError::new_from_span(
-                    ErrorVariant::CustomError {
-                        message: "regex operator can only be used with String operands".to_string(),
-                    },
-                    rhs_pair.as_span(),
-                ));
-            };
+        rhs: match rhs {
+            ParsedRhs::Nil => PredicateRhs::Missing,
+            ParsedRhs::Value(rhs) if op == BinaryOperator::Regex => {
+                let Value::String(s) = rhs else {
+                    return Err(ParseError::new_from_span(
+                        ErrorVariant::CustomError {
+                            message: "regex operator can only be used with String operands"
+                                .to_string(),
+                        },
+                        rhs_pair.as_span(),
+                    ));
+                };
 
-            let r = Regex::new(&s).map_err(|e| {
-                ParseError::new_from_span(
-                    ErrorVariant::CustomError {
-                        message: e.to_string(),
-                    },
-                    rhs_pair.as_span(),
-                )
-            })?;
+                let r = Regex::new(&s).map_err(|e| {
+                    ParseError::new_from_span(
+                        ErrorVariant::CustomError {
+                            message: e.to_string(),
+                        },
+                        rhs_pair.as_span(),
+                    )
+                })?;
 
-            Value::Regex(r)
-        } else {
-            rhs
+                PredicateRhs::Value(Value::Regex(r))
+            }
+            ParsedRhs::Value(rhs) => PredicateRhs::Value(rhs),
         },
         op,
     })

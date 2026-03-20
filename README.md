@@ -40,6 +40,10 @@ Each data referred in the DSL has a type, the type can be one of the following:
 * `IpAddr` - a single IP address that can be checked against an `IpCidr`
 * `Int` - an 64-bit signed integer
 
+`nil` is not a schema type. In expressions, `field == nil` and `field != nil`
+can be used to test whether a schema-known field is missing from, or present in,
+the runtime context.
+
 Please refer to the [documentation](https://docs.konghq.com/gateway/latest/reference/expressions-language/)
 on Kong website for how the language is used in practice.
 
@@ -271,4 +275,3 @@ Licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses
 Files in the project may not be copied, modified, or distributed except according to those terms.
 
 [Back to TOC](#table-of-contents)
-

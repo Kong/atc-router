@@ -1,4 +1,4 @@
-use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type, Value};
+use crate::ast::{BinaryOperator, Expression, LogicalExpression, PredicateRhs, Type, Value};
 use crate::schema::Schema;
 use std::collections::HashMap;
 
@@ -76,6 +76,8 @@ const MSG_ONLY_FOR_INT: &str =
     "Greater/GreaterOrEqual/Less/LessOrEqual operators only supports integer operands";
 const MSG_ONLY_FOR_CIDR: &str = "In/NotIn operators only supports IP in CIDR";
 const MSG_CONTAINS_ONLY_FOR_CIDR: &str = "Contains operator only supports string operands";
+const MSG_NIL_ONLY_FOR_EQUALS: &str = "nil checks only support == and != operators";
+const MSG_NIL_NO_TRANSFORMATIONS: &str = "nil checks do not support lhs transformations";
 
 impl Validate for Expression {
     fn validate(&self, schema: &Schema) -> ValidationResult {
@@ -107,15 +109,30 @@ impl Validate for Expression {
                     return raise_err(MSG_UNKNOWN_LHS);
                 };
 
+                let (lower, any) = p.lhs.get_transformations();
+
+                if matches!(p.rhs, PredicateRhs::Missing) {
+                    if lower || any {
+                        return raise_err(MSG_NIL_NO_TRANSFORMATIONS);
+                    }
+
+                    return match p.op {
+                        Equals | NotEquals => Ok(()),
+                        _ => raise_err(MSG_NIL_ONLY_FOR_EQUALS),
+                    };
+                }
+
+                let PredicateRhs::Value(rhs) = &p.rhs else {
+                    unreachable!();
+                };
+
                 if p.op != Regex // Regex RHS is always Regex, and LHS is always String
                     && p.op != In // In/NotIn supports IPAddr in IpCidr
                     && p.op != NotIn
-                    && lhs_type != &p.rhs.my_type()
+                    && lhs_type != &rhs.my_type()
                 {
                     return raise_err(MSG_TYPE_MISMATCH_LHS_RHS);
                 }
-
-                let (lower, _any) = p.lhs.get_transformations();
 
                 // LHS transformations only makes sense with string fields
                 if lower && lhs_type != &Type::String {
@@ -131,22 +148,22 @@ impl Validate for Expression {
                             _ => raise_err(MSG_REGEX_ONLY_FOR_STRING),
                         }
                     }
-                    Prefix | Postfix => match p.rhs {
+                    Prefix | Postfix => match rhs {
                         Value::String(_) => Ok(()),
                         _ => raise_err(MSG_PREFIX_POSTFIX_ONLY_FOR_STRING),
                     },
-                    Greater | GreaterOrEqual | Less | LessOrEqual => match p.rhs {
+                    Greater | GreaterOrEqual | Less | LessOrEqual => match rhs {
                         Value::Int(_) => Ok(()),
                         _ => raise_err(MSG_ONLY_FOR_INT),
                     },
                     In | NotIn => {
                         // unchecked path above
-                        match (lhs_type, &p.rhs) {
+                        match (lhs_type, rhs) {
                             (Type::IpAddr, Value::IpCidr(_)) => Ok(()),
                             _ => raise_err(MSG_ONLY_FOR_CIDR),
                         }
                     }
-                    Contains => match p.rhs {
+                    Contains => match rhs {
                         Value::String(_) => Ok(()),
                         _ => raise_err(MSG_CONTAINS_ONLY_FOR_CIDR),
                     },
@@ -186,6 +203,8 @@ mod tests {
         let tests = vec![
             r#"string == "abc""#,
             r#"string != "abc""#,
+            r#"string == nil"#,
+            r#"string != nil"#,
             r#"string ~ "abc""#,
             r#"string ^= "abc""#,
             r#"string =^ "abc""#,
@@ -201,6 +220,9 @@ mod tests {
             r#"string == 192.168.0.0/24"#,
             r#"string == 123"#,
             r#"string in "abc""#,
+            r#"string > nil"#,
+            r#"lower(string) == nil"#,
+            r#"any(string) == nil"#,
         ];
         for input in failing_tests {
             let expression = parse(input).unwrap();
