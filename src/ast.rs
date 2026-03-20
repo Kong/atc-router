@@ -166,9 +166,16 @@ impl Lhs {
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PredicateRhs {
+    Value(Value),
+    Missing,
+}
+
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Predicate {
     pub lhs: Lhs,
-    pub rhs: Value,
+    pub rhs: PredicateRhs,
     pub op: BinaryOperator,
 }
 
@@ -232,6 +239,15 @@ mod tests {
                 Value::IpAddr(addr) => write!(f, "{}", addr),
                 Value::Int(i) => write!(f, "{}", i),
                 Value::Regex(re) => write!(f, "\"{}\"", re),
+            }
+        }
+    }
+
+    impl fmt::Display for PredicateRhs {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match self {
+                PredicateRhs::Value(value) => write!(f, "{}", value),
+                PredicateRhs::Missing => write!(f, "nil"),
             }
         }
     }
@@ -308,6 +324,7 @@ mod tests {
                 "!(a == 1 || b == 2 && c == 3) && d == 4",
                 "(!((((a == 1) || (b == 2)) && (c == 3))) && (d == 4))",
             ),
+            ("a == nil || b != nil", "((a == nil) || (b != nil))"),
         ];
         for (input, expected) in tests {
             let result = parse(input).unwrap();
