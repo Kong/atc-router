@@ -95,7 +95,7 @@ fn parse_lhs(pair: Pair<Rule>) -> ParseResult<Lhs> {
     })
 }
 
-// rhs = { str_literal | ip_literal | int_literal | bool_literal }
+// rhs = { str_literal | rawstr_literal | ip_literal | int_literal | bool_literal }
 #[allow(clippy::result_large_err)] // it's fine as parsing is not the hot path
 fn parse_rhs(pair: Pair<Rule>) -> ParseResult<Value> {
     let pairs = pair.into_inner();
