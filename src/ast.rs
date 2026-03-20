@@ -21,11 +21,13 @@ pub enum LogicalExpression {
     Not(Expression),
 }
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LhsTransformations {
-    Lower,
-    Any,
+bitflags::bitflags! {
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub struct LhsTransformations: u8 {
+        const LOWER = 1 << 0;
+        const ANY = 1 << 1;
+    }
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -143,7 +145,7 @@ pub enum Type {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Lhs {
     pub var_name: String,
-    pub transformations: Vec<LhsTransformations>,
+    pub transformations: LhsTransformations,
 }
 
 impl Lhs {
@@ -152,13 +154,8 @@ impl Lhs {
     }
 
     pub fn get_transformations(&self) -> (bool, bool) {
-        let mut lower = false;
-        let mut any = false;
-
-        self.transformations.iter().for_each(|i| match i {
-            LhsTransformations::Any => any = true,
-            LhsTransformations::Lower => lower = true,
-        });
+        let lower = self.transformations.contains(LhsTransformations::LOWER);
+        let any = self.transformations.contains(LhsTransformations::ANY);
 
         (lower, any)
     }
@@ -216,9 +213,10 @@ mod tests {
             write!(
                 f,
                 "{}",
-                match self {
-                    LhsTransformations::Lower => "lower".to_string(),
-                    LhsTransformations::Any => "any".to_string(),
+                match *self {
+                    LhsTransformations::LOWER => "lower",
+                    LhsTransformations::ANY => "any",
+                    _ => "lower|any",
                 }
             )
         }
@@ -239,8 +237,8 @@ mod tests {
     impl fmt::Display for Lhs {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             let mut s = self.var_name.to_string();
-            for transformation in &self.transformations {
-                s = format!("{}({})", transformation, s);
+            for (transform_name, _) in self.transformations.iter_names() {
+                s = format!("{}({})", transform_name, s);
             }
             write!(f, "{}", s)
         }
