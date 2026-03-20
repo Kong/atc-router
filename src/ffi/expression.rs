@@ -218,8 +218,7 @@ pub unsafe extern "C" fn expression_validate(
 mod tests {
     use super::*;
     use crate::ast::Type;
-
-    const ERR_BUF_MAX_LEN: usize = 4096;
+    const ERR_BUF_LEN_FOR_TEST: usize = 4096;
 
     fn expr_validate_on(
         schema: &Schema,
@@ -227,8 +226,8 @@ mod tests {
         fields_buf_size: usize,
     ) -> Result<(Vec<String>, usize, u64), (i64, String)> {
         let atc = ffi::CString::new(atc).unwrap();
-        let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
-        let mut errbuf_len = ERR_BUF_MAX_LEN;
+        let mut errbuf = vec![b'X'; ERR_BUF_LEN_FOR_TEST];
+        let mut errbuf_len = ERR_BUF_LEN_FOR_TEST;
 
         let mut fields_buf = vec![0u8; fields_buf_size];
         let mut fields_buf_len = fields_buf.len();

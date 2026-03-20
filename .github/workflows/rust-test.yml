@@ -1,0 +1,32 @@
+---
+name: 'Rust tests'
+
+'on':
+  pull_request: {}
+  workflow_dispatch: {}
+  push:
+    branches:
+    - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  cargo-build-test:
+    name: 'Build and run tests'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+    steps:
+    - name: 'Checkout source code'
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
+
+    - name: 'Run cargo build'
+      run: cargo build
+
+    - name: 'Run cargo test'
+      run: cargo test
