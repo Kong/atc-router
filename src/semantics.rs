@@ -167,6 +167,7 @@ mod tests {
             let mut s = Schema::default();
             s.add_field("string", Type::String);
             s.add_field("int", Type::Int);
+            s.add_field("bool", Type::Bool);
             s.add_field("ipaddr", Type::IpAddr);
             s
         };
@@ -256,6 +257,26 @@ mod tests {
             r#"int == "abc""#,
             r#"int in 192.168.0.0/24"#,
             r#"lower(int) == 123"#,
+        ];
+        for input in failing_tests {
+            let expression = parse(input).unwrap();
+            assert!(expression.validate(&SCHEMA).is_err());
+        }
+    }
+
+    #[test]
+    fn bool_lhs() {
+        let tests = vec![r#"bool == true"#, r#"bool != false"#];
+        for input in tests {
+            let expression = parse(input).unwrap();
+            expression.validate(&SCHEMA).unwrap();
+        }
+
+        let failing_tests = vec![
+            r#"bool == "abc""#,
+            r#"bool == 123"#,
+            r#"bool > true"#,
+            r#"lower(bool) == true"#,
         ];
         for input in failing_tests {
             let expression = parse(input).unwrap();

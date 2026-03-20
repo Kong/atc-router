@@ -1,6 +1,6 @@
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 ident = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_" | ".")* }
-rhs = { str_literal | rawstr_literal | ip_literal | int_literal }
+rhs = { str_literal | rawstr_literal | ip_literal | int_literal | bool_literal }
 transform_func = { ident ~ "(" ~ lhs ~ ")" }
 lhs = { transform_func | ident }
 
@@ -10,6 +10,9 @@ digits = _{ oct_digits | ( "0x" ~ hex_digits ) | dec_digits }
 hex_digits = { ASCII_HEX_DIGIT+ }
 oct_digits = { "0" ~ ASCII_OCT_DIGIT+ }
 dec_digits = { ASCII_DIGIT+ }
+
+
+bool_literal = { "true" | "false" }
 
 
 str_literal = ${ "\"" ~ str_inner ~ "\"" }

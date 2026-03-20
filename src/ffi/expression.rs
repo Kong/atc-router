@@ -218,7 +218,8 @@ pub unsafe extern "C" fn expression_validate(
 mod tests {
     use super::*;
     use crate::ast::Type;
-    use crate::ffi::ERR_BUF_MAX_LEN;
+
+    const ERR_BUF_MAX_LEN: usize = 4096;
 
     fn expr_validate_on(
         schema: &Schema,

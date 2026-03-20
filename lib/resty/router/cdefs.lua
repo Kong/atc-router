@@ -8,6 +8,7 @@ typedef enum Type {
   IpCidr,
   IpAddr,
   Int,
+  Bool,
   Regex,
 } Type;
 
@@ -22,6 +23,7 @@ typedef enum CValue_Tag {
   CValue_IpCidr,
   CValue_IpAddr,
   CValue_Int,
+  CValue_Bool,
 } CValue_Tag;
 
 typedef struct CValue_Str_Body {
@@ -41,6 +43,9 @@ typedef struct CValue {
     };
     struct {
       int64_t int_;
+    };
+    struct {
+      bool bool_;
     };
   };
 } CValue;

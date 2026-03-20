@@ -44,6 +44,9 @@ function _M:add_field(field, typ)
     elseif typ == "Int" then
         ctype = clib.Int
 
+    elseif typ == "Bool" then
+        ctype = clib.Bool
+
     else
         error("Unknown type: " .. typ, 2)
     end

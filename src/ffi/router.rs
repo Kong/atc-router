@@ -241,7 +241,8 @@ pub unsafe extern "C" fn router_get_fields(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ffi::ERR_BUF_MAX_LEN;
+
+    const ERR_BUF_MAX_LEN: usize = 4096;
 
     #[test]
     fn test_short_error_buf() {

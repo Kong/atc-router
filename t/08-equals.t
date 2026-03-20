@@ -162,3 +162,51 @@ a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
 [error]
 [warn]
 [crit]
+
+
+
+=== TEST 4: Equals/NotEquals works Bool
+--- http_config eval: $::HttpConfig
+--- config
+    location = /t {
+        content_by_lua_block {
+            local schema = require("resty.router.schema")
+            local router = require("resty.router.router")
+            local context = require("resty.router.context")
+
+            local s = schema.new()
+
+            s:add_field("feature.enabled", "Bool")
+
+            local r = router.new(s)
+            assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
+                                 "feature.enabled == true"))
+            assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-8aa5583d150c",
+                                 "feature.enabled != true"))
+
+            local c = context.new(s)
+            c:add_value("feature.enabled", true)
+
+            local matched = r:execute(c)
+            ngx.say(matched)
+            ngx.say(c:get_result())
+
+            c = context.new(s)
+            c:add_value("feature.enabled", false)
+
+            matched = r:execute(c)
+            ngx.say(matched)
+            ngx.say(c:get_result())
+        }
+    }
+--- request
+GET /t
+--- response_body
+true
+a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnil
+true
+a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
+--- no_error_log
+[error]
+[warn]
+[crit]
