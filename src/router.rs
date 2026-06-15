@@ -112,15 +112,14 @@ where
         &'a self,
         context: &'a Context,
     ) -> Option<RouterPrefilterIter<'a, Reverse<MatcherKey>>> {
-        match &self.prefiltered_field {
-            Some(PrefilteredField { field, prefilter }) if prefilter.can_prefilter() => {
-                let values = context.value_of(field)?;
-                let value = values.first()?;
-                let value = value.as_str()?;
-                Some(prefilter.possible_matches(value))
-            }
-            _ => None,
+        let PrefilteredField { field, prefilter } = self.prefiltered_field.as_ref()?;
+        if !prefilter.can_prefilter() {
+            return None;
         }
+        let values = context.value_of(field)?;
+        let value = values.first()?;
+        let value = value.as_str()?;
+        Some(prefilter.possible_matches(value))
     }
 
     /// Note that unlike `execute`, this doesn't set `Context.result`
