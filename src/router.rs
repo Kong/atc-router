@@ -160,7 +160,9 @@ where
     /// matchers will be added to the prefilter. This can be an expensive call if there are a lot
     /// of matchers.
     ///
-    /// Calling
+    /// If possible, it is slightly more efficient to call this _after_ all matchers have been
+    /// added, rather than enabling at construction time and building the prefilter as each matcher
+    /// is added.
     pub fn enable_prefilter(&mut self, field: &str) -> Result<(), String> {
         if let Some(prefiltered_field) = &self.prefiltered_field {
             if prefiltered_field.field == field {
