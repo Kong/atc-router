@@ -308,7 +308,7 @@ pub unsafe extern "C" fn router_get_fields(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ffi::ERR_BUF_MAX_LEN;
+    const ERR_BUF_LEN_FOR_TEST: usize = 4096;
 
     #[test]
     fn test_short_error_buf() {
@@ -316,8 +316,8 @@ mod tests {
             let schema = Schema::default();
             let mut router = Router::new(&schema);
             let uuid = ffi::CString::new("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c").unwrap();
-            let junk = ffi::CString::new(vec![b'a'; ERR_BUF_MAX_LEN * 2]).unwrap();
-            let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
+            let junk = ffi::CString::new(vec![b'a'; ERR_BUF_LEN_FOR_TEST * 2]).unwrap();
+            let mut errbuf = vec![b'X'; ERR_BUF_LEN_FOR_TEST];
             let mut errbuf_len = 10;
 
             let result = router_add_matcher(
@@ -340,9 +340,9 @@ mod tests {
             let schema = Schema::default();
             let mut router = Router::new(&schema);
             let uuid = ffi::CString::new("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c").unwrap();
-            let junk = ffi::CString::new(vec![b'a'; ERR_BUF_MAX_LEN * 2]).unwrap();
-            let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
-            let mut errbuf_len = ERR_BUF_MAX_LEN;
+            let junk = ffi::CString::new(vec![b'a'; ERR_BUF_LEN_FOR_TEST * 2]).unwrap();
+            let mut errbuf = vec![b'X'; ERR_BUF_LEN_FOR_TEST];
+            let mut errbuf_len = ERR_BUF_LEN_FOR_TEST;
 
             let result = router_add_matcher(
                 &mut router,
@@ -353,7 +353,7 @@ mod tests {
                 &mut errbuf_len,
             );
             assert!(!result);
-            assert_eq!(errbuf_len, ERR_BUF_MAX_LEN);
+            assert_eq!(errbuf_len, ERR_BUF_LEN_FOR_TEST);
         }
     }
 
@@ -364,8 +364,8 @@ mod tests {
             let mut router = Router::new(&schema);
             let uuid = ffi::CString::new("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c").unwrap();
             let junk = ffi::CString::new("aaaa").unwrap();
-            let mut errbuf = vec![b'X'; ERR_BUF_MAX_LEN];
-            let mut errbuf_len = ERR_BUF_MAX_LEN;
+            let mut errbuf = vec![b'X'; ERR_BUF_LEN_FOR_TEST];
+            let mut errbuf_len = ERR_BUF_LEN_FOR_TEST;
 
             let result = router_add_matcher(
                 &mut router,
@@ -376,7 +376,7 @@ mod tests {
                 &mut errbuf_len,
             );
             assert!(!result);
-            assert!(errbuf_len < ERR_BUF_MAX_LEN);
+            assert!(errbuf_len < ERR_BUF_LEN_FOR_TEST);
         }
     }
 }
