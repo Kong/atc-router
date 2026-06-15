@@ -117,6 +117,11 @@ where
             return None;
         }
         let values = context.value_of(field)?;
+        // We only check the first value. We build the pre-filter so that if a matcher uses an
+        // `any` transformation, it will be treated as always possibly matching. Otherwise, by
+        // default, matchers must match against _all_ values, so our prefilter will return all
+        // matchers that could possibly match against the first value. To match against all
+        // values, they _must_ be able to match against the first value.
         let value = values.first()?;
         let value = value.as_str()?;
         Some(prefilter.possible_matches(value))
