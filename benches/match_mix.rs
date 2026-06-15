@@ -52,7 +52,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     }
 
-    router.enable_prefilter("http.path");
+    router.enable_prefilter("http.path").unwrap();
 
     for &i in NUMBERS {
         ctx.reset();

@@ -59,7 +59,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             |b, data| {
                 b.iter_with_large_drop(|| {
                     let mut router = Router::new(&schema);
-                    router.enable_prefilter("b");
+                    router.enable_prefilter("b").unwrap();
                     for v in data {
                         router.add_matcher(v.0, v.1, &v.2).unwrap();
                     }

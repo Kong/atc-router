@@ -50,7 +50,7 @@ fn worst_case(c: &mut Criterion) {
             |b, matchers| {
                 b.iter_with_large_drop(|| {
                     let mut router = Router::new(&schema);
-                    router.enable_prefilter("http.path");
+                    router.enable_prefilter("http.path").unwrap();
                     for &(priority, uuid, ref expression) in matchers {
                         router.add_matcher(priority, uuid, expression).unwrap();
                     }
@@ -82,7 +82,7 @@ fn worst_case(c: &mut Criterion) {
             },
         );
     }
-    router.enable_prefilter("http.path");
+    router.enable_prefilter("http.path").unwrap();
     for n in [1, 10, 100, 500, 1000, MAX] {
         ctx.reset();
         ctx.add_value("http.path", Value::String("/a".repeat(n - 1)));
