@@ -158,19 +158,17 @@ impl Validate for Expression {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::LazyLock;
     use super::*;
     use crate::parser::parse;
-    use lazy_static::lazy_static;
 
-    lazy_static! {
-        static ref SCHEMA: Schema = {
-            let mut s = Schema::default();
-            s.add_field("string", Type::String);
-            s.add_field("int", Type::Int);
-            s.add_field("ipaddr", Type::IpAddr);
-            s
-        };
-    }
+    pub static SCHEMA: LazyLock<Schema> = LazyLock::new(|| {
+        let mut s = Schema::default();
+        s.add_field("string", Type::String);
+        s.add_field("int", Type::Int);
+        s.add_field("ipaddr", Type::IpAddr);
+        s
+    });
 
     #[test]
     fn unknown_field() {
