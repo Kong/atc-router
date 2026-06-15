@@ -53,9 +53,7 @@ impl<K: Ord> RadixTrie<K> {
             let link = &mut node.children[idx];
             let common_len = common_prefix_len(&link.rest, prefix);
 
-            if common_len < link.rest.len() {
-                split_link(link, common_len);
-            }
+            split_link_at(link, common_len);
 
             prefix = &prefix[common_len..];
             node = &mut node.children[idx].child;
@@ -135,15 +133,23 @@ fn try_compact_link<K>(link: &mut RadixLink<K>) {
     link.child = grandchild.child;
 }
 
-fn split_link<K>(link: &mut RadixLink<K>, at: usize) {
-    let tail = link.rest.split_off(at + 1);
-    let ch = link.rest.pop().unwrap();
-    let old_child = mem::replace(&mut link.child, RadixTrie::new());
-    link.child.children.push(RadixLink {
-        ch,
-        rest: BString::new(tail),
-        child: old_child,
-    });
+fn split_link_at<K>(link: &mut RadixLink<K>, at: usize) {
+    if at < link.rest.len() {
+        // Split link.rest like: [link.rest @ .., ch, tail @ ..]
+        //                                        ^- `at`
+        // first, steal the tail, then pop `ch` out as well.
+        // Because we checked if `at` is strictly less than `len`, `at + 1` cannot be `> len`
+        let tail = link.rest.split_off(at + 1);
+        // Guaranteed to be Some, we stole `(at + 1)..`, so there is at least one item left behind
+        let ch = link.rest.pop().unwrap();
+
+        let old_child = mem::replace(&mut link.child, RadixTrie::new());
+        link.child.children.push(RadixLink {
+            ch,
+            rest: BString::new(tail),
+            child: old_child,
+        });
+    }
 }
 
 fn common_prefix_len(lhs: &[u8], rhs: &[u8]) -> usize {
