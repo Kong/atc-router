@@ -122,13 +122,17 @@ impl<K: Ord> RadixTrie<K> {
 }
 
 fn try_compact_link<K>(link: &mut RadixLink<K>) {
-    if link.child.keys.is_empty() && link.child.children.len() == 1 {
-        let grandchild = link.child.children.pop().unwrap();
-        link.rest.reserve(1 + grandchild.rest.len());
-        link.rest.push(grandchild.ch);
-        link.rest.extend_from_slice(&grandchild.rest);
-        link.child = grandchild.child;
+    if !link.child.keys.is_empty() || link.child.children.len() != 1 {
+        return;
     }
+    let Some(grandchild) = link.child.children.pop() else {
+        debug_assert!(false, "children.len() must be == 1 from above check");
+        return;
+    };
+    link.rest.reserve(1 + grandchild.rest.len());
+    link.rest.push(grandchild.ch);
+    link.rest.extend_from_slice(&grandchild.rest);
+    link.child = grandchild.child;
 }
 
 fn split_link<K>(link: &mut RadixLink<K>, at: usize) {
