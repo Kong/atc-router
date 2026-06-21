@@ -116,7 +116,7 @@ impl Frame {
 ///
 /// For example,
 /// ```
-/// use router_prefilter::matchers::MatcherVisitor;
+/// use atc_router_prefilter::matchers::MatcherVisitor;
 /// fn visit(visitor: &mut MatcherVisitor) {
 ///     visitor.visit_match_starts_with("A");
 ///     visitor.visit_match_starts_with("B");
@@ -128,7 +128,7 @@ impl Frame {
 /// is interpreted as `(A && B) || (C && D)`, to instead match as `A && (B | C) && D`, introduce a
 /// level of nesting:
 /// ```
-/// use router_prefilter::matchers::MatcherVisitor;
+/// use atc_router_prefilter::matchers::MatcherVisitor;
 /// fn visit(visitor: &mut MatcherVisitor) {
 ///     visitor.visit_match_starts_with("A");
 ///     visitor.visit_nested_start();
