@@ -6,57 +6,69 @@ use std::mem;
 #[derive(Debug, Clone)]
 struct RadixTrie<K> {
     keys: BTreeSet<K>,
-    children: Vec<RadixLink<K>>,
+
+    // struct-of-arrays format, each vec is the same size, items with the same
+    // index are related to the same child.
+    children_initial_chars: Vec<u8>,
+    children_rests: Vec<BString>,
+    children: Vec<RadixTrie<K>>,
 }
 
-#[derive(Debug, Clone)]
-struct RadixLink<K> {
-    ch: u8,
-    rest: BString,
-    child: RadixTrie<K>,
+#[derive(Debug)]
+struct RadixLink<'a, K> {
+    rest: &'a mut BString,
+    child: &'a mut RadixTrie<K>,
 }
 
 impl<K> RadixTrie<K> {
     fn new() -> Self {
         Self {
             keys: BTreeSet::new(),
+
+            children_initial_chars: Vec::new(),
+            children_rests: Vec::new(),
             children: Vec::new(),
         }
     }
 
     /// Find the child index whose edge label starts with the given byte.
     fn find_child(&self, byte: u8) -> Result<usize, usize> {
-        self.children.binary_search_by(|link| link.ch.cmp(&byte))
+        self.children_initial_chars.binary_search(&byte)
     }
 }
 
 impl<K: Ord> RadixTrie<K> {
+    fn link_at(&mut self, idx: usize) -> RadixLink<'_, K> {
+        debug_assert_eq!(self.children.len(), self.children_rests.len());
+        debug_assert_eq!(self.children.len(), self.children_initial_chars.len());
+        RadixLink {
+            rest: &mut self.children_rests[idx],
+            child: &mut self.children[idx],
+        }
+    }
+
     fn insert(&mut self, mut prefix: &[u8], key: K) {
         let mut node = self;
         while let Some(&first_char) = prefix.split_off_first() {
             let idx = match node.find_child(first_char) {
                 Ok(idx) => idx,
                 Err(idx) => {
-                    node.children.insert(
-                        idx,
-                        RadixLink {
-                            ch: first_char,
-                            rest: BString::new(prefix.to_vec()),
-                            child: RadixTrie::new(),
-                        },
-                    );
-                    node = &mut node.children[idx].child;
+                    node.children_initial_chars.insert(idx, first_char);
+                    node.children_rests
+                        .insert(idx, BString::new(prefix.to_vec()));
+                    node.children.insert(idx, RadixTrie::new());
+                    node = &mut node.children[idx];
                     break;
                 }
             };
 
-            let link = &mut node.children[idx];
+            let link = node.link_at(idx);
             let common_len = common_prefix_len(&link.rest, prefix);
 
             split_link_at(link, common_len);
 
             prefix = &prefix[common_len..];
-            node = &mut node.children[idx].child;
+            node = &mut node.children[idx];
         }
         node.keys.insert(key);
     }
@@ -70,7 +82,7 @@ impl<K: Ord> RadixTrie<K> {
             return;
         };
 
-        let link = &mut self.children[idx];
+        let link = self.link_at(idx);
         let Some((prefix_rest_begin, prefix_rest)) = prefix.split_at_checked(link.rest.len())
         else {
             return;
@@ -83,9 +95,11 @@ impl<K: Ord> RadixTrie<K> {
 
         // Clean up empty nodes.
         if link.child.keys.is_empty() && link.child.children.is_empty() {
+            self.children_initial_chars.remove(idx);
+            self.children_rests.remove(idx);
             self.children.remove(idx);
         } else {
-            try_compact_link(&mut self.children[idx]);
+            try_compact_link(link);
         }
     }
 
@@ -103,37 +117,44 @@ impl<K: Ord> RadixTrie<K> {
                 break;
             };
 
-            let link = &node.children[idx];
-            let Some((input_rest_begin, input_rest)) = input.split_at_checked(link.rest.len())
+            let rest = &node.children_rests[idx];
+            let Some((input_rest_begin, input_rest)) = input.split_at_checked(rest.len())
             else {
                 break;
             };
-            if input_rest_begin != link.rest.as_slice() {
+            if input_rest_begin != rest.as_slice() {
                 break;
             }
 
             input = input_rest;
-            node = &link.child;
+            node = &node.children[idx];
         }
         result
     }
 }
 
-fn try_compact_link<K>(link: &mut RadixLink<K>) {
+fn try_compact_link<K>(link: RadixLink<'_, K>) {
     if !link.child.keys.is_empty() || link.child.children.len() != 1 {
         return;
     }
-    let Some(grandchild) = link.child.children.pop() else {
-        debug_assert!(false, "children.len() must be == 1 from above check");
+    let (Some(grandchild_ch), Some(grandchild_rest), Some(grandchild)) = (
+        link.child.children_initial_chars.pop(),
+        link.child.children_rests.pop(),
+        link.child.children.pop(),
+    ) else {
+        debug_assert!(
+            false,
+            "children.len() must be == 1 from above check, children_* should always have the same len"
+        );
         return;
     };
-    link.rest.reserve(1 + grandchild.rest.len());
-    link.rest.push(grandchild.ch);
-    link.rest.extend_from_slice(&grandchild.rest);
-    link.child = grandchild.child;
+    link.rest.reserve(1 + grandchild_rest.len());
+    link.rest.push(grandchild_ch);
+    link.rest.extend_from_slice(&grandchild_rest);
+    *link.child = grandchild;
 }
 
-fn split_link_at<K>(link: &mut RadixLink<K>, at: usize) {
+fn split_link_at<K>(link: RadixLink<'_, K>, at: usize) {
     if at < link.rest.len() {
         // Split link.rest like: [link.rest @ .., ch, tail @ ..]
         //                                        ^- `at`
@@ -143,12 +164,10 @@ fn split_link_at<K>(link: &mut RadixLink<K>, at: usize) {
         // Guaranteed to be Some, we stole `(at + 1)..`, so there is at least one item left behind
         let ch = link.rest.pop().unwrap();
 
-        let old_child = mem::replace(&mut link.child, RadixTrie::new());
-        link.child.children.push(RadixLink {
-            ch,
-            rest: BString::new(tail),
-            child: old_child,
-        });
+        let old_child = mem::replace(link.child, RadixTrie::new());
+        link.child.children_initial_chars.push(ch);
+        link.child.children_rests.push(BString::new(tail));
+        link.child.children.push(old_child);
     }
 }
 
