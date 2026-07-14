@@ -118,8 +118,7 @@ impl<K: Ord> RadixTrie<K> {
             };
 
             let rest = &node.children_rests[idx];
-            let Some((input_rest_begin, input_rest)) = input.split_at_checked(rest.len())
-            else {
+            let Some((input_rest_begin, input_rest)) = input.split_at_checked(rest.len()) else {
                 break;
             };
             if input_rest_begin != rest.as_slice() {

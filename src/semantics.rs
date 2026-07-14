@@ -158,9 +158,9 @@ impl Validate for Expression {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::LazyLock;
     use super::*;
     use crate::parser::parse;
+    use std::sync::LazyLock;
 
     pub static SCHEMA: LazyLock<Schema> = LazyLock::new(|| {
         let mut s = Schema::default();
