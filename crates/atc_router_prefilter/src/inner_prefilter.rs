@@ -49,7 +49,8 @@ impl<K: Ord> RadixTrie<K> {
 
     fn insert(&mut self, mut prefix: &[u8], key: K) {
         let mut node = self;
-        while let Some(&first_char) = prefix.split_off_first() {
+        while let Some((&first_char, rest)) = prefix.split_first() {
+            prefix = rest;
             let idx = match node.find_child(first_char) {
                 Ok(idx) => idx,
                 Err(idx) => {
@@ -74,10 +75,11 @@ impl<K: Ord> RadixTrie<K> {
     }
 
     fn remove(&mut self, mut prefix: &[u8], key: &K) {
-        let Some(&first_char) = prefix.split_off_first() else {
+        let Some((&first_char, rest)) = prefix.split_first() else {
             self.keys.remove(key);
             return;
         };
+        prefix = rest;
         let Ok(idx) = self.find_child(first_char) else {
             return;
         };
@@ -109,9 +111,10 @@ impl<K: Ord> RadixTrie<K> {
         loop {
             result.extend(&node.keys);
 
-            let Some(&first_char) = input.split_off_first() else {
+            let Some((&first_char, rest)) = input.split_first() else {
                 break;
             };
+            input = rest;
 
             let Ok(idx) = node.find_child(first_char) else {
                 break;
