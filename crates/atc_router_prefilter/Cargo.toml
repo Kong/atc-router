@@ -14,7 +14,7 @@ regex-syntax = "0.8"
 bstr = "1.12"
 
 [dev-dependencies]
-criterion = { version = "0.8.1", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 rand = "0.10.0"
 regex = "1.12.2"
 

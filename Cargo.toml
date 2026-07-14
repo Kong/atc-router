@@ -24,7 +24,7 @@ bitflags = { version = "2.6", optional = true }
 atc_router_prefilter = { version = "1.0", path = "crates/atc_router_prefilter" }
 
 [dev-dependencies]
-criterion = "0"
+criterion = "0.7"
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
