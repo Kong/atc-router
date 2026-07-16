@@ -109,7 +109,11 @@ where
 mod tests {
     use uuid::Uuid;
 
-    use crate::{ast::Type, context::Context, schema::Schema};
+    use crate::{
+        ast::{Type, Value},
+        context::Context,
+        schema::Schema,
+    };
 
     use super::Router;
 
@@ -173,6 +177,86 @@ mod tests {
         let mut ctx = Context::new(&schema);
         ctx.add_value("http.path", "/not-dev".to_owned().into());
         router.try_match(&ctx).ok_or(()).expect_err("should fail");
+    }
+
+    #[test]
+    fn failed_and_branch_does_not_leak_state_into_successful_or_branch() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+        schema.add_field("http.role", Type::String);
+        schema.add_field("http.method", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                0,
+                Uuid::default(),
+                r##"(http.path ~ r#"^/users/(?<user_id>[^/]+)"# && http.role == "admin") || http.method == "GET""##,
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.path", Value::String("/users/alice".to_owned()));
+        ctx.add_value("http.method", Value::String("GET".to_owned()));
+
+        let result = router.try_match(&ctx).expect("method branch should match");
+        assert!(result.captures.is_empty());
+        assert!(!result.matches.contains_key("http.path"));
+        assert_eq!(
+            result.matches.get("http.method"),
+            Some(&Value::String("GET".to_owned()))
+        );
+    }
+
+    #[test]
+    fn failed_or_alternative_does_not_leak_captures() {
+        let mut schema = Schema::default();
+        schema.add_field("first", Type::String);
+        schema.add_field("guard", Type::String);
+        schema.add_field("second", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                0,
+                Uuid::default(),
+                r##"(first ~ r#"(?<stale>left)"# && guard == "yes") || second ~ r#"(?<winner>right)"#"##,
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("first", Value::String("left".to_owned()));
+        ctx.add_value("second", Value::String("right".to_owned()));
+
+        let result = router.try_match(&ctx).expect("second branch should match");
+        assert!(!result.captures.contains_key("stale"));
+        assert_eq!(
+            result.captures.get("winner").map(String::as_str),
+            Some("right")
+        );
+    }
+
+    #[test]
+    fn successful_not_does_not_retain_inner_branch_captures() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+        schema.add_field("guard", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                0,
+                Uuid::default(),
+                r##"!(http.path ~ r#"^/users/(?<user_id>[^/]+)"# && guard == "yes")"##,
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.path", Value::String("/users/alice".to_owned()));
+
+        let result = router.try_match(&ctx).expect("negation should match");
+        assert!(result.captures.is_empty());
+        assert!(result.matches.is_empty());
     }
 
     #[test]
