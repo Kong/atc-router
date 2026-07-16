@@ -275,7 +275,6 @@ mod tests {
     fn failed_higher_priority_matcher_does_not_leak_state() {
         let mut schema = Schema::default();
         schema.add_field("candidate", Type::String);
-        schema.add_field("guard", Type::String);
         schema.add_field("fallback", Type::String);
 
         let higher_priority_id = Uuid::from_u128(1);
@@ -285,7 +284,7 @@ mod tests {
             .add_matcher(
                 10,
                 higher_priority_id,
-                r##"candidate ~ r#"(?<stale>captured)"# && guard == "yes""##,
+                r##"candidate ~ r#"^(?<stale>captured)$"#"##,
             )
             .expect("should add higher-priority matcher");
         router
@@ -298,6 +297,7 @@ mod tests {
 
         let mut ctx = Context::new(&schema);
         ctx.add_value("candidate", Value::String("captured".to_owned()));
+        ctx.add_value("candidate", Value::String("not-captured".to_owned()));
         ctx.add_value("fallback", Value::String("matched".to_owned()));
 
         let result = router
