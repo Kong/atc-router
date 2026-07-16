@@ -3,7 +3,7 @@ use crate::schema::Schema;
 use fnv::FnvHashMap;
 use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Match {
     pub uuid: Uuid,
     pub matches: FnvHashMap<String, Value>,
