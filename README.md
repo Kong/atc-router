@@ -234,20 +234,22 @@ If an error occurred, `nil` and a string describing the error will be returned.
 
 ### get\_result
 
-**syntax:** *uuid, matched_value, captures = c:get_result(matched_field)*
+**syntax:** *uuid, matched_value, captures, matched_expression = c:get_result(matched_field)*
 
 **context:** *any*
 
 After a successful router match, gets the match result from the context.
 
-If `matched_field` is provided, then `matched_value` will be returned with the value
-matched by the specified field. If `matched_field` is `nil` or field did
-not match, then `nil` is returned for `matched_value`.
+If `matched_field` is provided, then `matched_value` and `matched_expression`
+will be returned. `matched_value` is the value matched by the specified field,
+and `matched_expression` is the raw right-hand-side expression that matched the
+field (the regex pattern for `~`, or the literal value for prefix/postfix/equals).
+If `matched_field` is `nil` or the field did not match, then `nil` is returned
+for both `matched_value` and `matched_expression`.
 
 If the context did not contain a valid match result, `nil` is returned.
 
-Otherwise, the string UUID, value matching field `matched_field` and
-regex captures from the matched route are returned.
+Otherwise, the string UUID, value matching field `matched_field`, regex captures and matched expression from the matched route are returned.
 
 [Back to TOC](#table-of-contents)
 
@@ -271,4 +273,3 @@ Licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses
 Files in the project may not be copied, modified, or distributed except according to those terms.
 
 [Back to TOC](#table-of-contents)
-

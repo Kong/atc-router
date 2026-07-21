@@ -75,15 +75,17 @@ end
 
 function _M:get_result(matched_field)
     local captures_len = tonumber(clib.context_get_result(
-        self.context, nil, nil, nil, nil, nil, nil, nil, nil))
+        self.context, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil))
     if captures_len == -1 then
         return nil
     end
 
-    local matched_value_buf, matched_value_len
+    local matched_value_buf, matched_value_len, matched_expr_buf, matched_expr_len
     if matched_field then
         matched_value_buf = ffi_new("const uint8_t *[1]")
         matched_value_len = ffi_new("size_t [1]")
+        matched_expr_buf = ffi_new("const uint8_t *[1]")
+        matched_expr_len = ffi_new("size_t [1]")
     end
 
     local capture_names, capture_names_len, capture_values, capture_values_len
@@ -99,14 +101,18 @@ function _M:get_result(matched_field)
 
     clib.context_get_result(self.context, UUID_BUF, matched_field,
                             matched_value_buf, matched_value_len,
+                            matched_expr_buf, matched_expr_len,
                             capture_names, capture_names_len, capture_values,
                             capture_values_len)
 
     local uuid = ffi_string(UUID_BUF, UUID_LEN)
-    local matched_value
+    local matched_value, matched_expr
     if matched_field then
-        matched_value = matched_value_len[0] > 0 and
+        matched_value = matched_value_buf[0] ~= nil and
                         ffi_string(matched_value_buf[0], matched_value_len[0]) or
+                        nil
+        matched_expr = matched_expr_buf[0] ~= nil and
+                        ffi_string(matched_expr_buf[0], matched_expr_len[0]) or
                         nil
     end
 
@@ -128,7 +134,7 @@ function _M:get_result(matched_field)
         end
     end
 
-    return uuid, matched_value, captures
+    return uuid, matched_value, captures, matched_expr
 end
 
 
