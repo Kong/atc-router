@@ -28,6 +28,3 @@ pub mod semantics;
 
 #[cfg(feature = "ffi")]
 pub mod ffi;
-
-#[macro_use]
-extern crate pest_derive;

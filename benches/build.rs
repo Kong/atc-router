@@ -1,7 +1,7 @@
 use atc_router::ast::Type;
 use atc_router::router::Router;
 use atc_router::schema::Schema;
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 use uuid::Uuid;
 
 // To run this benchmark, execute the following command:
@@ -32,7 +32,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut schema = Schema::default();
     schema.add_field("a", Type::Int);
 
-    c.bench_function("Build Router", |b| {
+    let mut g = c.benchmark_group("build router");
+    g.throughput(Throughput::Elements(N as u64));
+    g.bench_function("Build Router", |b| {
         b.iter_with_large_drop(|| {
             let mut router = Router::new(&schema);
             for v in &data {
