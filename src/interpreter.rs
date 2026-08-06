@@ -421,4 +421,31 @@ fn test_predicate() {
     };
 
     assert!(!p.execute(&mut ctx, &mut mat));
+
+    let mut bool_schema = schema::Schema::default();
+    bool_schema.add_field("feature.enabled", ast::Type::Bool);
+    let mut bool_ctx = Context::new(&bool_schema);
+    bool_ctx.add_value("feature.enabled", Value::Bool(true));
+
+    let p = Predicate {
+        lhs: ast::Lhs {
+            var_name: "feature.enabled".to_string(),
+            transformations: vec![],
+        },
+        rhs: Value::Bool(true),
+        op: BinaryOperator::Equals,
+    };
+
+    assert!(p.execute(&mut bool_ctx, &mut mat));
+
+    let p = Predicate {
+        lhs: ast::Lhs {
+            var_name: "feature.enabled".to_string(),
+            transformations: vec![],
+        },
+        rhs: Value::Bool(false),
+        op: BinaryOperator::NotEquals,
+    };
+
+    assert!(p.execute(&mut bool_ctx, &mut mat));
 }

@@ -39,6 +39,7 @@ Each data referred in the DSL has a type, the type can be one of the following:
 * `IpCidr` - an IP address range in CIDR format
 * `IpAddr` - a single IP address that can be checked against an `IpCidr`
 * `Int` - an 64-bit signed integer
+* `Bool` - a boolean value represented by `true` or `false`
 
 Please refer to the [documentation](https://docs.konghq.com/gateway/latest/reference/expressions-language/)
 on Kong website for how the language is used in practice.
@@ -65,6 +66,7 @@ location = /simple_example {
 
         s:add_field("http.path", "String")
         s:add_field("tcp.port", "Int")
+        s:add_field("feature.enabled", "Bool")
 
         local r = router.new(s)
         assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
@@ -73,6 +75,7 @@ location = /simple_example {
         local c = context.new(s)
         c:add_value("http.path", "/foo/bar")
         c:add_value("tcp.port", 80)
+        c:add_value("feature.enabled", true)
 
         local matched = r:execute(c)
         ngx.say(matched)
