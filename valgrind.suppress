@@ -8,3 +8,17 @@
    fun:ngx_single_process_cycle
    fun:main
 }
+
+# regex-automata 0.4.18 caches the default pool capacity in a process-wide
+# Lazy value. Valgrind reports its one-time 8-byte allocation as definitely
+# lost when the LuaJIT FFI-loaded library is unloaded.
+{
+   regex-automata-lazy-pool-capacity
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   ...
+   fun:*regex_automata*lazy*get*
+   ...
+   fun:*regex_automata*get_pool_capacity*
+}
