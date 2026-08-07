@@ -178,10 +178,41 @@ in the router's schema. When enabled, the router uses the prefilter to narrow do
 candidate matchers before performing full evaluation, which can improve match
 performance.
 
+Prefiltering is effective to quickly identify a possible subset of matchers without
+actually performing matching. A prefilter is effective only on matchers which must match
+a known prefix (or small set of prefixes) at the beginning of `field`. An expression in
+a matcher can be used for prefiltering if any of the following are true:
+
+- The expression matches against the `field` with `==` (equals), `^=` (prefix), or `~` (regex).
+  If matched with `~`, the regex must be anchored at the beginning, either with `\A` or with
+  `^` when the `m` flag is not in use, and there must be a small number (including 1) of
+  possible literals which must match at the beginning of the string. For example, the
+  following regexes can be prefiltered: `^/abc(.*)` (must start with `/abc`),
+  `\Afoo(bar|baz)/[a-z]*` (must start with `foobar` or `foobaz`). A character class at the
+  start expands to one literal per character, so it must be narrow: `^(a|b|c)[0-9]` can be
+  prefiltered, but `^[a-z]bc` cannot. The field must be referenced directly (not through
+  `lower()` or `any()`).
+- The expression is an `&&` (and) expression, and at least one side of the expression
+  can be used for prefiltering
+- The expression is an `||` (or) expression, and both sides of the expression
+  can be used for prefiltering
+
+A `!` (not) expression can never be used for prefiltering. By the rules above, that means
+negating either side of an `||` makes the whole expression ineligible, while negating one
+side of an `&&` does not.
+
+Enabling a prefilter is most effective when a significant portion of matchers use expressions
+which are eligible for prefiltering, and the prefixes extracted are mostly distinct from each
+other. In the case where the prefilter is effective, it can lead to tremendous speedups,
+especially when a large number of matchers are configured.
+
 Calling this method requires building a prefilter for all current matchers: it may be 
 expensive. It is expected that this method will be called only once for a router. The
 prefilter will be kept up to date with any added and removed matchers, until this method
 is called again with a different field name, or the disable_prefilter method is called.
+Only a single prefilter can be enabled at any time. Calling this function with a different
+`field` means only that field can be used for prefiltering, any previous calls with
+other `field`s are invalidated.
 
 If an error occurred, `nil` and a string describing the error will be returned.
 
