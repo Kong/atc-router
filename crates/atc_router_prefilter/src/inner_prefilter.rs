@@ -209,12 +209,6 @@ impl<K: Ord> InnerPrefilter<K> {
     /// Inserts a key with the given prefixes into the prefilter.
     ///
     /// Each prefix is added to the prefix map, maintaining the prefix-inheritance invariant.
-    ///
-    /// No prefix in `prefixes` may be a prefix of another entry in `prefixes`.
-    /// This precondition is upheld by the caller (`MatcherVisitor::finish`
-    /// applies `optimize_for_prefix_by_preference`, which collapses such
-    /// overlapping literals). Violating this causes `remove` to trip a
-    /// debug assertion.
     pub(crate) fn insert(&mut self, key: K, prefixes: Vec<Vec<u8>>)
     where
         K: Clone,
