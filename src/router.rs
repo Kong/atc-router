@@ -136,7 +136,12 @@ where
             Some(possible_matches) => {
                 for key in possible_matches {
                     let key = &key.0;
-                    let expr = &self.matchers[key];
+                    let Some(expr) = self.matchers.get(key) else {
+                        if cfg!(debug_assertions) {
+                            unreachable!("prefilter cannot return a matcher key not in `matchers`");
+                        }
+                        continue;
+                    };
                     if expr.execute(context, &mut mat) {
                         mat.uuid = key.1;
                         return Some(mat);
