@@ -308,7 +308,11 @@ impl Matcher for ExprMatcher<'_> {
 mod tests {
     use uuid::Uuid;
 
-    use crate::{ast::Type, context::Context, schema::Schema};
+    use crate::{
+        ast::{MatchedValue, Type, Value},
+        context::Context,
+        schema::Schema,
+    };
 
     use super::Router;
 
@@ -428,5 +432,107 @@ mod tests {
         let mut ctx = Context::new(router.schema());
         ctx.add_value("http.path", "/dev".to_owned().into());
         router.try_match(&ctx).expect("matches");
+    }
+
+    #[test]
+    fn test_matched_expr_prefix() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                0,
+                Uuid::default(),
+                "http.path ^= \"/abc\" || http.path ^= \"/foo\"",
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.path", "/foo/bar".to_owned().into());
+        assert!(router.execute(&mut ctx));
+
+        let res = ctx.result.as_ref().unwrap();
+        assert_eq!(
+            res.matches.get("http.path").map(MatchedValue::expression),
+            Some(&Value::String("/foo".to_string())),
+        );
+
+        ctx.reset();
+        ctx.add_value("http.path", "/abc/xyz".to_owned().into());
+        assert!(router.execute(&mut ctx));
+
+        let res = ctx.result.as_ref().unwrap();
+        assert_eq!(
+            res.matches.get("http.path").map(MatchedValue::expression),
+            Some(&Value::String("/abc".to_string())),
+        );
+    }
+
+    #[test]
+    fn test_matched_expr_regex() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                0,
+                Uuid::default(),
+                "http.path ~ r#\"^/\\d+/test$\"# || http.path ~ r#\"^/\\d+/bar$\"#",
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.path", "/123/test".to_owned().into());
+        assert!(router.execute(&mut ctx));
+
+        let res = ctx.result.as_ref().unwrap();
+        // the `expression` side stores the raw regex pattern.
+        assert_eq!(
+            res.matches.get("http.path").map(MatchedValue::expression),
+            Some(&Value::String("^/\\d+/test$".to_string()))
+        );
+        // the `value` side stores the substring of the request value that matched.
+        assert_eq!(
+            res.matches.get("http.path").map(MatchedValue::value),
+            Some(&Value::String("/123/test".to_string()))
+        );
+
+        ctx.reset();
+        ctx.add_value("http.path", "/123/bar".to_owned().into());
+        assert!(router.execute(&mut ctx));
+
+        let res = ctx.result.as_ref().unwrap();
+        // the `expression` side stores the raw regex pattern.
+        assert_eq!(
+            res.matches.get("http.path").map(MatchedValue::expression),
+            Some(&Value::String("^/\\d+/bar$".to_string()))
+        );
+        // the `value` side stores the substring of the request value that matched.
+        assert_eq!(
+            res.matches.get("http.path").map(MatchedValue::value),
+            Some(&Value::String("/123/bar".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_matched_expr_absent_on_no_match() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                0,
+                Uuid::default(),
+                "http.path ^= \"/foo\" || http.path ^= \"/bar\"",
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.path", "/nope".to_owned().into());
+        assert!(!router.execute(&mut ctx));
+        assert!(ctx.result.is_none());
     }
 }
