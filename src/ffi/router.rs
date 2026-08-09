@@ -170,7 +170,7 @@ pub unsafe extern "C" fn router_remove_matcher(
 ///
 /// This function will panic when:
 ///
-/// - `field` doesn't point to a valid C-style string which is a string field in the router's schema
+/// - `field` doesn't point to a valid C-style utf8 string
 ///
 /// # Safety
 ///

@@ -35,7 +35,7 @@ use std::mem;
 /// Implementors use the [`MatcherVisitor`] to describe their matching logic,
 /// allowing the prefilter to extract literal prefixes for fast filtering.
 ///
-/// See the docs on [`MatcherVisitor`] for information about how to use the visitor describe the
+/// See the docs on [`MatcherVisitor`] for information about how to use the visitor to describe the
 /// requirements of this matcher.
 ///
 /// # Examples
@@ -125,7 +125,7 @@ impl Frame {
 ///     visitor.visit_match_starts_with("D");
 /// }
 /// ```
-/// is interpreted as `(A && B) || (C && D)`, to instead match as `A && (B | C) && D`, introduce a
+/// is interpreted as `(A && B) || (C && D)`, to instead match as `A && (B || C) && D`, introduce a
 /// level of nesting:
 /// ```
 /// use atc_router_prefilter::matchers::MatcherVisitor;
@@ -315,7 +315,7 @@ impl MatcherVisitor {
     ///
     /// impl Matcher for MultiVersionRoute {
     ///     fn visit(&self, visitor: &mut MatcherVisitor) {
-    ///         // (startsWith("/v1") && contains("abc") || (startsWith("/v2") && contains("def"))
+    ///         // (startsWith("/v1") && contains("abc")) || (startsWith("/v2") && contains("def"))
     ///         visitor.visit_match_starts_with("/v1");
     ///         visitor.visit_match_regex(r"abc");
     ///         visitor.visit_or_in();
