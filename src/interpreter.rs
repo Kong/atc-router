@@ -1,4 +1,7 @@
-use crate::ast::{BinaryOperator, Expression, LogicalExpression, Predicate, Value};
+use crate::ast::{
+    BinaryOperator, Expression, LogicalExpression, MatchedValue, Predicate, RegexMatchedValue,
+    Value,
+};
 use crate::context::{Context, Match};
 
 pub trait Execute {
@@ -72,8 +75,10 @@ impl Execute for Predicate {
             match self.op {
                 BinaryOperator::Equals => {
                     if lhs_value == &self.rhs {
-                        m.matches
-                            .insert(self.lhs.var_name.clone(), self.rhs.clone());
+                        m.matches.insert(
+                            self.lhs.var_name.clone(),
+                            MatchedValue::Plain(self.rhs.clone()),
+                        );
 
                         if any {
                             return true;
@@ -103,7 +108,12 @@ impl Execute for Predicate {
 
                         m.matches.insert(
                             self.lhs.var_name.clone(),
-                            Value::String(reg_cap.get(0).unwrap().as_str().to_string()),
+                            MatchedValue::Regex(Box::new(RegexMatchedValue {
+                                captured: Value::String(
+                                    reg_cap.get(0).unwrap().as_str().to_string(),
+                                ),
+                                expr: Value::String(rhs.as_str().to_string()),
+                            })),
                         );
 
                         for (i, c) in reg_cap.iter().enumerate() {
@@ -134,8 +144,10 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.starts_with(rhs) {
-                        m.matches
-                            .insert(self.lhs.var_name.clone(), self.rhs.clone());
+                        m.matches.insert(
+                            self.lhs.var_name.clone(),
+                            MatchedValue::Plain(self.rhs.clone()),
+                        );
                         if any {
                             return true;
                         }
@@ -151,8 +163,10 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.ends_with(rhs) {
-                        m.matches
-                            .insert(self.lhs.var_name.clone(), self.rhs.clone());
+                        m.matches.insert(
+                            self.lhs.var_name.clone(),
+                            MatchedValue::Plain(self.rhs.clone()),
+                        );
                         if any {
                             return true;
                         }

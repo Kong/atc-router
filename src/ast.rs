@@ -128,6 +128,34 @@ impl From<String> for Value {
     }
 }
 
+#[derive(Debug)]
+pub struct RegexMatchedValue {
+    pub captured: Value,
+    pub expr: Value,
+}
+
+#[derive(Debug)]
+pub enum MatchedValue {
+    Plain(Value),
+    Regex(Box<RegexMatchedValue>),
+}
+
+impl MatchedValue {
+    pub fn value(&self) -> &Value {
+        match self {
+            MatchedValue::Plain(v) => v,
+            MatchedValue::Regex(r) => &r.captured,
+        }
+    }
+
+    pub fn expression(&self) -> &Value {
+        match self {
+            MatchedValue::Plain(v) => v,
+            MatchedValue::Regex(r) => &r.expr,
+        }
+    }
+}
+
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Eq, PartialEq)]
 #[repr(C)]

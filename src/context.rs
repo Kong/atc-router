@@ -1,4 +1,4 @@
-use crate::ast::Value;
+use crate::ast::{MatchedValue, Value};
 use crate::schema::Schema;
 use fnv::FnvHashMap;
 use uuid::Uuid;
@@ -6,7 +6,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug)]
 pub struct Match {
     pub uuid: Uuid,
-    pub matches: FnvHashMap<String, Value>,
+    pub matches: FnvHashMap<String, MatchedValue>,
     pub captures: FnvHashMap<String, String>,
 }
 
