@@ -1,4 +1,9 @@
 #![deny(warnings, missing_debug_implementations)]
+// Transitive dev-dependencies (e.g. criterion vs. pest_derive) can pull in
+// two major versions of a proc-macro crate like `syn` independently of any
+// change here; this isn't something a single PR controls, so don't let it
+// fail the build.
+#![allow(clippy::multiple_crate_versions)]
 /*!
 This crate provides a powerful rule based matching engine that can match a set of routes
 against dynamic input value efficiently.
