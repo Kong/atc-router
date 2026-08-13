@@ -27,15 +27,16 @@ jobs:
       run: cargo update
 
     - name: 'Run cargo build'
-      run: cargo build
+      run: cargo build --locked
 
     - name: 'Run cargo test'
       run: |
-        cargo test --workspace --all-targets
-        cargo test --workspace --doc
+        cargo test --workspace --all-targets --locked
+        cargo test --workspace --doc --locked
 
     # Mirrors the invocation in lint.yml's rust-lint action, so this only
     # flags regressions caused by fresher dependencies, not lints outside
-    # what the PR-time check already covers.
+    # what the PR-time check already covers. --locked here just pins to
+    # what the 'cargo update' step above already resolved.
     - name: 'Run cargo clippy'
-      run: cargo clippy --manifest-path ./Cargo.toml -- -W clippy::correctness -W clippy::cargo -W clippy::suspicious -W clippy::style
+      run: cargo clippy --manifest-path ./Cargo.toml --locked -- -W clippy::correctness -W clippy::cargo -W clippy::suspicious -W clippy::style
