@@ -1,0 +1,41 @@
+---
+name: 'Dependency drift'
+
+'on':
+  schedule:
+    # Every Monday at 06:00 UTC.
+    - cron: '0 6 * * 1'
+  workflow_dispatch: {}
+
+jobs:
+  cargo-update-test:
+    name: 'Update deps and test'
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout source code'
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
+
+    - name: 'Install clippy'
+      run: rustup component add clippy
+
+    # Cargo.lock is committed for reproducible builds, but that means CI
+    # never re-resolves the graph. Do it here on a schedule instead, so
+    # drift like a transitive dependency bump (e.g. a proc-macro crate
+    # requiring a new major version of `syn`) is caught before it
+    # surfaces on an unrelated PR.
+    - name: 'Update dependencies'
+      run: cargo update
+
+    - name: 'Run cargo build'
+      run: cargo build
+
+    - name: 'Run cargo test'
+      run: |
+        cargo test --workspace --all-targets
+        cargo test --workspace --doc
+
+    # Mirrors the invocation in lint.yml's rust-lint action, so this only
+    # flags regressions caused by fresher dependencies, not lints outside
+    # what the PR-time check already covers.
+    - name: 'Run cargo clippy'
+      run: cargo clippy --manifest-path ./Cargo.toml -- -W clippy::correctness -W clippy::cargo -W clippy::suspicious -W clippy::style
