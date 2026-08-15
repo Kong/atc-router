@@ -8,8 +8,9 @@ CDEFS_FILE="$PROJECT_ROOT/lib/resty/router/cdefs.lua"
 
 echo "Generating FFI C definitions with cbindgen..."
 
-# luajit doesn't handle preprocessor defines
-CBINDGEN_OUTPUT=$(cbindgen -l c | grep -v -F '#define')
+# luajit doesn't handle preprocessor defines; `cat -s` collapses the blank-line
+# runs left behind into a single blank line
+CBINDGEN_OUTPUT=$(cbindgen -l c | grep -v -F '#define' | cat -s)
 
 TEMP_FILE=$(mktemp)
 
