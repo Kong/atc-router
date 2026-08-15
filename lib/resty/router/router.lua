@@ -66,6 +66,21 @@ function _M:remove_matcher(uuid)
     return clib.router_remove_matcher(self.router, priority, uuid) == true
 end
 
+function _M:enable_prefilter(field)
+    local errbuf = get_string_buf(ERR_BUF_MAX_LEN)
+    local errbuf_len = get_size_ptr()
+    errbuf_len[0] = ERR_BUF_MAX_LEN
+
+    if clib.router_enable_prefilter(self.router, field, errbuf, errbuf_len) == false then
+        return nil, ffi_string(errbuf, errbuf_len[0])
+    end
+
+    return true
+end
+
+function _M:disable_prefilter()
+    clib.router_disable_prefilter(self.router)
+end
 
 function _M:execute(context)
     assert(context.schema == self.schema)

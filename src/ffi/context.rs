@@ -1,4 +1,4 @@
-use crate::ast::Value;
+use crate::ast::{MatchedValue, Value};
 use crate::context::Context;
 use crate::ffi::{write_errbuf, CValue};
 use crate::schema::Schema;
@@ -128,9 +128,11 @@ pub unsafe extern "C" fn context_reset(context: &mut Context) {
 ///
 /// - `context`: a pointer to the [`Context`] object.
 /// - `uuid_hex`: If not `NULL`, the UUID of the matched matcher will be stored.
-/// - `matched_field`: If not `NULL`, the field name (C-style string) of the matched value will be stored.
-/// - `matched_value`: If the `matched_field` is not `NULL`, the value of the matched field will be stored.
-/// - `matched_value_len`: If the `matched_field` is not `NULL`, the length of the value of the matched field will be stored.
+/// - `matched_field`: If not `NULL`, a C-style string naming the field to query in the match result.
+/// - `matched_value`: If the `matched_field` is not `NULL`, the matched value for that field will be stored.
+/// - `matched_value_len`: If the `matched_field` is not `NULL`, the length of `matched_value` will be stored.
+/// - `matched_expr`: If `matched_field` is not `NULL`, the raw expression that matched the field will be stored.
+/// - `matched_expr_len`: If `matched_field` is not `NULL`, the length of the matched expression will be stored.
 /// - `capture_names`: A pointer to an array of pointers to the capture names, each element is a non-C-style string pointer.
 /// - `capture_names_len`: A pointer to an array of the length of each capture name.
 /// - `capture_values`: A pointer to an array of pointers to the capture values, each element is a non-C-style string pointer.
@@ -142,7 +144,7 @@ pub unsafe extern "C" fn context_reset(context: &mut Context) {
 ///
 /// # Lifetimes
 ///
-/// The string pointers stored in `matched_value`, `capture_names`, and `capture_values`
+/// The string pointers stored in `matched_value`, `matched_expr`, `capture_names`, and `capture_values`
 /// might be invalidated if any of the following operations are happened:
 ///
 /// - The `context` was deallocated.
@@ -169,6 +171,11 @@ pub unsafe extern "C" fn context_reset(context: &mut Context) {
 ///   `mem::size_of::<*const u8>()` bytes, and it must be properly aligned.
 /// - If `matched_value` is not `NULL`, `matched_value_len` must be valid to read and write for
 ///   `size_of::<usize>()` bytes, and it must be properly aligned.
+/// - If `matched_expr` is not `NULL`,
+///   `matched_expr` must be valid to read and write for
+///   `mem::size_of::<*const u8>()` bytes, and it must be properly aligned.
+/// - If `matched_expr` is not `NULL`, `matched_expr_len` must be valid to read and write for
+///   `size_of::<usize>()` bytes, and it must be properly aligned.
 /// - If `uuid_hex` is not `NULL`, `capture_names` must be valid to read and write for
 ///   `<captures> * size_of::<*const u8>()` bytes, and it must be properly aligned.
 /// - If `uuid_hex` is not `NULL`, `capture_names_len` must be valid to read and write for
@@ -189,6 +196,8 @@ pub unsafe extern "C" fn context_get_result(
     matched_field: *const i8,
     matched_value: *mut *const u8,
     matched_value_len: *mut usize,
+    matched_expr: *mut *const u8,
+    matched_expr_len: *mut usize,
     capture_names: *mut *const u8,
     capture_names_len: *mut usize,
     capture_values: *mut *const u8,
@@ -210,11 +219,25 @@ pub unsafe extern "C" fn context_get_result(
                 .unwrap();
             assert!(!matched_value.is_null());
             assert!(!matched_value_len.is_null());
-            if let Some(Value::String(v)) = res.matches.get(matched_field) {
+            let matched = res.matches.get(matched_field);
+
+            if let Some(Value::String(v)) = matched.map(MatchedValue::value) {
                 *matched_value = v.as_bytes().as_ptr();
                 *matched_value_len = v.len();
             } else {
+                *matched_value = std::ptr::null();
                 *matched_value_len = 0;
+            }
+
+            if !matched_expr.is_null() {
+                assert!(!matched_expr_len.is_null());
+                if let Some(Value::String(v)) = matched.map(MatchedValue::expression) {
+                    *matched_expr = v.as_bytes().as_ptr();
+                    *matched_expr_len = v.len();
+                } else {
+                    *matched_expr = std::ptr::null();
+                    *matched_expr_len = 0;
+                }
             }
         }
 

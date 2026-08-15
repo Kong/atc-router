@@ -70,6 +70,8 @@ intptr_t context_get_result(const struct Context *context,
                             const int8_t *matched_field,
                             const uint8_t **matched_value,
                             uintptr_t *matched_value_len,
+                            const uint8_t **matched_expr,
+                            uintptr_t *matched_expr_len,
                             const uint8_t **capture_names,
                             uintptr_t *capture_names_len,
                             const uint8_t **capture_values,
@@ -96,6 +98,13 @@ bool router_add_matcher(struct Router *router,
                         uintptr_t *errbuf_len);
 
 bool router_remove_matcher(struct Router *router, uintptr_t priority, const int8_t *uuid);
+
+bool router_enable_prefilter(struct Router *router,
+                             const uint8_t *field,
+                             uint8_t *errbuf,
+                             uintptr_t *errbuf_len);
+
+void router_disable_prefilter(struct Router *router);
 
 bool router_execute(const struct Router *router, struct Context *context);
 

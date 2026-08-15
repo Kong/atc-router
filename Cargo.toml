@@ -1,6 +1,6 @@
 [package]
 name = "atc-router"
-version = "1.7.1"
+version = "1.8.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Datong Sun <datong.sun@konghq.com>", "Kong Contributors"]
@@ -15,19 +15,20 @@ categories = ["compilers"]
 pest = "2.7"
 pest_derive = "2.7"
 cidr = "0.3"
-lazy_static = "1.5"
 uuid = "1.8"
 regex = "1"
 serde = { version = "1.0", features = ["derive"], optional = true }
 serde_regex = { version = "1.1", optional = true }
 fnv = "1"
 bitflags = { version = "2.6", optional = true }
+atc_router_prefilter = { version = "1.0", path = "crates/atc_router_prefilter" }
 
 [dev-dependencies]
-criterion = "0"
+criterion = "0.7"
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
+bench = false
 
 [features]
 default = ["ffi"]
@@ -42,3 +43,10 @@ harness = false
 [[bench]]
 name = "match_mix"
 harness = false
+
+[[bench]]
+name = "worst_case"
+harness = false
+
+[workspace]
+members = ["crates/*"]

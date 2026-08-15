@@ -29,4 +29,6 @@ jobs:
       run: cargo build
 
     - name: 'Run cargo test'
-      run: cargo test
+      run: |
+        cargo test --workspace --all-targets
+        cargo test --workspace --doc

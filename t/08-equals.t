@@ -59,9 +59,9 @@ __DATA__
 GET /t
 --- response_body
 true
-a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnilnil
 true
-a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnilnil
 --- no_error_log
 [error]
 [warn]
@@ -83,6 +83,7 @@ a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
             s:add_field("http.path", "String")
 
             local r = router.new(s)
+            assert(r:enable_prefilter("http.path"))
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
                                  "http.path == \"/foo\""))
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-8aa5583d150c",
@@ -107,9 +108,9 @@ a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
 GET /t
 --- response_body
 true
-a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnilnil
 true
-a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnilnil
 --- no_error_log
 [error]
 [warn]
@@ -155,9 +156,9 @@ a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
 GET /t
 --- response_body
 true
-a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-1aa5583d150cnilnilnil
 true
-a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnil
+a921a9aa-ec0e-4cf3-a6cc-8aa5583d150cnilnilnil
 --- no_error_log
 [error]
 [warn]

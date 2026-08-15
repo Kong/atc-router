@@ -21,7 +21,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: in operator has correct type check
+=== TEST 1: multiple regexes OR'd together, request hits the first branch
 --- http_config eval: $::HttpConfig
 --- config
     location = /t {
@@ -31,28 +31,29 @@ __DATA__
             local context = require("resty.router.context")
 
             local s = schema.new()
-
             s:add_field("http.path", "String")
-            s:add_field("tcp.port", "Int")
 
             local r = router.new(s)
-            assert(r:enable_prefilter("http.path"))
-            ngx.say(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
-                                  "tcp.port in 80"))
+            assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
+                                 "http.path ~ r#\"^/[a-z0-9_-]+/v2/authenticate\"# || http.path ~ r#\"^/[a-z0-9_-]+/v2/fetch-principal\"#"))
 
-            ngx.say(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
-                                  "http.path in 80"))
+            local c = context.new(s)
+            c:add_value("http.path", "/foo/v2/authenticate")
 
-            ngx.say(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
-                                  "http.path in \"foo\""))
+            local matched = r:execute(c)
+            ngx.say(matched)
+
+            local uuid, matched_value, _, matched_expr = c:get_result("http.path")
+            ngx.say(matched_value)
+            ngx.say(matched_expr)
         }
     }
 --- request
 GET /t
 --- response_body
-nilIn/NotIn operators only supports IP in CIDR
-nilIn/NotIn operators only supports IP in CIDR
-nilIn/NotIn operators only supports IP in CIDR
+true
+/foo/v2/authenticate
+^/[a-z0-9_-]+/v2/authenticate
 --- no_error_log
 [error]
 [warn]
@@ -60,7 +61,7 @@ nilIn/NotIn operators only supports IP in CIDR
 
 
 
-=== TEST 2: in operator works with IPAddr and IpCidr operands
+=== TEST 2: multiple regexes OR'd together, request hits the second branch
 --- http_config eval: $::HttpConfig
 --- config
     location = /t {
@@ -70,38 +71,29 @@ nilIn/NotIn operators only supports IP in CIDR
             local context = require("resty.router.context")
 
             local s = schema.new()
-
-            s:add_field("l3.ip", "IpAddr")
+            s:add_field("http.path", "String")
 
             local r = router.new(s)
             assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
-                                 "l3.ip in 192.168.12.0/24"))
+                                 "http.path ~ r#\"^/[a-z0-9_-]+/v2/authenticate\"# || http.path ~ r#\"^/[a-z0-9_-]+/v2/fetch-principal\"#"))
 
             local c = context.new(s)
-            c:add_value("l3.ip", "192.168.12.1")
+            c:add_value("http.path", "/foo/v2/fetch-principal")
 
             local matched = r:execute(c)
             ngx.say(matched)
 
-            c = context.new(s)
-            c:add_value("l3.ip", "192.168.1.1")
-
-            local matched = r:execute(c)
-            ngx.say(matched)
-
-            assert(r:remove_matcher("a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c"))
-            assert(r:add_matcher(0, "a921a9aa-ec0e-4cf3-a6cc-1aa5583d150c",
-                                 "l3.ip not in 192.168.12.0/24"))
-            local matched = r:execute(c)
-            ngx.say(matched)
+            local uuid, matched_value, _, matched_expr = c:get_result("http.path")
+            ngx.say(matched_value)
+            ngx.say(matched_expr)
         }
     }
 --- request
 GET /t
 --- response_body
 true
-false
-true
+/foo/v2/fetch-principal
+^/[a-z0-9_-]+/v2/fetch-principal
 --- no_error_log
 [error]
 [warn]
