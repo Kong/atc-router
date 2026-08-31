@@ -1,6 +1,6 @@
 use crate::ast::{BinaryOperator, Expression, LogicalExpression, Type};
 use crate::context::{Context, Match};
-use crate::interpreter::Execute;
+use crate::interpreter::{collect_into, Eval, Matched};
 use crate::parser::parse;
 use crate::schema::Schema;
 use crate::semantics::{FieldCounter, Validate};
@@ -130,7 +130,18 @@ where
     /// Note that unlike `execute`, this doesn't set `Context.result`
     /// but it also doesn't need a `&mut Context`.
     pub fn try_match(&self, context: &Context) -> Option<Match> {
-        let mut mat = Match::new();
+        // A candidate that fails would only have its matched values and
+        // captures discarded, so evaluation just notes what matched and the
+        // winner alone pays to turn that into a `Match`. The buffer is reused
+        // across candidates, so a walk allocates once. See `interpreter::Eval`.
+        let mut noted: Vec<Matched<'_>> = Vec::new();
+
+        let finish = |noted: &[Matched<'_>], uuid: Uuid| {
+            let mut mat = Match::new();
+            collect_into(noted, &mut mat);
+            mat.uuid = uuid;
+            mat
+        };
 
         match self.prefilter_matches(context) {
             Some(possible_matches) => {
@@ -142,21 +153,18 @@ where
                         }
                         continue;
                     };
-                    if expr.execute(context, &mut mat) {
-                        mat.uuid = key.1;
-                        return Some(mat);
+                    noted.clear();
+                    if expr.eval(context, &mut noted) {
+                        return Some(finish(&noted, key.1));
                     }
-                    mat.reset();
                 }
             }
             None => {
                 for (MatcherKey(_, id), m) in self.matchers.iter().rev() {
-                    if m.execute(context, &mut mat) {
-                        mat.uuid = *id;
-                        return Some(mat);
+                    noted.clear();
+                    if m.eval(context, &mut noted) {
+                        return Some(finish(&noted, *id));
                     }
-
-                    mat.reset();
                 }
             }
         }
@@ -317,6 +325,12 @@ mod tests {
     use super::Router;
 
     use std::sync::Arc;
+
+    fn make_uuid(a: usize) -> Uuid {
+        format!("8cb2a7d0-c775-4ed9-989f-{:012}", a)
+            .parse()
+            .unwrap()
+    }
 
     #[test]
     fn execute_succeeds() {
@@ -514,6 +528,123 @@ mod tests {
             res.matches.get("http.path").map(MatchedValue::value),
             Some(&Value::String("/123/bar".to_string()))
         );
+    }
+
+    /// A candidate that matches part of its expression and then fails must not
+    /// leave anything behind for the route that eventually wins.
+    #[test]
+    fn test_failed_candidate_leaves_no_residue() {
+        let mut schema = Schema::default();
+        schema.add_field("http.host", Type::String);
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(&schema);
+        // Higher priority: the host matches, then the path fails.
+        router
+            .add_matcher(
+                10,
+                make_uuid(1),
+                r#"http.host == "a.test" && http.path ^= "/nope""#,
+            )
+            .expect("should add");
+        // Lower priority: this one wins.
+        router
+            .add_matcher(
+                1,
+                make_uuid(2),
+                r#"http.host == "a.test" && http.path ^= "/yes""#,
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.host", "a.test".to_owned().into());
+        ctx.add_value("http.path", "/yes/please".to_owned().into());
+
+        assert!(router.execute(&mut ctx));
+        let res = ctx.result.as_ref().unwrap();
+
+        assert_eq!(res.uuid, make_uuid(2));
+        // The winner's own prefix, not the loser's.
+        assert_eq!(
+            res.matches.get("http.path").map(MatchedValue::expression),
+            Some(&Value::String("/yes".to_string())),
+        );
+        assert_eq!(
+            res.matches.get("http.host").map(MatchedValue::expression),
+            Some(&Value::String("a.test".to_string())),
+        );
+        assert_eq!(res.matches.len(), 2);
+        assert!(res.captures.is_empty());
+    }
+
+    /// Regex captures belong to the winning route only, and survive a losing
+    /// candidate that also ran a matching regex.
+    #[test]
+    fn test_captures_come_from_the_winner_only() {
+        let mut schema = Schema::default();
+        schema.add_field("http.host", Type::String);
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(&schema);
+        // Higher priority: the regex matches and captures, then the host fails.
+        router
+            .add_matcher(
+                10,
+                make_uuid(1),
+                r##"http.path ~ r#"^/(loser)/(\d+)$"# && http.host == "other.test""##,
+            )
+            .expect("should add");
+        router
+            .add_matcher(
+                1,
+                make_uuid(2),
+                r##"http.path ~ r#"^/(?P<who>winner)/(\d+)$"#"##,
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.host", "a.test".to_owned().into());
+        ctx.add_value("http.path", "/winner/42".to_owned().into());
+
+        assert!(router.execute(&mut ctx));
+        let res = ctx.result.as_ref().unwrap();
+
+        assert_eq!(res.uuid, make_uuid(2));
+        assert_eq!(res.captures.get("1").map(String::as_str), Some("winner"));
+        assert_eq!(res.captures.get("2").map(String::as_str), Some("42"));
+        assert_eq!(res.captures.get("who").map(String::as_str), Some("winner"));
+        // Nothing from the losing candidate.
+        assert!(!res.captures.values().any(|v| v == "loser"));
+    }
+
+    /// The second, collecting run must take the same `||` branch the deciding
+    /// run took, so the recorded value is the branch that actually matched.
+    #[test]
+    fn test_or_branch_agrees_between_runs() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                0,
+                make_uuid(1),
+                r#"http.path ^= "/alpha" || http.path ^= "/beta""#,
+            )
+            .expect("should add");
+
+        for (path, expected) in [("/alpha/x", "/alpha"), ("/beta/x", "/beta")] {
+            let mut ctx = Context::new(&schema);
+            ctx.add_value("http.path", path.to_owned().into());
+
+            assert!(router.execute(&mut ctx));
+            let res = ctx.result.as_ref().unwrap();
+            assert_eq!(
+                res.matches.get("http.path").map(MatchedValue::expression),
+                Some(&Value::String(expected.to_string())),
+                "path {path}"
+            );
+        }
     }
 
     #[test]
