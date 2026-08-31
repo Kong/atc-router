@@ -37,25 +37,16 @@ fn schema() -> Schema {
 /// Two shared predicates match on every candidate, then the path discriminates.
 /// A losing candidate collects two matched values and throws them away.
 fn shared_prefix_expr(i: usize) -> String {
-    format!(
-        r#"http.host == "{HOST}" && http.method == "GET" && http.path ^= "/api/v{i}/""#
-    )
+    format!(r#"http.host == "{HOST}" && http.method == "GET" && http.path ^= "/api/v{i}/""#)
 }
 
 /// The regex matches on every candidate, so every losing candidate runs
 /// `captures()` and clones the capture groups before the host predicate fails.
 fn shared_regex_expr(i: usize) -> String {
-    format!(
-        r##"http.path ~ r#"^/api/(v[0-9]+)/(.+)$"# && http.host == "h{i}.example.com""##
-    )
+    format!(r##"http.path ~ r#"^/api/(v[0-9]+)/(.+)$"# && http.host == "h{i}.example.com""##)
 }
 
-fn bench_shape(
-    c: &mut Criterion,
-    group: &str,
-    expr: fn(usize) -> String,
-    matching_host: bool,
-) {
+fn bench_shape(c: &mut Criterion, group: &str, expr: fn(usize) -> String, matching_host: bool) {
     let schema = schema();
     let mut g = c.benchmark_group(group);
 
