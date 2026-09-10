@@ -79,10 +79,11 @@ jobs:
       with:
         files: |
           **.rs
+          clippy.toml
+          **/Cargo.toml
 
     - name: Rust Clippy
       if: steps.changed-files.outputs.any_changed == 'true'
       uses: Kong/public-shared-actions/code-check-actions/rust-lint@0ccacffed804d85da3f938a1b78c12831935f992 # v2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-
