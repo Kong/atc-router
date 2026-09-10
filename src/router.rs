@@ -379,6 +379,163 @@ mod tests {
     }
 
     #[test]
+    fn failed_and_branch_does_not_leak_state_into_successful_or_branch() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+        schema.add_field("http.role", Type::String);
+        schema.add_field("http.method", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                0,
+                Uuid::default(),
+                r##"(http.path ~ r#"^/users/(?<user_id>[^/]+)"# && http.role == "admin") || http.method == "GET""##,
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.path", Value::String("/users/alice".to_owned()));
+        ctx.add_value("http.method", Value::String("GET".to_owned()));
+
+        let result = router.try_match(&ctx).expect("method branch should match");
+        assert!(result.captures.is_empty());
+        assert!(!result.matches.contains_key("http.path"));
+        assert_eq!(
+            result.matches.get("http.method"),
+            Some(&Value::String("GET".to_owned()))
+        );
+    }
+
+    #[test]
+    fn failed_or_alternative_does_not_leak_captures() {
+        let mut schema = Schema::default();
+        schema.add_field("first", Type::String);
+        schema.add_field("guard", Type::String);
+        schema.add_field("second", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                0,
+                Uuid::default(),
+                r##"(first ~ r#"(?<stale>left)"# && guard == "yes") || second ~ r#"(?<winner>right)"#"##,
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("first", Value::String("left".to_owned()));
+        ctx.add_value("second", Value::String("right".to_owned()));
+
+        let result = router.try_match(&ctx).expect("second branch should match");
+        assert!(!result.captures.contains_key("stale"));
+        assert_eq!(
+            result.captures.get("winner").map(String::as_str),
+            Some("right")
+        );
+    }
+
+    #[test]
+    fn nested_failed_branch_preserves_enclosing_successful_state() {
+        let mut schema = Schema::default();
+        schema.add_field("outer", Type::String);
+        schema.add_field("inner", Type::String);
+        schema.add_field("guard", Type::String);
+        schema.add_field("fallback", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                0,
+                Uuid::default(),
+                r##"outer ~ r#"(?<outer_capture>outside)"# && ((inner ~ r#"(?<inner_capture>inside)"# && guard == "yes") || fallback == "ok")"##,
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("outer", Value::String("outside".to_owned()));
+        ctx.add_value("inner", Value::String("inside".to_owned()));
+        ctx.add_value("fallback", Value::String("ok".to_owned()));
+
+        let result = router
+            .try_match(&ctx)
+            .expect("fallback branch should match");
+        assert_eq!(
+            result.captures.get("outer_capture").map(String::as_str),
+            Some("outside")
+        );
+        assert!(!result.captures.contains_key("inner_capture"));
+        assert!(result.matches.contains_key("outer"));
+        assert!(!result.matches.contains_key("inner"));
+        assert!(result.matches.contains_key("fallback"));
+    }
+
+    #[test]
+    fn failed_higher_priority_matcher_does_not_leak_state() {
+        let mut schema = Schema::default();
+        schema.add_field("candidate", Type::String);
+        schema.add_field("fallback", Type::String);
+
+        let higher_priority_id = Uuid::from_u128(1);
+        let lower_priority_id = Uuid::from_u128(2);
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                10,
+                higher_priority_id,
+                r##"candidate ~ r#"^(?<stale>captured)$"#"##,
+            )
+            .expect("should add higher-priority matcher");
+        router
+            .add_matcher(
+                0,
+                lower_priority_id,
+                r##"fallback ~ r#"(?<winner>matched)"#"##,
+            )
+            .expect("should add lower-priority matcher");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("candidate", Value::String("captured".to_owned()));
+        ctx.add_value("candidate", Value::String("not-captured".to_owned()));
+        ctx.add_value("fallback", Value::String("matched".to_owned()));
+
+        let result = router
+            .try_match(&ctx)
+            .expect("lower-priority matcher should match");
+        assert_eq!(result.uuid, lower_priority_id);
+        assert!(!result.captures.contains_key("stale"));
+        assert_eq!(
+            result.captures.get("winner").map(String::as_str),
+            Some("matched")
+        );
+        assert!(!result.matches.contains_key("candidate"));
+        assert!(result.matches.contains_key("fallback"));
+    }
+
+    #[test]
+    fn successful_not_does_not_retain_inner_branch_captures() {
+        let mut schema = Schema::default();
+        schema.add_field("http.path", Type::String);
+        schema.add_field("guard", Type::String);
+
+        let mut router = Router::new(&schema);
+        router
+            .add_matcher(
+                0,
+                Uuid::default(),
+                r##"!(http.path ~ r#"^/users/(?<user_id>[^/]+)"# && guard == "yes")"##,
+            )
+            .expect("should add");
+
+        let mut ctx = Context::new(&schema);
+        ctx.add_value("http.path", Value::String("/users/alice".to_owned()));
+
+        let result = router.try_match(&ctx).expect("negation should match");
+        assert!(result.captures.is_empty());
+        assert!(result.matches.is_empty());
+    }
+
+    #[test]
     fn test_shared_schema_instantiation() {
         let mut schema = Schema::default();
         schema.add_field("http.path", Type::String);

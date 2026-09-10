@@ -12,9 +12,34 @@ impl Execute for Expression {
     fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
         match self {
             Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
-                LogicalExpression::Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
-                LogicalExpression::Not(r) => !r.execute(ctx, m),
+                LogicalExpression::And(l, r) => {
+                    let mut branch = m.clone();
+                    if l.execute(ctx, &mut branch) && r.execute(ctx, &mut branch) {
+                        *m = branch;
+                        true
+                    } else {
+                        false
+                    }
+                }
+                LogicalExpression::Or(l, r) => {
+                    let mut branch = m.clone();
+                    if l.execute(ctx, &mut branch) {
+                        *m = branch;
+                        return true;
+                    }
+
+                    let mut branch = m.clone();
+                    if r.execute(ctx, &mut branch) {
+                        *m = branch;
+                        true
+                    } else {
+                        false
+                    }
+                }
+                LogicalExpression::Not(r) => {
+                    let mut branch = m.clone();
+                    !r.execute(ctx, &mut branch)
+                }
             },
             Expression::Predicate(p) => p.execute(ctx, m),
         }
