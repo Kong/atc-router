@@ -48,5 +48,9 @@ harness = false
 name = "worst_case"
 harness = false
 
+[[bench]]
+name = "partial_match"
+harness = false
+
 [workspace]
 members = ["crates/*"]

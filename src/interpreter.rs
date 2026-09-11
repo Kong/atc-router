@@ -3,26 +3,126 @@ use crate::ast::{
     Value,
 };
 use crate::context::{Context, Match};
+use std::borrow::Cow;
 
 pub trait Execute {
     fn execute(&self, ctx: &Context, m: &mut Match) -> bool;
 }
 
+/// A predicate that matched, noted during evaluation instead of being recorded
+/// into a [`Match`] straight away.
+///
+/// Recording a matched value costs a `String` clone for the field name and a
+/// `Value` clone for the expression side; a matching regex additionally runs
+/// `captures()`. A router visits many candidates and keeps at most one, so
+/// paying that on every candidate throws almost all of it away. Noting a
+/// reference costs a `Vec` push instead, and only the expression that wins is
+/// turned into a `Match` (see [`collect_into`]).
+pub(crate) enum Matched<'a> {
+    Plain(&'a Predicate),
+    /// The subject the regex matched, kept so `captures()` runs once, at commit
+    /// time. It borrows the context value except under a `lower` transformation,
+    /// which has no borrowable original.
+    Regex {
+        pred: &'a Predicate,
+        subject: Cow<'a, str>,
+    },
+}
+
+/// Turns the predicates noted during evaluation into a [`Match`].
+///
+/// Order matters: later entries overwrite earlier ones for the same field,
+/// which is what recording inline during evaluation also did.
+pub(crate) fn collect_into(matched: &[Matched<'_>], m: &mut Match) {
+    for entry in matched {
+        match entry {
+            Matched::Plain(pred) => {
+                m.matches.insert(
+                    pred.lhs.var_name.clone(),
+                    MatchedValue::Plain(pred.rhs.clone()),
+                );
+            }
+            Matched::Regex { pred, subject } => {
+                // SAFETY: the predicate matched during evaluation, so the regex
+                // and the subject both still apply.
+                let rhs = pred.rhs.as_regex().unwrap();
+                let reg_cap = rhs.captures(subject).unwrap();
+
+                m.matches.insert(
+                    pred.lhs.var_name.clone(),
+                    MatchedValue::Regex(Box::new(RegexMatchedValue {
+                        captured: Value::String(reg_cap.get(0).unwrap().as_str().to_string()),
+                        expr: Value::String(rhs.as_str().to_string()),
+                    })),
+                );
+
+                for (i, c) in reg_cap.iter().enumerate() {
+                    if let Some(c) = c {
+                        m.captures.insert(i.to_string(), c.as_str().to_string());
+                    }
+                }
+
+                // named captures
+                for n in rhs.capture_names().flatten() {
+                    if let Some(value) = reg_cap.name(n) {
+                        m.captures.insert(n.to_string(), value.as_str().to_string());
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Noting a match is off the comparison path: a walk performs one comparison
+/// per candidate and notes something only when a predicate actually matches, so
+/// keeping this out of line leaves `Predicate::eval` small enough to inline.
+#[cold]
+#[inline(never)]
+fn note_plain<'a>(out: &mut Vec<Matched<'a>>, pred: &'a Predicate) {
+    out.push(Matched::Plain(pred));
+}
+
+/// Evaluation that notes what matched rather than recording it.
+pub(crate) trait Eval {
+    fn eval<'a>(&'a self, ctx: &'a Context, out: &mut Vec<Matched<'a>>) -> bool;
+}
+
 impl Execute for Expression {
     fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
-        match self {
-            Expression::Logical(l) => match l.as_ref() {
-                LogicalExpression::And(l, r) => l.execute(ctx, m) && r.execute(ctx, m),
-                LogicalExpression::Or(l, r) => l.execute(ctx, m) || r.execute(ctx, m),
-                LogicalExpression::Not(r) => !r.execute(ctx, m),
-            },
-            Expression::Predicate(p) => p.execute(ctx, m),
-        }
+        let mut out = Vec::new();
+        let matched = self.eval(ctx, &mut out);
+        // Recorded whatever the outcome, because recording inline did the same:
+        // a caller that keeps a `Match` from a false expression still sees the
+        // predicates that matched along the way.
+        collect_into(&out, m);
+        matched
     }
 }
 
 impl Execute for Predicate {
     fn execute(&self, ctx: &Context, m: &mut Match) -> bool {
+        let mut out = Vec::new();
+        let matched = self.eval(ctx, &mut out);
+        collect_into(&out, m);
+        matched
+    }
+}
+
+impl Eval for Expression {
+    fn eval<'a>(&'a self, ctx: &'a Context, out: &mut Vec<Matched<'a>>) -> bool {
+        match self {
+            Expression::Logical(l) => match l.as_ref() {
+                LogicalExpression::And(l, r) => l.eval(ctx, out) && r.eval(ctx, out),
+                LogicalExpression::Or(l, r) => l.eval(ctx, out) || r.eval(ctx, out),
+                LogicalExpression::Not(r) => !r.eval(ctx, out),
+            },
+            Expression::Predicate(p) => p.eval(ctx, out),
+        }
+    }
+}
+
+impl Eval for Predicate {
+    fn eval<'a>(&'a self, ctx: &'a Context, out: &mut Vec<Matched<'a>>) -> bool {
         let lhs_values = match ctx.value_of(&self.lhs.var_name) {
             None => return false,
             Some(v) => v,
@@ -33,7 +133,8 @@ impl Execute for Predicate {
         // can only be "all" or "any" mode.
         // - all: all values must match (default)
         // - any: ok if any any matched
-        for mut lhs_value in lhs_values.iter() {
+        for original in lhs_values.iter() {
+            let mut lhs_value = original;
             let lhs_value_transformed;
 
             if lower {
@@ -50,10 +151,7 @@ impl Execute for Predicate {
             match self.op {
                 BinaryOperator::Equals => {
                     if lhs_value == &self.rhs {
-                        m.matches.insert(
-                            self.lhs.var_name.clone(),
-                            MatchedValue::Plain(self.rhs.clone()),
-                        );
+                        note_plain(out, self);
 
                         if any {
                             return true;
@@ -79,30 +177,19 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_regex().unwrap();
 
                     if rhs.is_match(lhs) {
-                        let reg_cap = rhs.captures(lhs).unwrap();
-
-                        m.matches.insert(
-                            self.lhs.var_name.clone(),
-                            MatchedValue::Regex(Box::new(RegexMatchedValue {
-                                captured: Value::String(
-                                    reg_cap.get(0).unwrap().as_str().to_string(),
-                                ),
-                                expr: Value::String(rhs.as_str().to_string()),
-                            })),
-                        );
-
-                        for (i, c) in reg_cap.iter().enumerate() {
-                            if let Some(c) = c {
-                                m.captures.insert(i.to_string(), c.as_str().to_string());
-                            }
-                        }
-
-                        // named captures
-                        for n in rhs.capture_names().flatten() {
-                            if let Some(value) = reg_cap.name(n) {
-                                m.captures.insert(n.to_string(), value.as_str().to_string());
-                            }
-                        }
+                        // `captures()` is a second, much more expensive run of
+                        // the regex. It is deferred to `collect_into`, so only
+                        // the winning expression pays for it.
+                        out.push(Matched::Regex {
+                            pred: self,
+                            subject: if lower {
+                                Cow::Owned(lhs.to_string())
+                            } else {
+                                // SAFETY: without a transformation `lhs_value`
+                                // is `original`, whose data lives in `ctx`.
+                                Cow::Borrowed(original.as_str().unwrap())
+                            },
+                        });
 
                         if any {
                             return true;
@@ -119,10 +206,7 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.starts_with(rhs) {
-                        m.matches.insert(
-                            self.lhs.var_name.clone(),
-                            MatchedValue::Plain(self.rhs.clone()),
-                        );
+                        note_plain(out, self);
                         if any {
                             return true;
                         }
@@ -138,10 +222,7 @@ impl Execute for Predicate {
                     let rhs = self.rhs.as_str().unwrap();
 
                     if lhs.ends_with(rhs) {
-                        m.matches.insert(
-                            self.lhs.var_name.clone(),
-                            MatchedValue::Plain(self.rhs.clone()),
-                        );
+                        note_plain(out, self);
                         if any {
                             return true;
                         }
