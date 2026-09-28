@@ -108,7 +108,8 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// - `atc`: a C-style string representing the ATC expression.
 /// - `schema`: a valid pointer to a [`Schema`] object, as returned by [`schema_new`].
 /// - `fields_buf`: a buffer for storing the fields used in the expression.
-/// - `fields_buf_len`: a pointer to the length of `fields_buf`.
+/// - `fields_buf_len`: an in/out pointer; its input value is the buffer capacity, and on success
+///   it receives the number of bytes written to `fields_buf`.
 /// - `fields_total`: a pointer for storing the total number of unique fields used in the expression.
 /// - `operators`: a pointer for storing the bitflags representing used operators.
 /// - `errbuf`: a buffer to store any error messages.
@@ -122,11 +123,12 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// - `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL` (2): The provided `fields_buf` is too small.
 ///
 /// If `fields_buf_len` indicates that `fields_buf` is sufficient, this function writes the used fields to `fields_buf`, each field terminated by `\0`.
-/// It stores the total number of fields in `fields_total`.
+/// It stores the total number of fields in `fields_total` and the number of bytes written in
+/// `fields_buf_len`.
 ///
 /// If `fields_buf_len` indicates that `fields_buf` is insufficient, it returns
 /// `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL`; `fields_total` reports the number of complete
-/// fields written before the buffer was exhausted.
+/// fields written before the buffer was exhausted, and `fields_buf_len` retains its input capacity.
 ///
 /// After parsing and validation succeed, `operators` is updated with the bitflags for all operators
 /// in the expression, including when the fields buffer is too small.
@@ -140,7 +142,8 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// - `atc` must be a valid pointer to a C-style string, properly aligned, and must not contain an internal `\0`.
 /// - `schema` must be a valid pointer returned by [`schema_new`].
 /// - `fields_buf`, must be valid for writing `*fields_buf_len` bytes.
-/// - `fields_buf_len` must be a valid pointer to write `size_of::<usize>()` bytes and properly aligned.
+/// - `fields_buf_len` must be a valid pointer to read and write `size_of::<usize>()` bytes
+///   and properly aligned.
 /// - `fields_total` must be a valid pointer to write `size_of::<usize>()` bytes and properly aligned.
 /// - `operators` must be a valid pointer to write `size_of::<u64>()` bytes and properly aligned.
 /// - `errbuf` must be valid for reading and writing `*errbuf_len` bytes.
@@ -180,6 +183,9 @@ pub unsafe extern "C" fn expression_validate(
         return ATC_ROUTER_EXPRESSION_VALIDATE_FAILED;
     }
 
+    // Preserve the caller's input capacity for all checks; report consumed bytes on success.
+    let fields_buf_capacity = *fields_buf_len;
+
     // Collect operators before writing fields so a short buffer still returns them.
     let mut ops = BinaryOperatorFlags::empty();
     for pred in ast.iter_predicates() {
@@ -203,7 +209,7 @@ pub unsafe extern "C" fn expression_validate(
             let field_len = field_slice.len();
             let next_total_fields_length = total_fields_length + field_len;
 
-            if *fields_buf_len < next_total_fields_length {
+            if fields_buf_capacity < next_total_fields_length {
                 return ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL;
             }
 
@@ -215,6 +221,7 @@ pub unsafe extern "C" fn expression_validate(
         }
     }
 
+    *fields_buf_len = total_fields_length;
     ATC_ROUTER_EXPRESSION_VALIDATE_OK
 }
 
@@ -284,7 +291,7 @@ mod tests {
         schema.add_field("net.src.ip", Type::IpAddr);
         schema.add_field("http.path", Type::String);
 
-        let result = expr_validate_on(&schema, atc, 47);
+        let result = expr_validate_on(&schema, atc, 64);
 
         assert!(result.is_ok(), "Validation failed");
         let (fields, fields_buf_len, ops) = result.unwrap(); // Unwrap is safe since we've already asserted it
