@@ -252,7 +252,9 @@ pub unsafe extern "C" fn router_execute(router: &Router<&Schema>, context: &mut 
 ///   (NOT C-style strings) that are actually used in the router, which will be filled in.
 ///   if `fields` is `NULL`, this function will only return the number of fields used
 ///   in the router.
-/// - `fields_len`: a pointer to an array of the length of each field name.
+/// - `fields_len`: a pointer to an array that will receive the length of each field name.
+///   When `fields` is not `NULL`, its first element must be set to the number of available
+///   slots in both output arrays before calling this function.
 ///
 /// # Lifetimes
 ///
@@ -277,9 +279,11 @@ pub unsafe extern "C" fn router_execute(router: &Router<&Schema>, context: &mut 
 ///
 /// - `router` must be a valid pointer returned by [`router_new`].
 /// - If `fields` is not `NULL`, `fields` must be valid to read and write for
-///   `fields_len * size_of::<*const u8>()` bytes, and it must be properly aligned.
-/// - If `fields` is not `NULL`, `fields_len` must be valid to read and write for
-///   `size_of::<usize>()` bytes, and it must be properly aligned.
+///   `*fields_len` elements of type `*const u8`, and it must be properly aligned.
+/// - If `fields` is not `NULL`, `fields_len` must be non-null and point to an array
+///   valid to read and write for `*fields_len` elements of type `usize`, and it must be
+///   properly aligned. Its first element is the input capacity (at least the number of
+///   fields in the router) and is overwritten with the first field's length on output.
 /// - DO NOT write the memory pointed by the elements of `fields`.
 /// - DO NOT access the memory pointed by the elements of `fields`
 ///   after it becomes invalid, see the `Lifetimes` section.
@@ -309,6 +313,28 @@ pub unsafe extern "C" fn router_get_fields(
 mod tests {
     use super::*;
     const ERR_BUF_LEN_FOR_TEST: usize = 4096;
+
+    #[test]
+    fn test_get_fields_writes_only_within_capacity_arrays() {
+        let schema = Schema::default();
+        let mut router = Router::new(&schema);
+        router.fields.insert("ab".to_string(), 1);
+        router.fields.insert("c".to_string(), 1);
+
+        const CANARY: usize = usize::MAX;
+        let mut fields = [std::ptr::null::<u8>(); 3];
+        let mut fields_len = [2, CANARY, CANARY];
+
+        let count =
+            unsafe { router_get_fields(&router, fields.as_mut_ptr(), fields_len.as_mut_ptr()) };
+
+        assert_eq!(count, 2);
+        assert!(!fields[0].is_null() && !fields[1].is_null());
+        assert_eq!(fields[2], std::ptr::null());
+        assert!(matches!(fields_len[0], 1 | 2));
+        assert!(matches!(fields_len[1], 1 | 2));
+        assert_eq!(fields_len[2], CANARY);
+    }
 
     #[test]
     fn test_short_error_buf() {
