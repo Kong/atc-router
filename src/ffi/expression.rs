@@ -124,9 +124,12 @@ pub const ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL: i64 = 2;
 /// If `fields_buf_len` indicates that `fields_buf` is sufficient, this function writes the used fields to `fields_buf`, each field terminated by `\0`.
 /// It stores the total number of fields in `fields_total`.
 ///
-/// If `fields_buf_len` indicates that `fields_buf` is insufficient, it returns `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL`.
+/// If `fields_buf_len` indicates that `fields_buf` is insufficient, it returns
+/// `ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL`; `fields_total` reports the number of complete
+/// fields written before the buffer was exhausted.
 ///
-/// It writes the used operators as bitflags to `operators`.
+/// After parsing and validation succeed, `operators` is updated with the bitflags for all operators
+/// in the expression, including when the fields buffer is too small.
 /// Bitflags are defined by `BinaryOperatorFlags` and must exclude bits from `BinaryOperatorFlags::UNUSED`.
 ///
 ///
@@ -177,16 +180,19 @@ pub unsafe extern "C" fn expression_validate(
         return ATC_ROUTER_EXPRESSION_VALIDATE_FAILED;
     }
 
-    // Iterate over predicates to get fields and operators
+    // Collect operators before writing fields so a short buffer still returns them.
     let mut ops = BinaryOperatorFlags::empty();
+    for pred in ast.iter_predicates() {
+        ops |= BinaryOperatorFlags::from(&pred.op);
+    }
+    *operators = ops.bits();
+
     let mut existed_fields = HashSet::new();
     let mut total_fields_length = 0;
     let mut fields_buf_ptr = fields_buf;
     *fields_total = 0;
 
     for pred in ast.iter_predicates() {
-        ops |= BinaryOperatorFlags::from(&pred.op);
-
         let field = pred.lhs.var_name.as_str();
 
         if existed_fields.insert(field) {
@@ -195,21 +201,19 @@ pub unsafe extern "C" fn expression_validate(
             let field = ffi::CString::new(field).unwrap();
             let field_slice = field.as_bytes_with_nul();
             let field_len = field_slice.len();
+            let next_total_fields_length = total_fields_length + field_len;
 
-            *fields_total += 1;
-            total_fields_length += field_len;
-
-            if *fields_buf_len < total_fields_length {
+            if *fields_buf_len < next_total_fields_length {
                 return ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL;
             }
 
             let fields_buf = from_raw_parts_mut(fields_buf_ptr, field_len);
             fields_buf.copy_from_slice(field_slice);
             fields_buf_ptr = fields_buf_ptr.add(field_len);
+            total_fields_length = next_total_fields_length;
+            *fields_total += 1;
         }
     }
-
-    *operators = ops.bits();
 
     ATC_ROUTER_EXPRESSION_VALIDATE_OK
 }
@@ -353,6 +357,52 @@ mod tests {
             err_message,
             "Unknown LHS field".to_string(),
             "Error message mismatch"
+        );
+    }
+
+    #[test]
+    fn test_expression_validate_buf_too_small_reports_written_fields_and_operators() {
+        let atc = ffi::CString::new(
+            r##"net.protocol ~ "^https?$" && net.dst.port == 80 && (net.src.ip not in 10.0.0.0/16 || net.src.ip in 10.0.1.0/24) && http.path contains "hello""##,
+        )
+        .unwrap();
+        let mut schema = Schema::default();
+        schema.add_field("net.protocol", Type::String);
+        schema.add_field("net.dst.port", Type::Int);
+        schema.add_field("net.src.ip", Type::IpAddr);
+        schema.add_field("http.path", Type::String);
+
+        let mut fields_buf = vec![0xAB; 20];
+        let mut fields_buf_len = fields_buf.len();
+        let mut fields_total = 0;
+        let mut operators = 0x55;
+        let mut errbuf = vec![b'X'; ERR_BUF_LEN_FOR_TEST];
+        let mut errbuf_len = errbuf.len();
+        let result = unsafe {
+            expression_validate(
+                atc.as_ptr().cast(),
+                &schema,
+                fields_buf.as_mut_ptr(),
+                &mut fields_buf_len,
+                &mut fields_total,
+                &mut operators,
+                errbuf.as_mut_ptr(),
+                &mut errbuf_len,
+            )
+        };
+
+        assert_eq!(result, ATC_ROUTER_EXPRESSION_VALIDATE_BUF_TOO_SMALL);
+        let written_nuls = fields_buf.iter().filter(|byte| **byte == 0).count();
+        assert!(written_nuls > 0);
+        assert_eq!(fields_total, written_nuls);
+        assert_eq!(
+            operators,
+            (BinaryOperatorFlags::EQUALS
+                | BinaryOperatorFlags::REGEX
+                | BinaryOperatorFlags::IN
+                | BinaryOperatorFlags::NOT_IN
+                | BinaryOperatorFlags::CONTAINS)
+                .bits()
         );
     }
 
