@@ -47,15 +47,24 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn add_value(&mut self, field: &str, value: Value) {
-        if &value.my_type() != self.schema.type_of(field).unwrap() {
-            panic!("value provided does not match schema");
+    pub fn add_value(&mut self, field: &str, value: Value) -> Result<(), String> {
+        let Some(expected) = self.schema.type_of(field) else {
+            return Err(format!("field \"{field}\" is not defined in schema"));
+        };
+
+        let actual = value.my_type();
+        if &actual != expected {
+            return Err(format!(
+                "value type {actual:?} does not match schema type {expected:?} for field \"{field}\""
+            ));
         }
 
         self.values
             .entry(field.to_string())
             .or_default()
             .push(value);
+
+        Ok(())
     }
 
     pub fn value_of(&self, field: &str) -> Option<&[Value]> {
@@ -65,5 +74,45 @@ impl<'a> Context<'a> {
     pub fn reset(&mut self) {
         self.values.clear();
         self.result = None;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::{Type, Value};
+
+    #[test]
+    fn add_value_rejects_type_mismatch() {
+        let mut schema = Schema::default();
+        schema.add_field("tcp.port", Type::Int);
+        let mut ctx = Context::new(&schema);
+
+        let err = ctx
+            .add_value("tcp.port", Value::String("80".to_string()))
+            .unwrap_err();
+
+        assert!(err.contains("does not match schema type"));
+        assert!(ctx.value_of("tcp.port").is_none());
+    }
+
+    #[test]
+    fn add_value_rejects_unknown_field() {
+        let schema = Schema::default();
+        let mut ctx = Context::new(&schema);
+
+        let err = ctx.add_value("missing.field", Value::Int(1)).unwrap_err();
+
+        assert!(err.contains("not defined in schema"));
+    }
+
+    #[test]
+    fn add_value_accepts_matching_type() {
+        let mut schema = Schema::default();
+        schema.add_field("tcp.port", Type::Int);
+        let mut ctx = Context::new(&schema);
+
+        ctx.add_value("tcp.port", Value::Int(80)).unwrap();
+        assert_eq!(ctx.value_of("tcp.port").unwrap(), &[Value::Int(80)]);
     }
 }

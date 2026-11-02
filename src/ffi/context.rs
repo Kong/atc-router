@@ -63,11 +63,8 @@ pub unsafe extern "C" fn context_free(context: *mut Context) {
 /// # Errors
 ///
 /// This function will return `false` if the value could not be added to the context,
-/// such as when a String value is not a valid UTF-8 string.
-///
-/// # Panics
-///
-/// This function will panic if the provided value does not match the schema.
+/// such as when a String value is not a valid UTF-8 string, the field is unknown,
+/// or the value type does not match the schema field type.
 ///
 /// # Safety
 ///
@@ -98,7 +95,10 @@ pub unsafe extern "C" fn context_add_value(
         return false;
     }
 
-    context.add_value(field, value.unwrap());
+    if let Err(e) = context.add_value(field, value.unwrap()) {
+        write_errbuf(e, errbuf, errbuf_len);
+        return false;
+    }
 
     true
 }
@@ -272,4 +272,39 @@ pub unsafe extern "C" fn context_get_result(
         .len()
         .try_into()
         .unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::Type;
+    use crate::ffi::CValue;
+    use std::ffi;
+
+    const ERR_BUF_LEN_FOR_TEST: usize = 4096;
+
+    #[test]
+    fn context_add_value_reports_type_mismatch() {
+        unsafe {
+            let mut schema = Schema::default();
+            schema.add_field("tcp.port", Type::Int);
+            let mut context = Context::new(&schema);
+            let field = ffi::CString::new("tcp.port").unwrap();
+            let value = CValue::Str(b"80".as_ptr(), 2);
+            let mut errbuf = vec![0_u8; ERR_BUF_LEN_FOR_TEST];
+            let mut errbuf_len = ERR_BUF_LEN_FOR_TEST;
+
+            let ok = context_add_value(
+                &mut context,
+                field.as_ptr() as *const i8,
+                &value,
+                errbuf.as_mut_ptr(),
+                &mut errbuf_len,
+            );
+
+            assert!(!ok);
+            let msg = std::str::from_utf8(&errbuf[..errbuf_len]).unwrap();
+            assert!(msg.contains("does not match schema type"));
+        }
+    }
 }

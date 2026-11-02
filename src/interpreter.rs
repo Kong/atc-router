@@ -311,7 +311,7 @@ fn test_predicate() {
     ];
 
     for v in lhs_values {
-        ctx.add_value("my_key", v);
+        ctx.add_value("my_key", v).unwrap();
     }
 
     // check if all values match starts_with foo -- should be true

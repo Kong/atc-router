@@ -69,7 +69,8 @@ fn worst_case(c: &mut Criterion) {
     let mut g = c.benchmark_group("worst-case match");
     for n in [1, 10, 100, 500, 1000, MAX] {
         ctx.reset();
-        ctx.add_value("http.path", Value::String("/a".repeat(n - 1)));
+        ctx.add_value("http.path", Value::String("/a".repeat(n - 1)))
+            .unwrap();
         g.bench_with_input(
             BenchmarkId::new("without prefilter", n),
             &router,
@@ -85,7 +86,8 @@ fn worst_case(c: &mut Criterion) {
     router.enable_prefilter("http.path").unwrap();
     for n in [1, 10, 100, 500, 1000, MAX] {
         ctx.reset();
-        ctx.add_value("http.path", Value::String("/a".repeat(n - 1)));
+        ctx.add_value("http.path", Value::String("/a".repeat(n - 1)))
+            .unwrap();
         g.bench_with_input(
             BenchmarkId::new("with prefilter", n),
             &router,

@@ -329,7 +329,8 @@ mod tests {
             .expect("should add");
 
         let mut ctx = Context::new(&schema);
-        ctx.add_value("http.path", "/dev".to_owned().into());
+        ctx.add_value("http.path", "/dev".to_owned().into())
+            .unwrap();
         assert!(router.execute(&mut ctx));
     }
 
@@ -344,7 +345,8 @@ mod tests {
             .expect("should add");
 
         let mut ctx = Context::new(&schema);
-        ctx.add_value("http.path", "/not-dev".to_owned().into());
+        ctx.add_value("http.path", "/not-dev".to_owned().into())
+            .unwrap();
         assert!(!router.execute(&mut ctx));
     }
 
@@ -359,7 +361,8 @@ mod tests {
             .expect("should add");
 
         let mut ctx = Context::new(&schema);
-        ctx.add_value("http.path", "/dev".to_owned().into());
+        ctx.add_value("http.path", "/dev".to_owned().into())
+            .unwrap();
         router.try_match(&ctx).expect("matches");
     }
 
@@ -374,7 +377,8 @@ mod tests {
             .expect("should add");
 
         let mut ctx = Context::new(&schema);
-        ctx.add_value("http.path", "/not-dev".to_owned().into());
+        ctx.add_value("http.path", "/not-dev".to_owned().into())
+            .unwrap();
         router.try_match(&ctx).ok_or(()).expect_err("should fail");
     }
 
@@ -388,7 +392,8 @@ mod tests {
             .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
             .expect("should add");
         let mut ctx = Context::new(router.schema());
-        ctx.add_value("http.path", "/dev".to_owned().into());
+        ctx.add_value("http.path", "/dev".to_owned().into())
+            .unwrap();
         router.try_match(&ctx).expect("matches");
     }
 
@@ -402,7 +407,8 @@ mod tests {
             .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
             .expect("should add");
         let mut ctx = Context::new(router.schema());
-        ctx.add_value("http.path", "/dev".to_owned().into());
+        ctx.add_value("http.path", "/dev".to_owned().into())
+            .unwrap();
         router.try_match(&ctx).expect("matches");
     }
 
@@ -416,7 +422,8 @@ mod tests {
             .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
             .expect("should add");
         let mut ctx = Context::new(router.schema());
-        ctx.add_value("http.path", "/dev".to_owned().into());
+        ctx.add_value("http.path", "/dev".to_owned().into())
+            .unwrap();
         router.try_match(&ctx).expect("matches");
     }
 
@@ -430,7 +437,8 @@ mod tests {
             .add_matcher(0, Uuid::default(), "http.path == \"/dev\"")
             .expect("should add");
         let mut ctx = Context::new(router.schema());
-        ctx.add_value("http.path", "/dev".to_owned().into());
+        ctx.add_value("http.path", "/dev".to_owned().into())
+            .unwrap();
         router.try_match(&ctx).expect("matches");
     }
 
@@ -449,7 +457,8 @@ mod tests {
             .expect("should add");
 
         let mut ctx = Context::new(&schema);
-        ctx.add_value("http.path", "/foo/bar".to_owned().into());
+        ctx.add_value("http.path", "/foo/bar".to_owned().into())
+            .unwrap();
         assert!(router.execute(&mut ctx));
 
         let res = ctx.result.as_ref().unwrap();
@@ -459,7 +468,8 @@ mod tests {
         );
 
         ctx.reset();
-        ctx.add_value("http.path", "/abc/xyz".to_owned().into());
+        ctx.add_value("http.path", "/abc/xyz".to_owned().into())
+            .unwrap();
         assert!(router.execute(&mut ctx));
 
         let res = ctx.result.as_ref().unwrap();
@@ -484,7 +494,8 @@ mod tests {
             .expect("should add");
 
         let mut ctx = Context::new(&schema);
-        ctx.add_value("http.path", "/123/test".to_owned().into());
+        ctx.add_value("http.path", "/123/test".to_owned().into())
+            .unwrap();
         assert!(router.execute(&mut ctx));
 
         let res = ctx.result.as_ref().unwrap();
@@ -500,7 +511,8 @@ mod tests {
         );
 
         ctx.reset();
-        ctx.add_value("http.path", "/123/bar".to_owned().into());
+        ctx.add_value("http.path", "/123/bar".to_owned().into())
+            .unwrap();
         assert!(router.execute(&mut ctx));
 
         let res = ctx.result.as_ref().unwrap();
@@ -531,7 +543,8 @@ mod tests {
             .expect("should add");
 
         let mut ctx = Context::new(&schema);
-        ctx.add_value("http.path", "/nope".to_owned().into());
+        ctx.add_value("http.path", "/nope".to_owned().into())
+            .unwrap();
         assert!(!router.execute(&mut ctx));
         assert!(ctx.result.is_none());
     }
