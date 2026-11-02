@@ -173,3 +173,47 @@ false
 [error]
 [warn]
 [crit]
+
+
+
+=== TEST 5: schema type mismatch returns an error instead of crashing the worker
+--- http_config eval: $::HttpConfig
+--- config
+    location = /t {
+        content_by_lua_block {
+            local ffi = require("ffi")
+            local base = require("resty.core.base")
+            local schema = require("resty.router.schema")
+            local context = require("resty.router.context")
+            local cdefs = require("resty.router.cdefs")
+
+            local s = schema.new()
+            s:add_field("tcp.port", "Int")
+
+            local c = context.new(s)
+            local clib = cdefs.clib
+            local C = ffi.C
+
+            local cached = ffi.new("CValue[1]")
+            cached[0].tag = C.CValue_Str
+            cached[0].str._0 = "80"
+            cached[0].str._1 = 2
+
+            local errbuf = base.get_string_buf(cdefs.ERR_BUF_MAX_LEN)
+            local errbuf_len = base.get_size_ptr()
+            errbuf_len[0] = cdefs.ERR_BUF_MAX_LEN
+
+            local ok = clib.context_add_value(c.context, "tcp.port", cached, errbuf, errbuf_len)
+            ngx.say(ok and "true" or "false")
+            ngx.say(ffi.string(errbuf, errbuf_len[0]))
+        }
+    }
+--- request
+GET /t
+--- response_body_like
+false
+does not match schema type
+--- no_error_log
+[error]
+[warn]
+[crit]

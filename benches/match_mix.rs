@@ -39,9 +39,11 @@ fn criterion_benchmark(c: &mut Criterion) {
     const NUMBERS: &[usize] = &[0, 10, 1_000, 10_000, 40_000, 70_000, N - 1, N + 1];
     for &i in NUMBERS {
         ctx.reset();
-        ctx.add_value("http.path", Value::String(format!("hello{}", i)));
-        ctx.add_value("http.version", Value::String("1.1".to_string()));
-        ctx.add_value("a", Value::Int(3_i64));
+        ctx.add_value("http.path", Value::String(format!("hello{}", i)))
+            .unwrap();
+        ctx.add_value("http.version", Value::String("1.1".to_string()))
+            .unwrap();
+        ctx.add_value("a", Value::Int(3_i64)).unwrap();
 
         let expected_match = i < N;
         g.bench_with_input(BenchmarkId::new("without prefilter", i), &i, |b, _| {
@@ -56,9 +58,11 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     for &i in NUMBERS {
         ctx.reset();
-        ctx.add_value("http.path", Value::String(format!("hello{}", i)));
-        ctx.add_value("http.version", Value::String("1.1".to_string()));
-        ctx.add_value("a", Value::Int(3_i64));
+        ctx.add_value("http.path", Value::String(format!("hello{}", i)))
+            .unwrap();
+        ctx.add_value("http.version", Value::String("1.1".to_string()))
+            .unwrap();
+        ctx.add_value("a", Value::Int(3_i64)).unwrap();
 
         let expected_match = i < N;
         g.bench_with_input(BenchmarkId::new("with prefilter", i), &i, |b, _| {
